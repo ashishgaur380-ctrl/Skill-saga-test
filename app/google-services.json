@@ -1,0 +1,17 @@
+{
+  "project_info": {
+    "project_number": "354189057486",
+    "project_id": "skill-saga-cb695",
+    "storage_bucket": "skill-saga-cb695.firebasestorage.app"
+  },
+  "client": [{
+    "client_info": {
+      "mobilesdk_app_id": "1:354189057486:android:766d2f40945b738f8fdf9f",
+      "android_client_info": {"package_name": "com.skillsaga.learn"}
+    },
+    "oauth_client": [],
+    "api_key": [{"current_key": "AIzaSyDGYbsgP-vyDP2QOOjVzH1gqgZ4i7viyTQ"}],
+    "services": {"appinvite_service": {"other_platform_oauth_client": []}}
+  }],
+  "configuration_version": "1"
+}

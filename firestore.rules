@@ -1,0 +1,335 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    function signedIn() {
+      return request.auth != null;
+    }
+
+    function currentUser() {
+      return signedIn()
+        && exists(/databases/$(database)/documents/users/$(request.auth.uid));
+    }
+
+    function currentRole() {
+      return get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role;
+    }
+
+    function isAdmin() {
+      return currentUser() && currentRole() == 'admin';
+    }
+
+    function validSignupRole() {
+      return request.resource.data.role in ['learner', 'parent', 'teacher'];
+    }
+
+    match /users/{uid} {
+      allow read: if signedIn()
+        && (request.auth.uid == uid || isAdmin());
+
+      allow create: if signedIn()
+        && request.auth.uid == uid
+        && validSignupRole();
+
+      allow update: if signedIn()
+        && (
+          (
+            request.auth.uid == uid
+            && request.resource.data.role == resource.data.role
+            && request.resource.data.accountStatus == resource.data.accountStatus
+          )
+          || (
+            isAdmin()
+            && request.auth.uid != uid
+            && uid != '4Jme1MoSmHbjzwVjkvxeNSwPp0U2'
+          )
+        );
+
+      allow delete: if signedIn()
+        && (request.auth.uid == uid || isAdmin());
+    }
+
+    match /studentDirectory/{linkCode} {
+      allow read: if signedIn();
+      allow create, update: if signedIn()
+        && request.resource.data.studentUid == request.auth.uid
+        && request.resource.data.role == 'learner';
+      allow delete: if signedIn()
+        && resource.data.studentUid == request.auth.uid;
+    }
+
+    match /linkRequests/{requestId} {
+      allow create: if signedIn()
+        && request.resource.data.fromUid == request.auth.uid
+        && request.resource.data.fromRole in ['parent', 'teacher']
+        && request.resource.data.toUid is string
+        && request.resource.data.status == 'pending';
+
+      allow read: if signedIn()
+        && (
+          resource.data.fromUid == request.auth.uid
+          || resource.data.toUid == request.auth.uid
+          || requestId.matches(request.auth.uid + '_.*')
+          || isAdmin()
+        );
+
+      allow update: if signedIn()
+        && resource.data.toUid == request.auth.uid
+        && resource.data.status == 'pending'
+        && request.resource.data.status in ['accepted', 'rejected'];
+
+      allow delete: if signedIn()
+        && (
+          resource.data.fromUid == request.auth.uid
+          || resource.data.toUid == request.auth.uid
+          || isAdmin()
+        );
+    }
+
+    match /relationships/{relationshipId} {
+      allow create: if signedIn()
+        && request.resource.data.status == 'active'
+        && (
+          isAdmin()
+          || request.resource.data.parentUid == request.auth.uid
+          || request.resource.data.teacherUid == request.auth.uid
+          || request.resource.data.studentUid == request.auth.uid
+        );
+
+      allow read: if signedIn()
+        && (
+          resource.data.parentUid == request.auth.uid
+          || resource.data.teacherUid == request.auth.uid
+          || resource.data.studentUid == request.auth.uid
+          || isAdmin()
+        );
+
+      allow update: if signedIn()
+        && (
+          isAdmin()
+          || (
+            resource.data.studentUid == request.auth.uid
+            && request.resource.data.parentUid == resource.data.parentUid
+            && request.resource.data.teacherUid == resource.data.teacherUid
+            && request.resource.data.studentUid == resource.data.studentUid
+            && request.resource.data.status == resource.data.status
+          )
+        );
+
+      allow delete: if signedIn()
+        && (
+          resource.data.parentUid == request.auth.uid
+          || resource.data.teacherUid == request.auth.uid
+          || resource.data.studentUid == request.auth.uid
+          || isAdmin()
+        );
+    }
+
+    match /quizzes/{quizId} {
+      allow read: if signedIn()
+        && (resource.data.published == true || isAdmin()
+          || (resource.data.status == 'scheduled'
+            && resource.data.publishAtMs is number
+            && resource.data.publishAtMs <= request.time.toMillis()
+            && (resource.data.expiresAtMs == null || resource.data.expiresAtMs == 0 || resource.data.expiresAtMs > request.time.toMillis())));
+      allow create, update, delete: if isAdmin();
+    }
+
+    match /curriculum/{id} {
+      allow read: if signedIn()
+        && (resource.data.status == 'published' || resource.data.status == 'active' || isAdmin()
+          || (resource.data.status == 'scheduled'
+            && resource.data.publishAtMs is number
+            && resource.data.publishAtMs <= request.time.toMillis()
+            && (resource.data.expiresAtMs == null || resource.data.expiresAtMs == 0 || resource.data.expiresAtMs > request.time.toMillis())));
+      allow create, update, delete: if isAdmin();
+    }
+
+    match /learningMaterials/{id} {
+      allow read: if signedIn()
+        && (resource.data.status == 'published' || resource.data.status == 'active' || isAdmin()
+          || (resource.data.status == 'scheduled'
+            && resource.data.publishAtMs is number
+            && resource.data.publishAtMs <= request.time.toMillis()
+            && (resource.data.expiresAtMs == null || resource.data.expiresAtMs == 0 || resource.data.expiresAtMs > request.time.toMillis())));
+      allow create, update, delete: if isAdmin();
+    }
+
+    match /questionBank/{id} {
+      allow read: if signedIn()
+        && (resource.data.status == 'published' || isAdmin()
+          || (resource.data.status == 'scheduled'
+            && resource.data.publishAtMs is number
+            && resource.data.publishAtMs <= request.time.toMillis()
+            && (resource.data.expiresAtMs == null || resource.data.expiresAtMs == 0 || resource.data.expiresAtMs > request.time.toMillis())));
+      allow create, update, delete: if isAdmin();
+    }
+
+    match /competitions/{id} {
+      allow read: if signedIn()
+        && (resource.data.published == true || isAdmin());
+      allow create, update, delete: if isAdmin();
+    }
+
+    match /competitionResults/{id} {
+      allow read: if isAdmin();
+      allow create: if signedIn()
+        && request.resource.data.uid == request.auth.uid;
+      allow update, delete: if isAdmin()
+        || (signedIn() && resource.data.uid == request.auth.uid);
+    }
+
+    match /assignments/{assignmentId} {
+      allow create: if signedIn()
+        && currentUser()
+        && request.resource.data.teacherUid == request.auth.uid
+        && currentRole() == 'teacher'
+        && request.resource.data.studentUid is string
+        && request.resource.data.quizId is string
+        && request.resource.data.status == 'assigned';
+
+      allow read: if signedIn()
+        && (
+          resource.data.teacherUid == request.auth.uid
+          || resource.data.studentUid == request.auth.uid
+          || assignmentId.matches(request.auth.uid + '_.*')
+          || isAdmin()
+        );
+
+      allow update: if signedIn()
+        && (
+          isAdmin()
+          || (
+            resource.data.teacherUid == request.auth.uid
+            && request.resource.data.teacherUid == resource.data.teacherUid
+            && request.resource.data.studentUid == resource.data.studentUid
+            && request.resource.data.quizId == resource.data.quizId
+          )
+          || (
+            resource.data.studentUid == request.auth.uid
+            && request.resource.data.teacherUid == resource.data.teacherUid
+            && request.resource.data.studentUid == resource.data.studentUid
+            && request.resource.data.quizId == resource.data.quizId
+            && request.resource.data.status in ['assigned','completed']
+          )
+        );
+
+      allow delete: if signedIn()
+        && (
+          resource.data.teacherUid == request.auth.uid
+          || isAdmin()
+        );
+    }
+
+    match /quizAttempts/{attemptId} {
+      allow create: if signedIn()
+        && request.resource.data.uid == request.auth.uid
+        && request.resource.data.quizId is string
+        && request.resource.data.score is number
+        && request.resource.data.total is number
+        && request.resource.data.percentage is number;
+      allow read, update, delete: if isAdmin();
+    }
+
+    match /rewards/{id} {
+      allow read: if signedIn()
+        && (resource.data.published == true || resource.data.status == 'published' || isAdmin());
+      allow create, update, delete: if isAdmin();
+    }
+
+    match /badges/{id} {
+      allow read: if signedIn()
+        && (resource.data.published == true || resource.data.status == 'published' || isAdmin());
+      allow create, update, delete: if isAdmin();
+    }
+
+    match /leaderboards/{id} {
+      allow read: if signedIn()
+        && (resource.data.published == true || resource.data.status == 'published' || isAdmin());
+      allow create, update, delete: if isAdmin();
+    }
+
+    match /notifications/{id} {
+      allow read: if signedIn()
+        && (resource.data.status == 'published' || isAdmin());
+      allow create, update, delete: if isAdmin();
+    }
+
+    match /forumGroups/{id} {
+      allow read: if signedIn()
+        && (resource.data.status == 'published' || resource.data.ownerUid == request.auth.uid || isAdmin());
+      allow create: if signedIn()
+        && request.resource.data.ownerUid == request.auth.uid
+        && request.resource.data.title is string
+        && request.resource.data.description is string
+        && request.resource.data.classLevel is number
+        && request.resource.data.classLevel >= 1
+        && request.resource.data.classLevel <= 12
+        && request.resource.data.subject is string
+        && request.resource.data.status in ['pending','published'];
+      allow update: if isAdmin()
+        || (
+          signedIn()
+          && resource.data.ownerUid == request.auth.uid
+          && request.resource.data.ownerUid == resource.data.ownerUid
+          && request.resource.data.memberCount is number
+          && request.resource.data.status == resource.data.status
+        );
+      allow delete: if isAdmin() || (signedIn() && resource.data.ownerUid == request.auth.uid);
+    }
+
+    match /forumGroupMembers/{id} {
+      allow read: if signedIn()
+        && (
+          resource.data.memberUid == request.auth.uid
+          || isAdmin()
+          || get(/databases/$(database)/documents/forumGroups/$(resource.data.groupId)).data.ownerUid == request.auth.uid
+        );
+      allow create: if signedIn()
+        && request.resource.data.memberUid == request.auth.uid
+        && request.resource.data.groupId is string
+        && (get(/databases/$(database)/documents/forumGroups/$(request.resource.data.groupId)).data.status == 'published'
+            || get(/databases/$(database)/documents/forumGroups/$(request.resource.data.groupId)).data.ownerUid == request.auth.uid);
+      allow delete: if isAdmin()
+        || (signedIn() && resource.data.memberUid == request.auth.uid)
+        || (signedIn() && get(/databases/$(database)/documents/forumGroups/$(resource.data.groupId)).data.ownerUid == request.auth.uid);
+    }
+
+    match /forumPosts/{id} {
+      allow read: if signedIn()
+        && (resource.data.status == 'published' || isAdmin()
+          || resource.data.authorUid == request.auth.uid);
+      allow create: if signedIn()
+        && request.resource.data.authorUid == request.auth.uid
+        && request.resource.data.groupId is string
+        && request.resource.data.status == 'published'
+        && get(/databases/$(database)/documents/forumGroups/$(request.resource.data.groupId)).data.status == 'published'
+        && (
+          get(/databases/$(database)/documents/forumGroups/$(request.resource.data.groupId)).data.ownerUid == request.auth.uid
+          || exists(/databases/$(database)/documents/forumGroupMembers/$(request.resource.data.groupId + '_' + request.auth.uid))
+        );
+      allow update: if isAdmin()
+        || (
+          signedIn()
+          && get(/databases/$(database)/documents/forumGroups/$(resource.data.groupId)).data.ownerUid == request.auth.uid
+        );
+      allow delete: if isAdmin()
+        || (signedIn() && resource.data.authorUid == request.auth.uid)
+        || (signedIn() && get(/databases/$(database)/documents/forumGroups/$(resource.data.groupId)).data.ownerUid == request.auth.uid);
+    }
+
+    match /forumReports/{id} {
+      allow read, update, delete: if isAdmin();
+      allow create: if signedIn()
+        && request.resource.data.reporterUid == request.auth.uid
+        && request.resource.data.postId is string;
+    }
+
+    match /appSettings/{id} {
+      allow read: if signedIn();
+      allow create, update, delete: if isAdmin();
+    }
+
+  }
+}

@@ -1,0 +1,3 @@
+Skill Saga APK build marker
+Admin Console v3 must be included in this build.
+Source commit: b125fd8816564276e8158c41b2c0f831cd1530ec
