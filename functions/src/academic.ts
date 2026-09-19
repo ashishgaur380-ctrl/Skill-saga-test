@@ -304,6 +304,34 @@ export const bulkImportAcademic = onCall(async (request) => {
     return id;
   };
 
+  const resolveSubjectMapping = (
+    value:string,
+    boardValues:string[],
+    classValues:string[],
+    label:string,
+    row:number,
+    mode:"name"|"code"="code",
+  ) => {
+    const boardIds = boardValues.map(v => resolve("boards", v, "Board", row)).filter((v):v is string => Boolean(v));
+    const classIds = classValues.map(v => resolve("classes", v, "Class", row)).filter((v):v is string => Boolean(v));
+    if (boardIds.length !== boardValues.length || classIds.length !== classValues.length) return null;
+
+    const normalizedValue = mode === "code" ? value.toUpperCase() : value.toLowerCase();
+    const exactKey = mode === "code"
+      ? normalizedValue + "|" + boardIds.slice().sort().join(",") + "|" + classIds.slice().sort().join(",")
+      : "name:" + normalizedValue;
+
+    const id = planned.get("subjects")?.get(exactKey) ?? existing.get("subjects")?.get(exactKey);
+    if (!id) {
+      errors.push({
+        row,
+        message:`Subject "${value}" was not found for board(s) [${boardValues.join(", ")}] and class(es) [${classValues.join(", ")}].`,
+      });
+      return null;
+    }
+    return id;
+  };
+
   const orderedRows = rows.map((row, index) => ({ row, originalRow: index + 2 }))
     .sort((a,b) => IMPORT_ORDER.indexOf(entityFromRow(a.row.entity)) - IMPORT_ORDER.indexOf(entityFromRow(b.row.entity)));
 
@@ -330,8 +358,22 @@ export const bulkImportAcademic = onCall(async (request) => {
         data.classIds=classes.map(v=>resolve("classes",v,"Class",rowNumber)).filter((v):v is string=>Boolean(v));
       }
       if (collection==="chapters") {
-        const subjectValue = textValue(row.subjectCode) || requiredText(row.subjectName,"subjectName");
-        const id=resolve("subjects",subjectValue,"Subject",rowNumber,textValue(row.subjectCode) ? "code" : "name");
+        const boardValues=csvList(row.boardCodes);
+        const classValues=csvList(row.classCodes);
+        if (!boardValues.length || !classValues.length) {
+          throw new HttpsError("invalid-argument","Chapters require boardCodes and classCodes so the subject mapping is unambiguous.");
+        }
+        const subjectCode=textValue(row.subjectCode);
+        const subjectName=textValue(row.subjectName);
+        if (!subjectCode && !subjectName) throw new HttpsError("invalid-argument","Chapters require subjectCode or subjectName.");
+        const id=resolveSubjectMapping(
+          subjectCode || subjectName,
+          boardValues,
+          classValues,
+          "Subject",
+          rowNumber,
+          subjectCode ? "code" : "name",
+        );
         if (id) data.subjectId=id;
       }
       if (collection==="topics") {
