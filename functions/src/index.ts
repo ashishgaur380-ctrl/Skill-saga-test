@@ -51,3 +51,10 @@ export {
   updateReward,
   archiveReward,
 } from "./rewards";
+
+export {
+  listNotificationTemplates,
+  createNotificationTemplate,
+  updateNotificationTemplate,
+  archiveNotificationTemplate,
+} from "./notifications";
