@@ -98,3 +98,44 @@ h2 { margin-top: 0; }
 .checkbox-row{display:flex!important;grid-template-columns:none!important;align-items:center;gap:8px!important}
 .checkbox-row input{width:16px;height:16px}
 .modal-actions{display:flex;justify-content:flex-end;gap:10px;padding:16px 24px;border-top:1px solid #e2e8f0}
+
+
+.academic-manager{min-height:100vh;padding:34px;background:#f5f7fb}
+.academic-header{display:flex;align-items:flex-start;justify-content:space-between;gap:24px;margin-bottom:24px}
+.academic-header h1{margin:0;font-size:32px}
+.academic-header p{margin:8px 0 0;color:#69758a}
+.academic-eyebrow{display:block;margin:0 0 7px;font-size:11px;font-weight:800;letter-spacing:.12em;color:#526a9e}
+.academic-status{display:flex;align-items:center;gap:8px;padding:9px 12px;border:1px solid #dce4ef;border-radius:999px;background:#fff;color:#526076;font-size:12px;font-weight:700;white-space:nowrap}
+.status-dot{width:8px;height:8px;border-radius:50%;background:#16a34a}
+.academic-tabs{display:flex;gap:8px;padding:6px;margin-bottom:18px;background:#e9eef6;border:1px solid #dce4ef;border-radius:12px}
+.academic-tab{flex:1;border:0;background:transparent;color:#526076;padding:11px 14px;border-radius:8px;font-weight:700;cursor:pointer}
+.academic-tab:hover{background:#f8fafc;color:#172033}
+.academic-tab.active{background:#101d3a;color:#fff;box-shadow:0 2px 7px rgba(16,29,58,.15)}
+.academic-panel{background:#fff;border:1px solid #e4e8f0;border-radius:14px;overflow:hidden;box-shadow:0 4px 18px rgba(20,35,65,.04)}
+.academic-panel-header{display:flex;align-items:center;justify-content:space-between;gap:18px;padding:22px 24px;border-bottom:1px solid #e2e8f0}
+.academic-panel-header h2{margin:0;font-size:20px}
+.academic-panel-header p{margin:6px 0 0;color:#69758a;font-size:13px}
+.academic-toolbar{display:flex;align-items:center;justify-content:space-between;gap:16px;padding:16px 24px;border-bottom:1px solid #e2e8f0}
+.academic-toolbar input{width:min(420px,100%);padding:10px 12px;border:1px solid #cbd5e1;border-radius:9px;outline:none}
+.academic-toolbar input:focus{border-color:#526a9e;box-shadow:0 0 0 3px rgba(82,106,158,.12)}
+.record-count{color:#64748b;font-size:13px;font-weight:600}
+.primary-button,.secondary-button{border-radius:9px;padding:10px 14px;font-weight:700;cursor:pointer}
+.primary-button{border:1px solid #101d3a;background:#101d3a;color:#fff}
+.primary-button:hover{background:#17284d}
+.secondary-button{border:1px solid #cbd5e1;background:#fff;color:#334155}
+.secondary-button:hover{background:#f8fafc}
+.primary-button:disabled,.secondary-button:disabled{opacity:.55;cursor:not-allowed}
+.academic-empty{padding:56px 24px;text-align:center;color:#69758a}
+.academic-empty h3{margin:10px 0 6px;color:#172033}
+.academic-empty p{margin:0 auto 18px;max-width:620px;line-height:1.5}
+.empty-icon{font-size:28px;color:#94a3b8}
+@media (max-width:700px){
+  .academic-manager{padding:20px}
+  .academic-header{display:block}
+  .academic-status{margin-top:16px;width:max-content}
+  .academic-tabs{display:grid;grid-template-columns:repeat(2,1fr)}
+  .academic-toolbar{display:block}
+  .academic-toolbar input{width:100%}
+  .record-count{display:block;margin-top:10px}
+  .academic-panel-header{align-items:flex-start;flex-direction:column}
+}
