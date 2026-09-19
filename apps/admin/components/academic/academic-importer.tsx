@@ -46,7 +46,9 @@ function parseCsv(text: string): Record<string, string>[] {
   if (rows.length < 2) throw new Error("CSV must contain a header and at least one data row.");
 
   const headers = rows[0].map((value) => value.trim());
-  const missing = HEADERS.filter((header) => !headers.includes(header));
+  // subjectCode is optional for the master academic import; it is used when importing chapters to disambiguate repeated subjects.
+  const requiredHeaders = HEADERS.filter((header) => header !== "subjectCode");
+  const missing = requiredHeaders.filter((header) => !headers.includes(header));
   if (missing.length) throw new Error("Missing required columns: " + missing.join(", "));
 
   return rows.slice(1).map((values) =>
