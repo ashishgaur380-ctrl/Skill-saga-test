@@ -66,15 +66,26 @@ export async function POST(request: NextRequest) {
     // Firebase callable responses are normally { data: ... }. The emulator
     // can expose the callable result in a slightly different envelope, so
     // normalize it here before returning it to the browser client.
-    if (payload && typeof payload === "object" && "data" in payload) {
-      return NextResponse.json(payload, { status: response.status });
-    }
+    if (payload && typeof payload === "object") {
+      const envelope = payload as { data?: unknown; result?: unknown };
+      let value =
+        envelope.result !== undefined
+          ? envelope.result
+          : envelope.data !== undefined
+            ? envelope.data
+            : payload;
 
-    if (payload && typeof payload === "object" && "result" in payload) {
-      return NextResponse.json(
-        { data: (payload as { result: unknown }).result },
-        { status: response.status },
-      );
+      // Some emulator/runtime combinations add an extra callable envelope.
+      if (
+        value &&
+        typeof value === "object" &&
+        "data" in value &&
+        Object.keys(value).length === 1
+      ) {
+        value = (value as { data: unknown }).data;
+      }
+
+      return NextResponse.json({ data: value }, { status: response.status });
     }
 
     return NextResponse.json({ data: payload }, { status: response.status });
