@@ -30,3 +30,10 @@ export {
   updateCompetition,
   archiveCompetition,
 } from "./competition";
+
+export {
+  listAutomationRules,
+  createAutomationRule,
+  updateAutomationRule,
+  setAutomationEnabled,
+} from "./automation";
