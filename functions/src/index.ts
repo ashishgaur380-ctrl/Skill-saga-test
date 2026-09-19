@@ -58,3 +58,5 @@ export {
   updateNotificationTemplate,
   archiveNotificationTemplate,
 } from "./notifications";
+
+export { getAnalyticsSummary } from "./analytics";
