@@ -5,6 +5,7 @@ const allowedActions = new Set([
   "createAcademic",
   "updateAcademic",
   "archiveAcademic",
+  "bulkImportAcademic",
 ]);
 
 const projectId = process.env.GCLOUD_PROJECT ?? "skill-saga-2";
