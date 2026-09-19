@@ -21,12 +21,18 @@ export default function AdminLoginPage() {
       await signIn(email.trim(), password);
       router.replace("/");
     } catch (caught) {
-      const code = caught instanceof Error ? caught.message : "Unable to sign in.";
-      setError(code.includes("auth/invalid-credential")
-        ? "Invalid email or password."
-        : code.includes("authorized admin role")
-          ? code
-          : "Unable to sign in. Check the Firebase configuration and your credentials.");
+      const message = caught instanceof Error ? caught.message : "Unable to sign in.";
+      if (message.includes("authorized admin role")) {
+        setError(message);
+      } else if (message.includes("auth/invalid-credential") || message.includes("auth/wrong-password") || message.includes("auth/user-not-found")) {
+        setError("Firebase rejected the email/password. Please verify the Firebase user and password.");
+      } else if (message.includes("auth/invalid-api-key")) {
+        setError("Firebase rejected the Web API key. Please recheck NEXT_PUBLIC_FIREBASE_API_KEY.");
+      } else if (message.includes("auth/network-request-failed")) {
+        setError("Firebase could not be reached. Check the Codespace network connection.");
+      } else {
+        setError(`Firebase sign-in error: ${message}`);
+      }
     } finally {
       setBusy(false);
     }
