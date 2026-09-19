@@ -128,12 +128,20 @@ export const listAcademic = onCall(async (request) => {
     .limit(500)
     .get();
 
-  const items = snapshot.docs
-    .map((doc) => {
-      const data = doc.data() as Record<string, unknown>;
-      return { id: doc.id, ...data };
-    })
-    .sort((a, b) => String(a.name ?? "").localeCompare(String(b.name ?? "")));
+  type AcademicListItem = {
+    id: string;
+    name?: unknown;
+    [key: string]: unknown;
+  };
+
+  const items: AcademicListItem[] = snapshot.docs.map((doc) => {
+    const data = doc.data() as Record<string, unknown>;
+    return { id: doc.id, ...data };
+  });
+
+  items.sort((a, b) =>
+    String(a.name ?? "").localeCompare(String(b.name ?? "")),
+  );
 
   return { items };
 });
