@@ -275,12 +275,16 @@ export const bulkImportAcademic = onCall(async (request) => {
     const map = new Map<string,string>();
     for (const doc of snapshot.docs) {
       const data = doc.data() as Record<string,unknown>;
-      const key = collection === "subjects"
-        ? textValue(data.code).toUpperCase() + "|" + (Array.isArray(data.boardIds) ? (data.boardIds as unknown[]).map(String).sort().join(",") : "") + "|" + (Array.isArray(data.classIds) ? (data.classIds as unknown[]).map(String).sort().join(",") : "")
-        : ["boards","classes"].includes(collection)
-          ? textValue(data.code).toUpperCase()
-          : textValue(data.name).toLowerCase();
-      if (key) map.set(key, doc.id);
+      const codeKey = textValue(data.code).toUpperCase();
+      const nameKey = textValue(data.name).toLowerCase();
+      if (collection === "subjects") {
+        const mappingKey = codeKey + "|" + (Array.isArray(data.boardIds) ? (data.boardIds as unknown[]).map(String).sort().join(",") : "") + "|" + (Array.isArray(data.classIds) ? (data.classIds as unknown[]).map(String).sort().join(",") : "");
+        if (mappingKey) map.set(mappingKey, doc.id);
+        if (nameKey) map.set("name:" + nameKey, doc.id);
+      } else {
+        const key = ["boards","classes"].includes(collection) ? codeKey : nameKey;
+        if (key) map.set(key, doc.id);
+      }
     }
     existing.set(collection,map);
   }
@@ -291,7 +295,9 @@ export const bulkImportAcademic = onCall(async (request) => {
   const errors: Array<{row:number;message:string}> = [];
 
   const resolve = (collection:AcademicCollection,value:string,label:string,row:number) => {
-    const key = ["boards","classes","subjects"].includes(collection) ? value.toUpperCase() : value.toLowerCase();
+    const key = collection === "subjects"
+      ? "name:" + value.toLowerCase()
+      : ["boards","classes"].includes(collection) ? value.toUpperCase() : value.toLowerCase();
     const id = planned.get(collection)?.get(key) ?? existing.get(collection)?.get(key);
     if (!id) { errors.push({row,message:`${label} "${value}" was not found.`}); return null; }
     return id;
@@ -341,6 +347,7 @@ export const bulkImportAcademic = onCall(async (request) => {
       if (planned.get(collection)?.has(key)) throw new HttpsError("already-exists",`Duplicate row for "${name}".`);
       const ref=db.collection(collection).doc();
       planned.get(collection)!.set(key,ref.id);
+      if (collection === "subjects") planned.get(collection)!.set("name:" + name.toLowerCase(), ref.id);
       prepared.push({collection,key,data:{...data,createdBy:uid,updatedBy:uid}});
     } catch (error) {
       errors.push({row:rowNumber,message:error instanceof HttpsError?error.message:error instanceof Error?error.message:"Invalid import row."});
