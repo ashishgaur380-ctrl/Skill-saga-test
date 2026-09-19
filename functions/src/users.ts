@@ -20,6 +20,25 @@ export const listUsers=onCall(async request=>{
   const result=await adminAuth.listUsers(1000);
   let users=result.users;
 
+  // The development Admin Console uses the production Firebase Auth session
+  // while Firestore/Functions run in emulators. In that mixed mode, Auth user
+  // directory reads may not be available from the emulator environment.
+  // Safely expose the authenticated administrator from the verified callable
+  // token instead of returning a misleading empty Users page.
+  const currentUid=request.auth?.uid;
+  const currentEmail=typeof request.auth?.token.email==="string"?request.auth.token.email:"";
+  if(currentUid && !users.some(user=>user.uid===currentUid) && currentEmail){
+    users=[{
+      uid:currentUid,
+      email:currentEmail,
+      displayName:typeof request.auth?.token.name==="string"?request.auth.token.name:"",
+      disabled:false,
+      emailVerified:request.auth?.token.email_verified===true,
+      metadata:{creationTime:null,lastSignInTime:null},
+      customClaims:{role:typeof request.auth?.token.role==="string"?request.auth.token.role:"super_admin"},
+    } as any,...users];
+  }
+
   // Local Functions emulator may not have the same Auth user directory as the
   // browser's configured Firebase Auth project. Always resolve the currently
   // authenticated administrator so the Admin Console never shows a false empty
