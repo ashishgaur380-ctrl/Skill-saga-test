@@ -235,10 +235,10 @@ export default function AcademicManager() {
         await callAcademic<{ success: boolean }>("updateAcademic", {
           collection: activeModule, id: editing.id, data,
         });
-        setNotice(`${current.name.slice(0, -1) || current.name} updated successfully.`);
+        setNotice(`${singularName} updated successfully.`);
       } else {
         await callAcademic<{ id: string }>("createAcademic", { collection: activeModule, data });
-        setNotice(`${current.name.slice(0, -1) || current.name} created successfully.`);
+        setNotice(`${singularName} created successfully.`);
       }
       setFormOpen(false);
       setEditing(null);
