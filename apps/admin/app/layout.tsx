@@ -1,4 +1,5 @@
 import "./globals.css";
+import { AdminGate, AuthProvider } from "../components/auth-provider";
 
 export const metadata = {
   title: "Skill Saga Admin",
@@ -8,7 +9,11 @@ export const metadata = {
 export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
   return (
     <html lang="en">
-      <body>{children}</body>
+      <body>
+        <AuthProvider>
+          <AdminGate>{children}</AdminGate>
+        </AuthProvider>
+      </body>
     </html>
   );
 }
