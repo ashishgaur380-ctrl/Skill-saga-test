@@ -16,3 +16,10 @@ export {
   updateQuestion,
   archiveQuestion,
 } from "./question";
+
+export {
+  listQuizzes,
+  createQuiz,
+  updateQuiz,
+  archiveQuiz,
+} from "./quiz";
