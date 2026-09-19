@@ -12,6 +12,7 @@ out/
 !.env.example
 
 # Firebase local/emulator files
+emulator-data/
 .firebase/
 firebase-debug.log
 firestore-debug.log
