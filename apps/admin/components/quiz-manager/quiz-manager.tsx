@@ -23,13 +23,36 @@ async function listA(c:string):Promise<A[]>{
 const blank={title:"",description:"",questionIds:[] as string[],boardId:"",classId:"",subjectId:"",status:"draft",active:true};
 export default function QuizManager(){
  const[quizzes,setQuizzes]=useState<Quiz[]>([]),[questions,setQuestions]=useState<Q[]>([]),[academic,setAcademic]=useState<Record<string,A[]>>({}),[form,setForm]=useState(blank),[editing,setEditing]=useState<Quiz|null>(null),[open,setOpen]=useState(false),[loading,setLoading]=useState(true),[saving,setSaving]=useState(false),[error,setError]=useState<string|null>(null),[notice,setNotice]=useState<string|null>(null);
- const load=useCallback(async()=>{setLoading(true);setError(null);try{const[q,b,c,s]=await Promise.all([callQuiz<{items:Quiz[]}>("listQuizzes"),callQuiz<{items:Q[]}>("listQuestions" as never).catch(()=>({items:[]} as any)),listA("boards"),listA("classes"),]);setQuizzes(q.items??[]);setQuestions((q as any).questions??[]);setAcademic({boards:b,classes:c,sSubjects:s});}catch(e){setError(e instanceof Error?e.message:"Unable to load Quiz Manager.");}finally{setLoading(false)}},[]);
- // Load questions directly through the Question Bank proxy to keep this manager independent.
- const loadAll=useCallback(async()=>{setLoading(true);setError(null);try{
-   const qs=await (async()=>{const u=firebaseAuth.currentUser;if(!u)throw new Error("You are not authenticated.");const t=await u.getIdToken();const r=await fetch("/api/question-bank",{method:"POST",headers:{"Content-Type":"application/json",Authorization:`Bearer ${t}`},body:JSON.stringify({action:"listQuestions",data:{}}),cache:"no-store"});const p=await r.json() as any;if(!r.ok)throw new Error(p.error?.message||"Unable to load questions.");return p.data?.items??[];})();
-   const [qq,b,c,s]=await Promise.all([callQuiz<{items:Quiz[]}>("listQuizzes"),listA("boards"),listA("classes"),listA("subjects")]);setQuizzes(qq.items??[]);setQuestions(qs);setAcademic({boards:b,classes:c,subjects:s});
- }catch(e){setError(e instanceof Error?e.message:"Unable to load Quiz Manager.");}finally{setLoading(false)}},[]);
+ const loadAll=useCallback(async()=>{
+   setLoading(true); setError(null);
+   try {
+     const [quizResult, questionResult, boards, classes, subjects] = await Promise.all([
+       callQuiz<{items:Quiz[]}>("listQuizzes"),
+       (async()=>{
+         const u=firebaseAuth.currentUser;
+         if(!u) throw new Error("You are not authenticated.");
+         const token=await u.getIdToken();
+         const r=await fetch("/api/question-bank",{
+           method:"POST",
+           headers:{"Content-Type":"application/json",Authorization:`Bearer ${token}`},
+           body:JSON.stringify({action:"listQuestions",data:{}}),
+           cache:"no-store"
+         });
+         const p=await r.json() as any;
+         if(!r.ok) throw new Error(p.error?.message||"Unable to load questions.");
+         return (p.data?.items??[]) as Q[];
+       })(),
+       listA("boards"), listA("classes"), listA("subjects")
+     ]);
+     setQuizzes(quizResult.items??[]);
+     setQuestions(questionResult);
+     setAcademic({boards,classes,subjects});
+   } catch(e) {
+     setError(e instanceof Error?e.message:"Unable to load Quiz Manager.");
+   } finally { setLoading(false); }
+ },[]);
  useEffect(()=>{void loadAll()},[loadAll]);
+
  function create(){setEditing(null);setForm({...blank});setOpen(true);setError(null);setNotice(null)}
  function edit(q:Quiz){setEditing(q);setForm({title:q.title,description:q.description??"",questionIds:[...q.questionIds],boardId:q.boardId??"",classId:q.classId??"",subjectId:q.subjectId??"",status:q.status,active:q.active});setOpen(true);setError(null);setNotice(null)}
  async function save(){setSaving(true);setError(null);try{if(editing)await callQuiz("updateQuiz",{id:editing.id,data:form});else await callQuiz("createQuiz",{data:form});setOpen(false);setNotice(editing?"Quiz updated successfully.":"Quiz created successfully.");await loadAll()}catch(e){setError(e instanceof Error?e.message:"Unable to save quiz.")}finally{setSaving(false)}}
