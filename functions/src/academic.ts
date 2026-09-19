@@ -420,6 +420,22 @@ export const bulkImportAcademic = onCall(async (request) => {
               : ["boards","classes"].includes(collection) ? textValue(data.code).toUpperCase() : name.toLowerCase();
       if (existing.get(collection)?.has(key)) throw new HttpsError("already-exists",`"${name}" already exists.`);
       if (planned.get(collection)?.has(key)) throw new HttpsError("already-exists",`Duplicate row for "${name}".`);
+      // Subject mappings are reusable dependencies. If the exact
+      // board+class+code mapping already exists, reuse it instead of
+      // rejecting the entire import. This lets a single CSV safely include
+      // subject mappings that may already have been created manually.
+      const existingId = existing.get(collection)?.get(key);
+      if (collection === "subjects" && existingId) {
+        planned.get(collection)!.set(key, existingId);
+        planned.get(collection)!.set(
+          "name:" + name.toLowerCase() + "|" +
+          (data.boardIds as string[]).slice().sort().join(",") + "|" +
+          (data.classIds as string[]).slice().sort().join(","),
+          existingId,
+        );
+        continue;
+      }
+
       const ref=db.collection(collection).doc();
       planned.get(collection)!.set(key,ref.id);
       if (collection === "subjects") {
