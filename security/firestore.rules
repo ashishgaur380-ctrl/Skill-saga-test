@@ -10,6 +10,9 @@ service cloud.firestore {
       allow read: if isSelf(userId) || hasAnyRole(['super_admin', 'admin', 'support']);
       allow create, update, delete: if false;
     }
+
+    // Academic writes remain server-authoritative. Backend/Admin SDK will
+    // validate and authorize mutations. Authenticated reads are allowed.
     match /boards/{id} { allow read: if signedIn(); allow write: if false; }
     match /classes/{id} { allow read: if signedIn(); allow write: if false; }
     match /subjects/{id} { allow read: if signedIn(); allow write: if false; }
@@ -17,6 +20,7 @@ service cloud.firestore {
     match /topics/{id} { allow read: if signedIn(); allow write: if false; }
     match /skillCategories/{id} { allow read: if signedIn(); allow write: if false; }
     match /skills/{id} { allow read: if signedIn(); allow write: if false; }
+
     match /{document=**} { allow read, write: if false; }
   }
 }
