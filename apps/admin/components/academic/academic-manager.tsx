@@ -3,33 +3,57 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { firebaseAuth } from "../../lib/firebase";
 
-type Board = {
+type AcademicItem = {
   id: string;
   name: string;
-  code: string;
+  code?: string;
   active: boolean;
   sortOrder: number;
+  numericLevel?: number;
+  boardIds?: string[];
+  classIds?: string[];
+  subjectId?: string;
+  chapterId?: string;
+  categoryId?: string;
+  description?: string;
 };
 
-type AcademicListResponse = { items: Board[] };
-type AcademicIdResponse = { id: string };
+type Collection =
+  | "boards"
+  | "classes"
+  | "subjects"
+  | "chapters"
+  | "topics"
+  | "skillCategories"
+  | "skills";
+
+type Module = {
+  key: Collection;
+  name: string;
+  description: string;
+};
+
+const modules: Module[] = [
+  { key: "boards", name: "Boards", description: "Supported education boards and curricula." },
+  { key: "classes", name: "Classes", description: "Class levels 1–12 and future levels." },
+  { key: "subjects", name: "Subjects", description: "Map subjects to boards and classes." },
+  { key: "chapters", name: "Chapters", description: "Organize subject content." },
+  { key: "topics", name: "Topics", description: "Organize chapters into reusable topics." },
+  { key: "skillCategories", name: "Skill Categories", description: "Group reusable skills by domain." },
+  { key: "skills", name: "Skills", description: "Manage reusable learner skills." },
+];
 
 async function callAcademic<T>(
   action: string,
-  data: Record<string, unknown>
+  data: Record<string, unknown>,
 ): Promise<{ data: T }> {
   const user = firebaseAuth.currentUser;
-  if (!user) {
-    throw new Error("You are not authenticated. Please sign in again.");
-  }
+  if (!user) throw new Error("You are not authenticated. Please sign in again.");
 
   const token = await user.getIdToken();
   const response = await fetch("/api/academic", {
     method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      Authorization: `Bearer ${token}`,
-    },
+    headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
     body: JSON.stringify({ action, data }),
     cache: "no-store",
   });
@@ -42,95 +66,131 @@ async function callAcademic<T>(
     throw new Error(
       "error" in payload && payload.error?.message
         ? payload.error.message
-        : "Academic operation failed."
+        : "Academic operation failed.",
     );
   }
-
   return payload as { data: T };
 }
 
-const modules = [
-  ["boards", "Boards", "Supported education boards and curricula."],
-  ["classes", "Classes", "Class levels 1–12 and future levels."],
-  ["subjects", "Subjects", "Map subjects to boards and classes."],
-  ["chapters", "Chapters", "Organize subject content."],
-  ["topics", "Topics", "Organize chapters into reusable topics."],
-  ["skills", "Skills", "Manage skill categories and skills."],
-] as const;
+function emptyForm(collection: Collection, sortOrder = 0) {
+  return {
+    name: "",
+    code: "",
+    sortOrder,
+    active: true,
+    numericLevel: collection === "classes" ? 1 : 0,
+    boardIds: [] as string[],
+    classIds: [] as string[],
+    subjectId: "",
+    chapterId: "",
+    categoryId: "",
+    description: "",
+  };
+}
 
 export default function AcademicManager() {
-  const [activeModule, setActiveModule] = useState("boards");
-  const [boards, setBoards] = useState<Board[]>([]);
+  const [activeModule, setActiveModule] = useState<Collection>("boards");
+  const [records, setRecords] = useState<Record<Collection, AcademicItem[]>>({
+    boards: [], classes: [], subjects: [], chapters: [], topics: [], skillCategories: [], skills: [],
+  });
   const [search, setSearch] = useState("");
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
-  const [editing, setEditing] = useState<Board | null>(null);
+  const [editing, setEditing] = useState<AcademicItem | null>(null);
   const [formOpen, setFormOpen] = useState(false);
-  const [form, setForm] = useState({ name: "", code: "", sortOrder: 0, active: true });
+  const [form, setForm] = useState(emptyForm("boards"));
 
-  const current = useMemo(
-    () => modules.find((item) => item[0] === activeModule) ?? modules[0],
-    [activeModule]
-  );
+  const current = modules.find((item) => item.key === activeModule) ?? modules[0];
+  const currentRecords = records[activeModule];
 
-  const loadBoards = useCallback(async () => {
-    if (activeModule !== "boards") return;
+  const loadCollection = useCallback(async (collection: Collection) => {
     setLoading(true);
     setError(null);
     try {
-      const result = await callAcademic<AcademicListResponse>("listAcademic", { collection: "boards" });
-      setBoards(result.data.items ?? []);
+      const result = await callAcademic<{ items: AcademicItem[] }>("listAcademic", { collection });
+      setRecords((previous) => ({ ...previous, [collection]: result.data.items ?? [] }));
     } catch (err) {
-      setError(
-        err instanceof Error
-          ? err.message
-          : "Unable to load boards. Make sure the Academic Functions are deployed."
-      );
+      setError(err instanceof Error ? err.message : "Unable to load academic records.");
     } finally {
       setLoading(false);
     }
-  }, [activeModule]);
+  }, []);
 
   useEffect(() => {
-    void loadBoards();
-  }, [loadBoards]);
+    void loadCollection(activeModule);
+  }, [activeModule, loadCollection]);
 
-  const filteredBoards = useMemo(() => {
+  const filteredRecords = useMemo(() => {
     const query = search.trim().toLowerCase();
-    if (!query) return boards;
-    return boards.filter(
-      (board) =>
-        board.name.toLowerCase().includes(query) ||
-        board.code.toLowerCase().includes(query)
+    if (!query) return currentRecords;
+    return currentRecords.filter((item) =>
+      [item.name, item.code, item.description]
+        .filter(Boolean)
+        .some((value) => String(value).toLowerCase().includes(query)),
     );
-  }, [boards, search]);
+  }, [currentRecords, search]);
+
+  const labelFor = (collection: Collection, id?: string) =>
+    id ? records[collection].find((item) => item.id === id)?.name ?? id : "—";
+
+  const relationText = (item: AcademicItem) => {
+    if (activeModule === "subjects") {
+      return [
+        ...(item.boardIds ?? []).map((id) => labelFor("boards", id)),
+        ...(item.classIds ?? []).map((id) => labelFor("classes", id)),
+      ].join(" • ") || "Not mapped";
+    }
+    if (activeModule === "chapters") return labelFor("subjects", item.subjectId);
+    if (activeModule === "topics") return labelFor("chapters", item.chapterId);
+    if (activeModule === "skills") return labelFor("skillCategories", item.categoryId);
+    return "";
+  };
 
   function openCreate() {
     setEditing(null);
-    setForm({ name: "", code: "", sortOrder: boards.length, active: true });
+    setForm(emptyForm(activeModule, currentRecords.length));
     setFormOpen(true);
     setError(null);
     setNotice(null);
   }
 
-  function openEdit(board: Board) {
-    setEditing(board);
+  function openEdit(item: AcademicItem) {
+    setEditing(item);
     setForm({
-      name: board.name,
-      code: board.code,
-      sortOrder: board.sortOrder,
-      active: board.active,
+      ...emptyForm(activeModule, item.sortOrder),
+      name: item.name,
+      code: item.code ?? "",
+      active: item.active,
+      numericLevel: item.numericLevel ?? 1,
+      boardIds: item.boardIds ?? [],
+      classIds: item.classIds ?? [],
+      subjectId: item.subjectId ?? "",
+      chapterId: item.chapterId ?? "",
+      categoryId: item.categoryId ?? "",
+      description: item.description ?? "",
     });
     setFormOpen(true);
     setError(null);
     setNotice(null);
   }
 
-  async function saveBoard() {
-    if (!form.name.trim() || !form.code.trim()) {
-      setError("Board name and code are required.");
+  function validateForm() {
+    if (!form.name.trim()) return "Name is required.";
+    if (["boards", "classes", "subjects"].includes(activeModule) && !form.code.trim()) {
+      return "Code is required.";
+    }
+    if (activeModule === "chapters" && !form.subjectId) return "Select a subject.";
+    if (activeModule === "topics" && !form.chapterId) return "Select a chapter.";
+    if (activeModule === "skills" && !form.categoryId) return "Select a skill category.";
+    return null;
+  }
+
+  async function saveRecord() {
+    const validationError = validateForm();
+    if (validationError) {
+      setError(validationError);
       return;
     }
 
@@ -138,51 +198,75 @@ export default function AcademicManager() {
     setError(null);
     setNotice(null);
 
+    const data: Record<string, unknown> = {
+      name: form.name.trim(),
+      sortOrder: Number(form.sortOrder),
+      active: form.active,
+    };
+
+    if (["boards", "classes", "subjects"].includes(activeModule)) {
+      data.code = form.code.trim().toUpperCase();
+    }
+    if (activeModule === "classes") data.numericLevel = Number(form.numericLevel);
+    if (activeModule === "subjects") {
+      data.boardIds = form.boardIds;
+      data.classIds = form.classIds;
+    }
+    if (activeModule === "chapters") data.subjectId = form.subjectId;
+    if (activeModule === "topics") data.chapterId = form.chapterId;
+    if (activeModule === "skillCategories") data.description = form.description.trim();
+    if (activeModule === "skills") data.categoryId = form.categoryId;
+
     try {
-      const data = {
-        name: form.name.trim(),
-        code: form.code.trim().toUpperCase(),
-        sortOrder: Number(form.sortOrder),
-        active: form.active,
-      };
-
       if (editing) {
-        await callAcademic<{ success: boolean }>("updateAcademic", { collection: "boards", id: editing.id, data });
-        setNotice("Board updated successfully.");
+        await callAcademic<{ success: boolean }>("updateAcademic", {
+          collection: activeModule, id: editing.id, data,
+        });
+        setNotice(`${current.name.slice(0, -1) || current.name} updated successfully.`);
       } else {
-        await callAcademic<AcademicIdResponse>("createAcademic", { collection: "boards", data });
-        setNotice("Board created successfully.");
+        await callAcademic<{ id: string }>("createAcademic", { collection: activeModule, data });
+        setNotice(`${current.name.slice(0, -1) || current.name} created successfully.`);
       }
-
       setFormOpen(false);
       setEditing(null);
-      await loadBoards();
+      await loadCollection(activeModule);
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Unable to save board.");
+      setError(err instanceof Error ? err.message : "Unable to save academic record.");
     } finally {
       setSaving(false);
     }
   }
 
-  async function archiveBoard(board: Board) {
-    if (!window.confirm(`Archive "${board.name}"? It will no longer be active for new academic mappings.`)) {
-      return;
-    }
+  async function archiveRecord(item: AcademicItem) {
+    if (!window.confirm(`Archive "${item.name}"? It will remain available for historical relationships.`)) return;
 
     setSaving(true);
     setError(null);
     setNotice(null);
-
     try {
-      await callAcademic<{ success: boolean }>("archiveAcademic", { collection: "boards", id: board.id });
-      setNotice("Board archived.");
-      await loadBoards();
+      await callAcademic<{ success: boolean }>("archiveAcademic", {
+        collection: activeModule, id: item.id,
+      });
+      setNotice(`${item.name} archived.`);
+      await loadCollection(activeModule);
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Unable to archive board.");
+      setError(err instanceof Error ? err.message : "Unable to archive record.");
     } finally {
       setSaving(false);
     }
   }
+
+  function toggleArray(field: "boardIds" | "classIds", id: string) {
+    setForm((previous) => ({
+      ...previous,
+      [field]: previous[field].includes(id)
+        ? previous[field].filter((value) => value !== id)
+        : [...previous[field], id],
+    }));
+  }
+
+  const selectable = (collection: Collection) =>
+    records[collection].filter((item) => item.active || editing?.id === item.id);
 
   return (
     <main className="academic-manager">
@@ -196,101 +280,173 @@ export default function AcademicManager() {
       </header>
 
       <nav className="academic-tabs" aria-label="Academic modules">
-        {modules.map(([key, name]) => (
+        {modules.map((module) => (
           <button
-            key={key}
+            key={module.key}
             type="button"
-            className={activeModule === key ? "academic-tab active" : "academic-tab"}
-            onClick={() => { setActiveModule(key); setSearch(""); setError(null); setNotice(null); }}
+            className={activeModule === module.key ? "academic-tab active" : "academic-tab"}
+            onClick={() => {
+              setActiveModule(module.key);
+              setSearch("");
+              setError(null);
+              setNotice(null);
+            }}
           >
-            {name}
+            {module.name}
           </button>
         ))}
       </nav>
 
-      {activeModule !== "boards" ? (
-        <section className="academic-panel">
-          <div className="academic-panel-header">
-            <div><h2>{current[1]}</h2><p>{current[2]}</p></div>
+      <section className="academic-panel">
+        <div className="academic-panel-header">
+          <div>
+            <h2>{current.name}</h2>
+            <p>{current.description}</p>
           </div>
+          <button type="button" className="primary-button" onClick={openCreate}>+ Add {current.name.replace(/s$/, "")}</button>
+        </div>
+
+        <div className="academic-toolbar">
+          <input
+            value={search}
+            onChange={(event) => setSearch(event.target.value)}
+            placeholder={`Search ${current.name.toLowerCase()}...`}
+            aria-label={`Search ${current.name}`}
+          />
+          <span className="record-count">{currentRecords.length} record{currentRecords.length === 1 ? "" : "s"}</span>
+        </div>
+
+        {error && <div className="academic-message error">{error}</div>}
+        {notice && <div className="academic-message success">{notice}</div>}
+
+        {loading ? (
+          <div className="academic-empty"><h3>Loading {current.name.toLowerCase()}…</h3></div>
+        ) : filteredRecords.length === 0 ? (
           <div className="academic-empty">
             <div className="empty-icon">◎</div>
-            <h3>{current[1]} manager is next</h3>
-            <p>The same server-authoritative CRUD pattern used for Boards will be applied to this academic entity.</p>
+            <h3>{search ? `No matching ${current.name.toLowerCase()}` : `No ${current.name.toLowerCase()} configured yet`}</h3>
+            <p>{search ? "Try a different search term." : `Create the first record to build the central academic hierarchy.`}</p>
+            {!search && <button type="button" className="secondary-button" onClick={openCreate}>Create first {current.name.replace(/s$/, "").toLowerCase()}</button>}
           </div>
-        </section>
-      ) : (
-        <section className="academic-panel">
-          <div className="academic-panel-header">
-            <div><h2>Boards</h2><p>Manage supported education boards and curricula.</p></div>
-            <button type="button" className="primary-button" onClick={openCreate}>+ Add Board</button>
+        ) : (
+          <div className="academic-table-wrap">
+            <table className="academic-table">
+              <thead>
+                <tr>
+                  <th>Name</th>
+                  {["boards", "classes", "subjects"].includes(activeModule) && <th>Code</th>}
+                  {activeModule === "classes" && <th>Level</th>}
+                  {activeModule !== "boards" && activeModule !== "classes" && activeModule !== "skillCategories" && <th>Relationship</th>}
+                  {activeModule === "skillCategories" && <th>Description</th>}
+                  <th>Status</th><th>Order</th><th>Actions</th>
+                </tr>
+              </thead>
+              <tbody>
+                {filteredRecords.map((item) => (
+                  <tr key={item.id}>
+                    <td><strong>{item.name}</strong></td>
+                    {["boards", "classes", "subjects"].includes(activeModule) && <td><code>{item.code}</code></td>}
+                    {activeModule === "classes" && <td>{item.numericLevel}</td>}
+                    {activeModule !== "boards" && activeModule !== "classes" && activeModule !== "skillCategories" && <td>{relationText(item)}</td>}
+                    {activeModule === "skillCategories" && <td>{item.description || "—"}</td>}
+                    <td><span className={item.active ? "status-pill active" : "status-pill"}>{item.active ? "Active" : "Archived"}</span></td>
+                    <td>{item.sortOrder}</td>
+                    <td>
+                      <div className="row-actions">
+                        <button type="button" className="text-button" onClick={() => openEdit(item)}>Edit</button>
+                        {item.active && <button type="button" className="text-button danger" disabled={saving} onClick={() => void archiveRecord(item)}>Archive</button>}
+                      </div>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
           </div>
-
-          <div className="academic-toolbar">
-            <input
-              value={search}
-              onChange={(event) => setSearch(event.target.value)}
-              placeholder="Search boards by name or code..."
-              aria-label="Search boards"
-            />
-            <span className="record-count">{boards.length} board{boards.length === 1 ? "" : "s"}</span>
-          </div>
-
-          {error && <div className="academic-message error">{error}</div>}
-          {notice && <div className="academic-message success">{notice}</div>}
-
-          {loading ? (
-            <div className="academic-empty"><h3>Loading boards…</h3></div>
-          ) : filteredBoards.length === 0 ? (
-            <div className="academic-empty">
-              <div className="empty-icon">◎</div>
-              <h3>{search ? "No matching boards" : "No boards configured yet"}</h3>
-              <p>{search ? "Try a different search term." : "Create the first board to start building the central academic hierarchy."}</p>
-              {!search && <button type="button" className="secondary-button" onClick={openCreate}>Create first board</button>}
-            </div>
-          ) : (
-            <div className="academic-table-wrap">
-              <table className="academic-table">
-                <thead><tr><th>Board</th><th>Code</th><th>Status</th><th>Order</th><th>Actions</th></tr></thead>
-                <tbody>
-                  {filteredBoards.map((board) => (
-                    <tr key={board.id}>
-                      <td><strong>{board.name}</strong></td>
-                      <td><code>{board.code}</code></td>
-                      <td><span className={board.active ? "status-pill active" : "status-pill"}>{board.active ? "Active" : "Archived"}</span></td>
-                      <td>{board.sortOrder}</td>
-                      <td>
-                        <div className="row-actions">
-                          <button type="button" className="text-button" onClick={() => openEdit(board)}>Edit</button>
-                          {board.active && <button type="button" className="text-button danger" disabled={saving} onClick={() => void archiveBoard(board)}>Archive</button>}
-                        </div>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          )}
-        </section>
-      )}
+        )}
+      </section>
 
       {formOpen && (
         <div className="modal-backdrop" role="presentation">
-          <section className="academic-modal" role="dialog" aria-modal="true" aria-labelledby="board-form-title">
+          <section className="academic-modal" role="dialog" aria-modal="true" aria-labelledby="academic-form-title">
             <div className="modal-header">
-              <div><span className="academic-eyebrow">ACADEMIC STRUCTURE</span><h2 id="board-form-title">{editing ? "Edit Board" : "Add Board"}</h2></div>
+              <div>
+                <span className="academic-eyebrow">ACADEMIC STRUCTURE</span>
+                <h2 id="academic-form-title">{editing ? `Edit ${current.name.replace(/s$/, "")}` : `Add ${current.name.replace(/s$/, "")}`}</h2>
+              </div>
               <button type="button" className="modal-close" onClick={() => setFormOpen(false)} aria-label="Close">×</button>
             </div>
+
             <div className="form-grid">
-              <label>Board name<input value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} placeholder="e.g. CBSE" /></label>
-              <label>Board code<input value={form.code} onChange={(e) => setForm({ ...form, code: e.target.value })} placeholder="e.g. CBSE" /></label>
+              <label>Name<input value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} placeholder={activeModule === "classes" ? "e.g. Class 1" : "Enter name"} /></label>
+
+              {["boards", "classes", "subjects"].includes(activeModule) && (
+                <label>Code<input value={form.code} onChange={(e) => setForm({ ...form, code: e.target.value })} placeholder="e.g. CBSE" /></label>
+              )}
+
+              {activeModule === "classes" && (
+                <label>Numeric level<input type="number" min="1" max="12" value={form.numericLevel} onChange={(e) => setForm({ ...form, numericLevel: Number(e.target.value) })} /></label>
+              )}
+
+              {activeModule === "subjects" && (
+                <>
+                  <fieldset className="academic-fieldset">
+                    <legend>Boards</legend>
+                    <div className="multi-select-list">
+                      {selectable("boards").map((item) => (
+                        <label key={item.id} className="multi-option"><input type="checkbox" checked={form.boardIds.includes(item.id)} onChange={() => toggleArray("boardIds", item.id)} />{item.name}</label>
+                      ))}
+                    </div>
+                  </fieldset>
+                  <fieldset className="academic-fieldset">
+                    <legend>Classes</legend>
+                    <div className="multi-select-list">
+                      {selectable("classes").map((item) => (
+                        <label key={item.id} className="multi-option"><input type="checkbox" checked={form.classIds.includes(item.id)} onChange={() => toggleArray("classIds", item.id)} />{item.name}</label>
+                      ))}
+                    </div>
+                  </fieldset>
+                </>
+              )}
+
+              {activeModule === "chapters" && (
+                <label>Subject
+                  <select value={form.subjectId} onChange={(e) => setForm({ ...form, subjectId: e.target.value })}>
+                    <option value="">Select subject</option>
+                    {selectable("subjects").map((item) => <option key={item.id} value={item.id}>{item.name}</option>)}
+                  </select>
+                </label>
+              )}
+
+              {activeModule === "topics" && (
+                <label>Chapter
+                  <select value={form.chapterId} onChange={(e) => setForm({ ...form, chapterId: e.target.value })}>
+                    <option value="">Select chapter</option>
+                    {selectable("chapters").map((item) => <option key={item.id} value={item.id}>{item.name}</option>)}
+                  </select>
+                </label>
+              )}
+
+              {activeModule === "skillCategories" && (
+                <label>Description<textarea value={form.description} onChange={(e) => setForm({ ...form, description: e.target.value })} placeholder="Describe this skill domain..." rows={3} /></label>
+              )}
+
+              {activeModule === "skills" && (
+                <label>Skill category
+                  <select value={form.categoryId} onChange={(e) => setForm({ ...form, categoryId: e.target.value })}>
+                    <option value="">Select skill category</option>
+                    {selectable("skillCategories").map((item) => <option key={item.id} value={item.id}>{item.name}</option>)}
+                  </select>
+                </label>
+              )}
+
               <label>Sort order<input type="number" min="0" value={form.sortOrder} onChange={(e) => setForm({ ...form, sortOrder: Number(e.target.value) })} /></label>
               <label className="checkbox-row"><input type="checkbox" checked={form.active} onChange={(e) => setForm({ ...form, active: e.target.checked })} /> Active</label>
             </div>
+
             {error && <div className="academic-message error">{error}</div>}
             <div className="modal-actions">
               <button type="button" className="secondary-button" onClick={() => setFormOpen(false)} disabled={saving}>Cancel</button>
-              <button type="button" className="primary-button" onClick={() => void saveBoard()} disabled={saving}>{saving ? "Saving…" : editing ? "Save changes" : "Create board"}</button>
+              <button type="button" className="primary-button" onClick={() => void saveRecord()} disabled={saving}>{saving ? "Saving…" : editing ? "Save changes" : "Create"}</button>
             </div>
           </section>
         </div>
