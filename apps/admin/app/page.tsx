@@ -12,7 +12,7 @@ const modules = [
   { label: "Competition Manager", href: "/competition-manager" },
   { label: "Automation", href: "/automation" },
   { label: "Community", href: "/community" },
-  { label: "Rewards", href: null },
+  { label: "Rewards", href: "/rewards" },
   { label: "Notifications", href: null },
   { label: "Analytics", href: null },
   { label: "System Settings", href: null },
