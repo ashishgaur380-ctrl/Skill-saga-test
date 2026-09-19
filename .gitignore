@@ -1,3 +1,27 @@
+# Dependencies
+node_modules/
+.pnpm-store/
+
+# Next.js
+.next/
+out/
+
+# Local environment
+.env
+.env.*
+!.env.example
+
+# Firebase local/emulator files
+.firebase/
+firebase-debug.log
+firestore-debug.log
+ui-debug.log
+
+# Generated function build output
+functions/lib/
+
+# IDE
+.vscode/
 
 # Android/Gradle generated files
 .gradle/
