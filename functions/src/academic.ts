@@ -418,8 +418,6 @@ export const bulkImportAcademic = onCall(async (request) => {
             : collection === "skills"
               ? textValue(data.categoryId) + "|" + name.toLowerCase()
               : ["boards","classes"].includes(collection) ? textValue(data.code).toUpperCase() : name.toLowerCase();
-      if (existing.get(collection)?.has(key)) throw new HttpsError("already-exists",`"${name}" already exists.`);
-      if (planned.get(collection)?.has(key)) throw new HttpsError("already-exists",`Duplicate row for "${name}".`);
       // Subject mappings are reusable dependencies. If the exact
       // board+class+code mapping already exists, reuse it instead of
       // rejecting the entire import. This lets a single CSV safely include
@@ -435,6 +433,9 @@ export const bulkImportAcademic = onCall(async (request) => {
         );
         continue;
       }
+
+      if (existing.get(collection)?.has(key)) throw new HttpsError("already-exists",`"${name}" already exists.`);
+      if (planned.get(collection)?.has(key)) throw new HttpsError("already-exists",`Duplicate row for "${name}".`);
 
       const ref=db.collection(collection).doc();
       planned.get(collection)!.set(key,ref.id);
