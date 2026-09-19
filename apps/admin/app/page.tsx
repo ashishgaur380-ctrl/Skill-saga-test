@@ -8,7 +8,7 @@ const modules = [
   { label: "Academic Structure", href: "/academic" },
   { label: "Content", href: "/content" },
   { label: "Question Bank", href: "/question-bank" },
-  { label: "Quiz Manager", href: null },
+  { label: "Quiz Manager", href: "/quiz-manager" },
   { label: "Competition Manager", href: null },
   { label: "Automation", href: null },
   { label: "Community", href: null },
