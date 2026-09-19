@@ -149,7 +149,7 @@ export default function AcademicImporter({ onComplete }: { onComplete: () => voi
         <div className={result.totalErrors ? "import-result error-result" : "import-result success-result"}>
           <strong>{result.success ? "Import completed" : "Import not applied"}</strong>
           <p>{result.imported} row{result.imported === 1 ? "" : "s"} imported. {result.totalErrors} error{result.totalErrors === 1 ? "" : "s"}.</p>
-          {result.errors.length > 0 && <ul>{result.errors.slice(0,12).map((item) => <li key={item.row}>Row {item.row}: {item.message}</li>)}</ul>}
+          {result.errors.length > 0 && <ul>{result.errors.slice(0,12).map((item, index) => <li key={`${item.row}-${index}`}>Row {item.row}: {item.message}</li>)}</ul>}
           <button className="secondary-button" type="button" onClick={() => { setRows([]); setResult(null); setFileName(""); onComplete(); }}>Close</button>
         </div>
       )}
