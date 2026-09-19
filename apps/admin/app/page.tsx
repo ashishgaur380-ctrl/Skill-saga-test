@@ -6,8 +6,8 @@ import { useAuth } from "../components/auth-provider";
 const modules = [
   { label: "Users", href: null },
   { label: "Academic Structure", href: "/academic" },
-  { label: "Content", href: null },
-  { label: "Question Bank", href: null },
+  { label: "Content", href: "/content" },
+  { label: "Question Bank", href: "/question-bank" },
   { label: "Quiz Manager", href: null },
   { label: "Competition Manager", href: null },
   { label: "Automation", href: null },
