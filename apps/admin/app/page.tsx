@@ -4,7 +4,7 @@ import Link from "next/link";
 import { useAuth } from "../components/auth-provider";
 
 const modules = [
-  { label: "Users", href: null },
+  { label: "Users", href: "/users" },
   { label: "Academic Structure", href: "/academic" },
   { label: "Content", href: "/content" },
   { label: "Question Bank", href: "/question-bank" },
