@@ -23,3 +23,10 @@ export {
   updateQuiz,
   archiveQuiz,
 } from "./quiz";
+
+export {
+  listCompetitions,
+  createCompetition,
+  updateCompetition,
+  archiveCompetition,
+} from "./competition";
