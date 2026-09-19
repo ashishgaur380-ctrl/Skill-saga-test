@@ -20,7 +20,7 @@ function validate(raw:any) {
   const status=text(raw.status).toLowerCase()||"draft";
   if(!["draft","published"].includes(status)) throw new HttpsError("invalid-argument","Status must be Draft or Published.");
   return {
-    title, description:text(raw.description), questionIds:[...new Set(questionIds.map(text))],
+    title, description:text(raw.description), questionIds:[...new Set(questionIds.map(text))] as string[],
     boardId:text(raw.boardId), classId:text(raw.classId), subjectId:text(raw.subjectId),
     status, active:raw.active===undefined?true:Boolean(raw.active)
   };
