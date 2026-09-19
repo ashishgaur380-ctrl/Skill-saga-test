@@ -19,9 +19,8 @@ jobs:
         run: |
           set -euo pipefail
           rm -rf source
-          git clone --no-single-branch https://github.com/ashishgaur380-ctrl/Skill-saga.git source
+          git clone --branch skill-saga-clean-rebuild --single-branch https://github.com/ashishgaur380-ctrl/Skill-saga.git source
           cd source
-          git checkout --detach skill-saga-clean-rebuild
           git remote remove origin
           git remote add target https://x-access-token:${GH_TOKEN}@github.com/${GITHUB_REPOSITORY}.git
           git push target HEAD:main --force
