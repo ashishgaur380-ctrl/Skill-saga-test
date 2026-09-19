@@ -14,7 +14,7 @@ const modules = [
   { label: "Community", href: "/community" },
   { label: "Rewards", href: "/rewards" },
   { label: "Notifications", href: "/notifications" },
-  { label: "Analytics", href: null },
+  { label: "Analytics", href: "/analytics" },
   { label: "System Settings", href: null },
 ];
 
