@@ -39,21 +39,6 @@ export const listUsers=onCall(async request=>{
     } as any,...users];
   }
 
-  // Local Functions emulator may not have the same Auth user directory as the
-  // browser's configured Firebase Auth project. Always resolve the currently
-  // authenticated administrator so the Admin Console never shows a false empty
-  // user list during development.
-  const currentUid=request.auth?.uid;
-  if(currentUid && !users.some(user=>user.uid===currentUid)){
-    try{
-      const currentUser=await adminAuth.getUser(currentUid);
-      users=[currentUser,...users];
-    }catch{
-      // The production Auth user cannot be resolved by the local emulator.
-      // Return the directory result rather than fabricating a user record.
-    }
-  }
-
   const items=users.map(user=>({
     uid:user.uid,
     email:user.email??"",
