@@ -116,11 +116,13 @@ export function AdminGate({ children }: { children: ReactNode }) {
   const router = useRouter();
   const { user, role, loading, error } = useAuth();
 
-  if (pathname === "/login") return <>{children}</>;
-
   useEffect(() => {
-    if (!loading && !user) router.replace("/login");
-  }, [loading, user, router]);
+    if (pathname !== "/login" && !loading && !user) {
+      router.replace("/login");
+    }
+  }, [pathname, loading, user, router]);
+
+  if (pathname === "/login") return <>{children}</>;
 
   if (loading) {
     return (
