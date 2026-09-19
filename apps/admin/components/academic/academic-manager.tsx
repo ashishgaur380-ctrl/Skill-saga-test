@@ -103,6 +103,13 @@ export default function AcademicManager() {
   const [form, setForm] = useState(emptyForm("boards"));
 
   const current = modules.find((item) => item.key === activeModule) ?? modules[0];
+  const singularName =
+    current.key === "skillCategories" ? "Skill Category" :
+    current.key === "boards" ? "Board" :
+    current.key === "classes" ? "Class" :
+    current.key === "subjects" ? "Subject" :
+    current.key === "chapters" ? "Chapter" :
+    current.key === "topics" ? "Topic" : "Skill";
   const currentRecords = records[activeModule];
 
   const loadCollection = useCallback(async (collection: Collection) => {
@@ -119,7 +126,13 @@ export default function AcademicManager() {
   }, []);
 
   useEffect(() => {
-    void loadCollection(activeModule);
+    const dependencies: Collection[] =
+      activeModule === "subjects" ? ["boards", "classes"] :
+      activeModule === "chapters" ? ["subjects"] :
+      activeModule === "topics" ? ["chapters"] :
+      activeModule === "skills" ? ["skillCategories"] : [];
+
+    void Promise.all([loadCollection(activeModule), ...dependencies.map(loadCollection)]);
   }, [activeModule, loadCollection]);
 
   const filteredRecords = useMemo(() => {
@@ -303,7 +316,7 @@ export default function AcademicManager() {
             <h2>{current.name}</h2>
             <p>{current.description}</p>
           </div>
-          <button type="button" className="primary-button" onClick={openCreate}>+ Add {current.name.replace(/s$/, "")}</button>
+          <button type="button" className="primary-button" onClick={openCreate}>+ Add {singularName}</button>
         </div>
 
         <div className="academic-toolbar">
@@ -326,7 +339,7 @@ export default function AcademicManager() {
             <div className="empty-icon">◎</div>
             <h3>{search ? `No matching ${current.name.toLowerCase()}` : `No ${current.name.toLowerCase()} configured yet`}</h3>
             <p>{search ? "Try a different search term." : `Create the first record to build the central academic hierarchy.`}</p>
-            {!search && <button type="button" className="secondary-button" onClick={openCreate}>Create first {current.name.replace(/s$/, "").toLowerCase()}</button>}
+            {!search && <button type="button" className="secondary-button" onClick={openCreate}>Create first {singularName.toLowerCase()}</button>}
           </div>
         ) : (
           <div className="academic-table-wrap">
@@ -371,7 +384,7 @@ export default function AcademicManager() {
             <div className="modal-header">
               <div>
                 <span className="academic-eyebrow">ACADEMIC STRUCTURE</span>
-                <h2 id="academic-form-title">{editing ? `Edit ${current.name.replace(/s$/, "")}` : `Add ${current.name.replace(/s$/, "")}`}</h2>
+                <h2 id="academic-form-title">{editing ? `Edit ${singularName}` : `Add ${singularName}`}</h2>
               </div>
               <button type="button" className="modal-close" onClick={() => setFormOpen(false)} aria-label="Close">×</button>
             </div>
