@@ -9,7 +9,7 @@ const modules = [
   { label: "Content", href: "/content" },
   { label: "Question Bank", href: "/question-bank" },
   { label: "Quiz Manager", href: "/quiz-manager" },
-  { label: "Competition Manager", href: null },
+  { label: "Competition Manager", href: "/competition-manager" },
   { label: "Automation", href: null },
   { label: "Community", href: null },
   { label: "Rewards", href: null },
