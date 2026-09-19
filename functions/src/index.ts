@@ -44,3 +44,10 @@ export {
   moderateCommunityPost,
   archiveCommunityPost,
 } from "./community";
+
+export {
+  listRewards,
+  createReward,
+  updateReward,
+  archiveReward,
+} from "./rewards";
