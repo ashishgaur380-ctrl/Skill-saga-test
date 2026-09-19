@@ -129,7 +129,10 @@ export const listAcademic = onCall(async (request) => {
     .get();
 
   const items = snapshot.docs
-    .map((doc) => ({ id: doc.id, ...doc.data() }))
+    .map((doc) => {
+      const data = doc.data() as Record<string, unknown>;
+      return { id: doc.id, ...data };
+    })
     .sort((a, b) => String(a.name ?? "").localeCompare(String(b.name ?? "")));
 
   return { items };
