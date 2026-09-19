@@ -1,0 +1,11 @@
+{
+  "development": {
+    "projectId": "REPLACE_WITH_SKILL_SAGA_DEV_PROJECT_ID"
+  },
+  "staging": {
+    "projectId": "REPLACE_WITH_SKILL_SAGA_STAGING_PROJECT_ID"
+  },
+  "production": {
+    "projectId": "REPLACE_WITH_SKILL_SAGA_PRODUCTION_PROJECT_ID"
+  }
+}
