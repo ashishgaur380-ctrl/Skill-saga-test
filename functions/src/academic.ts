@@ -284,6 +284,15 @@ export const bulkImportAcademic = onCall(async (request) => {
         if (scopedNameKey) map.set(scopedNameKey, doc.id);
         if (codeKey) map.set("code:" + codeKey, doc.id);
         if (nameKey) map.set("name:" + nameKey, doc.id);
+      } else if (collection === "chapters") {
+        const subjectId = textValue(data.subjectId);
+        if (subjectId && nameKey) map.set(subjectId + "|" + nameKey, doc.id);
+      } else if (collection === "topics") {
+        const chapterId = textValue(data.chapterId);
+        if (chapterId && nameKey) map.set(chapterId + "|" + nameKey, doc.id);
+      } else if (collection === "skills") {
+        const categoryId = textValue(data.categoryId);
+        if (categoryId && nameKey) map.set(categoryId + "|" + nameKey, doc.id);
       } else {
         const key = ["boards","classes"].includes(collection) ? codeKey : nameKey;
         if (key) map.set(key, doc.id);
@@ -405,7 +414,15 @@ export const bulkImportAcademic = onCall(async (request) => {
       if (planned.get(collection)?.has(key)) throw new HttpsError("already-exists",`Duplicate row for "${name}".`);
       const ref=db.collection(collection).doc();
       planned.get(collection)!.set(key,ref.id);
-      if (collection === "subjects") planned.get(collection)!.set("name:" + name.toLowerCase(), ref.id);
+      if (collection === "subjects") {
+        planned.get(collection)!.set("name:" + name.toLowerCase(), ref.id);
+        planned.get(collection)!.set(
+          "name:" + name.toLowerCase() + "|" +
+          (data.boardIds as string[]).slice().sort().join(",") + "|" +
+          (data.classIds as string[]).slice().sort().join(","),
+          ref.id,
+        );
+      }
       prepared.push({collection,key,data:{...data,createdBy:uid,updatedBy:uid}});
     } catch (error) {
       errors.push({row:rowNumber,message:error instanceof HttpsError?error.message:error instanceof Error?error.message:"Invalid import row."});
