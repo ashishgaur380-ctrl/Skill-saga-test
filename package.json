@@ -1,0 +1,12 @@
+{
+  "name": "skill-saga-2",
+  "private": true,
+  "version": "0.1.0",
+  "description": "Skill Saga 2.0 — A smarter way to learn",
+  "packageManager": "pnpm@10.0.0",
+  "scripts": {
+    "lint": "echo 'lint not configured yet'",
+    "test": "echo 'tests not configured yet'",
+    "typecheck": "echo 'typecheck not configured yet'"
+  }
+}
