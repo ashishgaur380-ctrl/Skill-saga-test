@@ -59,7 +59,25 @@ export async function POST(request: NextRequest) {
       payload = { error: { message: text || "Emulator returned an invalid response." } };
     }
 
-    return NextResponse.json(payload, { status: response.status });
+    if (!response.ok) {
+      return NextResponse.json(payload, { status: response.status });
+    }
+
+    // Firebase callable responses are normally { data: ... }. The emulator
+    // can expose the callable result in a slightly different envelope, so
+    // normalize it here before returning it to the browser client.
+    if (payload && typeof payload === "object" && "data" in payload) {
+      return NextResponse.json(payload, { status: response.status });
+    }
+
+    if (payload && typeof payload === "object" && "result" in payload) {
+      return NextResponse.json(
+        { data: (payload as { result: unknown }).result },
+        { status: response.status },
+      );
+    }
+
+    return NextResponse.json({ data: payload }, { status: response.status });
   } catch (error) {
     const message =
       error instanceof Error ? error.message : "Unable to reach the local Functions emulator.";
