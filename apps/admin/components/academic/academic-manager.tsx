@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { firebaseAuth } from "../../lib/firebase";
+import AcademicImporter from "./academic-importer";
 
 type AcademicItem = {
   id: string;
@@ -100,6 +101,7 @@ export default function AcademicManager() {
   const [notice, setNotice] = useState<string | null>(null);
   const [editing, setEditing] = useState<AcademicItem | null>(null);
   const [formOpen, setFormOpen] = useState(false);
+  const [importOpen, setImportOpen] = useState(false);
   const [form, setForm] = useState(emptyForm("boards"));
 
   const current = modules.find((item) => item.key === activeModule) ?? modules[0];
@@ -316,7 +318,7 @@ export default function AcademicManager() {
             <h2>{current.name}</h2>
             <p>{current.description}</p>
           </div>
-          <button type="button" className="primary-button" onClick={openCreate}>+ Add {singularName}</button>
+          <div className="academic-header-actions"><button type="button" className="secondary-button" onClick={() => setImportOpen(true)}>Bulk import</button><button type="button" className="primary-button" onClick={openCreate}>+ Add {singularName}</button></div>
         </div>
 
         <div className="academic-toolbar">
@@ -377,6 +379,18 @@ export default function AcademicManager() {
           </div>
         )}
       </section>
+
+      {importOpen && (
+        <div className="modal-backdrop" role="presentation">
+          <section className="academic-modal importer-modal" role="dialog" aria-modal="true" aria-labelledby="import-title">
+            <div className="modal-header">
+              <div><span className="academic-eyebrow">ACADEMIC DATA</span><h2 id="import-title">Bulk import academic structure</h2></div>
+              <button type="button" className="modal-close" onClick={() => setImportOpen(false)} aria-label="Close">×</button>
+            </div>
+            <AcademicImporter onComplete={() => { void loadCollection(activeModule); }} />
+          </section>
+        </div>
+      )}
 
       {formOpen && (
         <div className="modal-backdrop" role="presentation">
