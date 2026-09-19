@@ -62,3 +62,5 @@ export {
 export { getAnalyticsSummary } from "./analytics";
 
 export { getSystemSettings, updateSystemSettings } from "./system";
+
+export { listUsers, updateUser } from "./users";
