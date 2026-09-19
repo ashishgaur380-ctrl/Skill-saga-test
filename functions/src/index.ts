@@ -9,3 +9,10 @@ export {
   archiveAcademic,
   bulkImportAcademic,
 } from "./academic";
+
+export {
+  listQuestions,
+  createQuestion,
+  updateQuestion,
+  archiveQuestion,
+} from "./question";
