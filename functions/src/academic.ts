@@ -125,13 +125,14 @@ export const listAcademic = onCall(async (request) => {
   const snapshot = await getFirestore()
     .collection(collection)
     .orderBy("sortOrder", "asc")
-    .orderBy("name", "asc")
     .limit(500)
     .get();
 
-  return {
-    items: snapshot.docs.map((doc) => ({ id: doc.id, ...doc.data() })),
-  };
+  const items = snapshot.docs
+    .map((doc) => ({ id: doc.id, ...doc.data() }))
+    .sort((a, b) => String(a.name ?? "").localeCompare(String(b.name ?? "")));
+
+  return { items };
 });
 
 export const createAcademic = onCall(async (request) => {
