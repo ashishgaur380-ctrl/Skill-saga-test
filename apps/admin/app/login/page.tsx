@@ -1,3 +1,92 @@
+"use client";
+
+import { FormEvent, useState } from "react";
+import { useRouter } from "next/navigation";
+import { useAuth } from "../../components/auth-provider";
+
 export default function AdminLoginPage() {
-  return <main style={{minHeight:'100vh',display:'grid',placeItems:'center',padding:24,background:'#f8fafc'}}><section style={{width:'100%',maxWidth:420,background:'#fff',padding:32,borderRadius:16,border:'1px solid #e2e8f0'}}><h1 style={{marginTop:0}}>Skill Saga Admin</h1><p style={{color:'#64748b'}}>Sign in with your authorized administrator account.</p><form><label style={{display:'block',marginTop:20}}>Email<input name='email' type='email' autoComplete='email' required style={{display:'block',width:'100%',marginTop:8,padding:12,border:'1px solid #cbd5e1',borderRadius:8}} /></label><label style={{display:'block',marginTop:16}}>Password<input name='password' type='password' autoComplete='current-password' required style={{display:'block',width:'100%',marginTop:8,padding:12,border:'1px solid #cbd5e1',borderRadius:8}} /></label><button type='submit' disabled style={{marginTop:24,width:'100%',padding:12,border:0,borderRadius:8}}>Firebase Authentication pending configuration</button></form></section></main>;
+  const router = useRouter();
+  const { signIn } = useAuth();
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState("");
+
+  async function handleSubmit(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    setBusy(true);
+    setError("");
+
+    try {
+      await signIn(email.trim(), password);
+      router.replace("/");
+    } catch (caught) {
+      const code = caught instanceof Error ? caught.message : "Unable to sign in.";
+      setError(code.includes("auth/invalid-credential")
+        ? "Invalid email or password."
+        : code.includes("authorized admin role")
+          ? code
+          : "Unable to sign in. Check the Firebase configuration and your credentials.");
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  return (
+    <main className="login-page">
+      <section className="login-card">
+        <div className="login-brand">
+          <div className="login-mark">SS</div>
+          <div>
+            <strong>Skill Saga</strong>
+            <span>2.0 Admin Console</span>
+          </div>
+        </div>
+
+        <div className="login-heading">
+          <p className="eyebrow">SECURE ADMIN ACCESS</p>
+          <h1>Welcome back</h1>
+          <p>Sign in with an authorized Skill Saga administrator account.</p>
+        </div>
+
+        <form onSubmit={handleSubmit} className="login-form">
+          <label>
+            Email
+            <input
+              name="email"
+              type="email"
+              autoComplete="email"
+              value={email}
+              onChange={(event) => setEmail(event.target.value)}
+              placeholder="admin@example.com"
+              required
+            />
+          </label>
+
+          <label>
+            Password
+            <input
+              name="password"
+              type="password"
+              autoComplete="current-password"
+              value={password}
+              onChange={(event) => setPassword(event.target.value)}
+              placeholder="Enter your password"
+              required
+            />
+          </label>
+
+          {error && <div className="login-error" role="alert">{error}</div>}
+
+          <button type="submit" disabled={busy}>
+            {busy ? "Signing in…" : "Sign in"}
+          </button>
+        </form>
+
+        <p className="login-note">
+          Access is controlled by Firebase Authentication and server-issued administrator roles.
+        </p>
+      </section>
+    </main>
+  );
 }
