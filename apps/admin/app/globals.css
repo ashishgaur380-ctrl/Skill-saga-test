@@ -70,3 +70,31 @@ h2 { margin-top: 0; }
   .cards { grid-template-columns: 1fr; }
   .login-card { padding: 26px; }
 }
+
+.academic-message{margin:16px 24px;padding:12px 14px;border-radius:9px;font-size:14px}
+.academic-message.error{border:1px solid #fecaca;background:#fef2f2;color:#991b1b}
+.academic-message.success{border:1px solid #bbf7d0;background:#f0fdf4;color:#166534}
+.academic-table-wrap{overflow-x:auto}
+.academic-table{width:100%;border-collapse:collapse}
+.academic-table th,.academic-table td{padding:15px 24px;text-align:left;border-bottom:1px solid #e2e8f0}
+.academic-table th{font-size:12px;text-transform:uppercase;letter-spacing:.06em;color:#64748b;background:#f8fafc}
+.academic-table td{color:#334155}
+.academic-table code{padding:3px 7px;border-radius:6px;background:#f1f5f9;color:#475569}
+.status-pill{display:inline-flex;padding:4px 8px;border-radius:999px;background:#f1f5f9;color:#64748b;font-size:12px;font-weight:600}
+.status-pill.active{background:#dcfce7;color:#166534}
+.row-actions{display:flex;gap:12px}
+.text-button{border:0;background:transparent;color:#334155;font-weight:600;cursor:pointer;padding:4px}
+.text-button.danger{color:#b91c1c}
+.text-button:disabled{opacity:.5;cursor:not-allowed}
+.modal-backdrop{position:fixed;inset:0;z-index:50;display:grid;place-items:center;padding:20px;background:rgba(15,23,42,.45)}
+.academic-modal{width:min(560px,100%);border-radius:16px;background:#fff;box-shadow:0 24px 80px rgba(15,23,42,.25)}
+.modal-header{display:flex;justify-content:space-between;align-items:flex-start;padding:24px;border-bottom:1px solid #e2e8f0}
+.modal-header h2{margin:0;font-size:22px}
+.modal-close{border:0;background:transparent;font-size:28px;line-height:1;color:#64748b;cursor:pointer}
+.form-grid{display:grid;gap:16px;padding:24px}
+.form-grid label{display:grid;gap:7px;color:#334155;font-size:13px;font-weight:600}
+.form-grid input:not([type="checkbox"]){padding:11px 12px;border:1px solid #cbd5e1;border-radius:9px;font:inherit;font-weight:400;outline:none}
+.form-grid input:focus{border-color:#64748b}
+.checkbox-row{display:flex!important;grid-template-columns:none!important;align-items:center;gap:8px!important}
+.checkbox-row input{width:16px;height:16px}
+.modal-actions{display:flex;justify-content:flex-end;gap:10px;padding:16px 24px;border-top:1px solid #e2e8f0}
