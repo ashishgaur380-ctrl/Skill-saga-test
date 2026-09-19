@@ -333,7 +333,7 @@ export const bulkImportAcademic = onCall(async (request) => {
         if (id) data.categoryId=id;
       }
 
-      const key=["boards","classes","subjects"].includes(collection)?textValue(data.code).toUpperCase():name.toLowerCase();
+      const key=collection === "subjects"        ? textValue(data.code).toUpperCase() + "|" + (data.boardIds as string[]).slice().sort().join(",") + "|" + (data.classIds as string[]).slice().sort().join(",")        : ["boards","classes"].includes(collection) ? textValue(data.code).toUpperCase() : name.toLowerCase();
       if (existing.get(collection)?.has(key)) throw new HttpsError("already-exists",`"${name}" already exists.`);
       if (planned.get(collection)?.has(key)) throw new HttpsError("already-exists",`Duplicate row for "${name}".`);
       const ref=db.collection(collection).doc();
