@@ -12,17 +12,26 @@ export const getAnalyticsSummary=onCall(async(r:CallableRequest<unknown>)=>{
   const db=getFirestore();
   const names=["questions","quizzes","competitions","rewards","notificationTemplates","communityPosts","automationRules"] as const;
 
-  // Use Firestore server-side aggregation counts rather than downloading documents.
-  // This keeps Analytics scalable when the real content library becomes large.
+  // Diagnostic-safe server-side read: use the same Firestore connection used by
+  // the other admin functions and return both counts and a few document IDs.
+  // This temporarily helps verify that Analytics is reading the same database.
   const results=await Promise.all(
     names.map(async(name)=>{
-      const snapshot=await db.collection(name).count().get();
-      return [name, snapshot.data().count] as const;
+      const snapshot=await db.collection(name).limit(10).get();
+      return [name,{
+        count:snapshot.size,
+        sampleIds:snapshot.docs.slice(0,5).map(doc=>doc.id),
+      }] as const;
     })
   );
 
   return {
-    counts:Object.fromEntries(results),
+    counts:Object.fromEntries(results.map(([name,value])=>[name,value.count])),
+    diagnostics:Object.fromEntries(results),
+    environment:{
+      projectId:process.env.GCLOUD_PROJECT??null,
+      firestoreEmulatorHost:process.env.FIRESTORE_EMULATOR_HOST??null,
+    },
     generatedAt:new Date().toISOString(),
   };
 });
