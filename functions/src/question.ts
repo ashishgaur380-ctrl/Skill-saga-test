@@ -98,7 +98,7 @@ function audit(uid: string, role: string, action: string, id: string) {
 export const listQuestions = onCall(async (request) => {
   assertRole(request);
   const snapshot = await getFirestore().collection("questions").limit(500).get();
-  const items = snapshot.docs.map((doc) => ({ id: doc.id, ...doc.data() }));
+  const items: Array<{ id: string; questionText?: unknown; [key: string]: unknown }> = snapshot.docs.map((doc) => ({ id: doc.id, ...doc.data() }));
   items.sort((a, b) => String(a.questionText ?? "").localeCompare(String(b.questionText ?? "")));
   return { items };
 });
