@@ -230,7 +230,7 @@ export const archiveAcademic = onCall(async (request) => {
 
 type ImportRow = {
   entity?: unknown; name?: unknown; code?: unknown; numericLevel?: unknown;
-  boardCodes?: unknown; classCodes?: unknown; subjectName?: unknown;
+  boardCodes?: unknown; classCodes?: unknown; subjectName?: unknown; subjectCode?: unknown;
   chapterName?: unknown; categoryName?: unknown; description?: unknown;
   sortOrder?: unknown; active?: unknown;
 };
@@ -280,6 +280,7 @@ export const bulkImportAcademic = onCall(async (request) => {
       if (collection === "subjects") {
         const mappingKey = codeKey + "|" + (Array.isArray(data.boardIds) ? (data.boardIds as unknown[]).map(String).sort().join(",") : "") + "|" + (Array.isArray(data.classIds) ? (data.classIds as unknown[]).map(String).sort().join(",") : "");
         if (mappingKey) map.set(mappingKey, doc.id);
+        if (codeKey) map.set("code:" + codeKey, doc.id);
         if (nameKey) map.set("name:" + nameKey, doc.id);
       } else {
         const key = ["boards","classes"].includes(collection) ? codeKey : nameKey;
@@ -294,9 +295,9 @@ export const bulkImportAcademic = onCall(async (request) => {
   const prepared: Array<{collection:AcademicCollection;key:string;data:Record<string,unknown>}> = [];
   const errors: Array<{row:number;message:string}> = [];
 
-  const resolve = (collection:AcademicCollection,value:string,label:string,row:number) => {
+  const resolve = (collection:AcademicCollection,value:string,label:string,row:number,mode:"name"|"code"="name") => {
     const key = collection === "subjects"
-      ? "name:" + value.toLowerCase()
+      ? (mode === "code" ? "code:" + value.toUpperCase() : "name:" + value.toLowerCase())
       : ["boards","classes"].includes(collection) ? value.toUpperCase() : value.toLowerCase();
     const id = planned.get(collection)?.get(key) ?? existing.get(collection)?.get(key);
     if (!id) { errors.push({row,message:`${label} "${value}" was not found.`}); return null; }
@@ -329,7 +330,8 @@ export const bulkImportAcademic = onCall(async (request) => {
         data.classIds=classes.map(v=>resolve("classes",v,"Class",rowNumber)).filter((v):v is string=>Boolean(v));
       }
       if (collection==="chapters") {
-        const id=resolve("subjects",requiredText(row.subjectName,"subjectName"),"Subject",rowNumber);
+        const subjectValue = textValue(row.subjectCode) || requiredText(row.subjectName,"subjectName");
+        const id=resolve("subjects",subjectValue,"Subject",rowNumber,textValue(row.subjectCode) ? "code" : "name");
         if (id) data.subjectId=id;
       }
       if (collection==="topics") {
