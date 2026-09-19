@@ -78,6 +78,9 @@ export const listUsers=onCall(async request=>{
 
 export const updateUser=onCall(async request=>{
   const {uid:actorUid,role:actorRole}=auth(request);
+  if(process.env.FIRESTORE_EMULATOR_HOST && !process.env.FIREBASE_AUTH_EMULATOR_HOST){
+    throw new HttpsError("failed-precondition","User changes are disabled while the Admin Console uses a production Auth session with local Firestore/Functions emulators. Connect the Auth emulator before testing account mutations.");
+  }
   const payload=request.data as any;
   const uid=text(payload?.uid);
   if(!uid)throw new HttpsError("invalid-argument","uid is required.");
