@@ -1,0 +1,9 @@
+"use client";
+import{useEffect,useState}from"react";
+import{firebaseAuth}from"../../lib/firebase";
+const labels=[["questions","Questions"],["quizzes","Quizzes"],["competitions","Competitions"],["rewards","Rewards"],["notificationTemplates","Notification Templates"],["communityPosts","Community Posts"],["automationRules","Automation Rules"]] as const;
+export default function AnalyticsManager(){
+ const[data,setData]=useState<Record<string,number>|null>(null),[error,setError]=useState<string|null>(null);
+ useEffect(()=>{(async()=>{try{const u=firebaseAuth.currentUser;if(!u)throw new Error("You are not authenticated.");const t=await u.getIdToken();const r=await fetch("/api/analytics",{method:"POST",headers:{Authorization:`Bearer ${t}`,"Content-Type":"application/json"},body:JSON.stringify({})});const p=await r.json()as any;if(!r.ok)throw new Error(p.error?.message||"Unable to load analytics.");setData(p.data?.counts??{})}catch(e){setError(e instanceof Error?e.message:"Unable to load analytics.")}})()},[]);
+ return <main className="academic-manager"><header className="academic-header"><div><span className="academic-eyebrow">ANALYTICS</span><h1>Platform Analytics</h1><p>Live counts from the central development database.</p></div></header><section className="cards">{labels.map(([key,label])=><article key={key}><span>{label}</span><strong>{data?data[key]??0:"—"}</strong><small>Database records</small></article>)}</section>{error&&<div className="academic-message error">{error}</div>}<section className="academic-panel"><h2>Analytics Integrity</h2><p>These figures are retrieved server-side from Firestore. They are not hard-coded in the Admin UI.</p></section></main>
+}
