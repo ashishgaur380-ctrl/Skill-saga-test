@@ -7,7 +7,7 @@ type ImportResult = { imported: number; errors: Array<{ row: number; message: st
 
 const HEADERS = [
   "entity","name","code","numericLevel","boardCodes","classCodes",
-  "subjectName","chapterName","categoryName","description","sortOrder","active",
+  "subjectName","subjectCode","chapterName","categoryName","description","sortOrder","active",
 ];
 
 const TEMPLATE = [
@@ -15,7 +15,7 @@ const TEMPLATE = [
   ["boards","CBSE","CBSE","","","","","","","","1","true"].join(","),
   ["classes","Class 1","CLASS_1","1","","","","","","","1","true"].join(","),
   ["subjects","Mathematics","MATH","","CBSE","CLASS_1","","","","","1","true"].join(","),
-  ["chapters","Chapter 1 - Shapes","","","","","Mathematics","","","","1","true"].join(","),
+  ["chapters","Chapter 1 - Shapes","","","","","Mathematics","MATH","","","","1","true"].join(","),
   ["topics","2D Shapes","","","","","","Chapter 1 - Shapes","","","1","true"].join(","),
   ["skillCategories","Problem Solving","","","","","","","","Core problem solving skills","1","true"].join(","),
   ["skills","Logical Reasoning","","","","","","","","Problem Solving","1","true"].join(","),
