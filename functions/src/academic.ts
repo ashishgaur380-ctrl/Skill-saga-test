@@ -275,8 +275,11 @@ export const bulkImportAcademic = onCall(async (request) => {
     const map = new Map<string,string>();
     for (const doc of snapshot.docs) {
       const data = doc.data() as Record<string,unknown>;
-      const key = ["boards","classes","subjects"].includes(collection)
-        ? textValue(data.code).toUpperCase() : textValue(data.name).toLowerCase();
+      const key = collection === "subjects"
+        ? textValue(data.code).toUpperCase() + "|" + (Array.isArray(data.boardIds) ? (data.boardIds as unknown[]).map(String).sort().join(",") : "") + "|" + (Array.isArray(data.classIds) ? (data.classIds as unknown[]).map(String).sort().join(",") : "")
+        : ["boards","classes"].includes(collection)
+          ? textValue(data.code).toUpperCase()
+          : textValue(data.name).toLowerCase();
       if (key) map.set(key, doc.id);
     }
     existing.set(collection,map);
