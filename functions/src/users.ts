@@ -16,8 +16,26 @@ const text=(v:unknown)=>typeof v==="string"?v.trim():"";
 
 export const listUsers=onCall(async request=>{
   auth(request);
-  const result=await getAuth().listUsers(1000);
-  const items=result.users.map(user=>({
+  const adminAuth=getAuth();
+  const result=await adminAuth.listUsers(1000);
+  let users=result.users;
+
+  // Local Functions emulator may not have the same Auth user directory as the
+  // browser's configured Firebase Auth project. Always resolve the currently
+  // authenticated administrator so the Admin Console never shows a false empty
+  // user list during development.
+  const currentUid=request.auth?.uid;
+  if(currentUid && !users.some(user=>user.uid===currentUid)){
+    try{
+      const currentUser=await adminAuth.getUser(currentUid);
+      users=[currentUser,...users];
+    }catch{
+      // The production Auth user cannot be resolved by the local emulator.
+      // Return the directory result rather than fabricating a user record.
+    }
+  }
+
+  const items=users.map(user=>({
     uid:user.uid,
     email:user.email??"",
     displayName:user.displayName??"",
@@ -28,7 +46,15 @@ export const listUsers=onCall(async request=>{
     role:typeof user.customClaims?.role==="string"?user.customClaims.role:"learner",
   }));
   items.sort((a,b)=>a.email.localeCompare(b.email));
-  return {items};
+  return {
+    items,
+    authDiagnostics:{
+      firebaseAuthEmulatorHost:process.env.FIREBASE_AUTH_EMULATOR_HOST??null,
+      functionsProject:process.env.GCLOUD_PROJECT??null,
+      requestedUid:currentUid??null,
+      directoryCount:result.users.length,
+    },
+  };
 });
 
 export const updateUser=onCall(async request=>{
