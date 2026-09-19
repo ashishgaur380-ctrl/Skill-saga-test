@@ -15,7 +15,7 @@ const modules = [
   { label: "Rewards", href: "/rewards" },
   { label: "Notifications", href: "/notifications" },
   { label: "Analytics", href: "/analytics" },
-  { label: "System Settings", href: null },
+  { label: "System Settings", href: "/system-settings" },
 ];
 
 export default function AdminHome() {
