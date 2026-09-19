@@ -11,7 +11,7 @@ const modules = [
   { label: "Quiz Manager", href: "/quiz-manager" },
   { label: "Competition Manager", href: "/competition-manager" },
   { label: "Automation", href: "/automation" },
-  { label: "Community", href: null },
+  { label: "Community", href: "/community" },
   { label: "Rewards", href: null },
   { label: "Notifications", href: null },
   { label: "Analytics", href: null },
