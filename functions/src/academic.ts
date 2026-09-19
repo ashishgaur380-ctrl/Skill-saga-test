@@ -226,3 +226,146 @@ export const archiveAcademic = onCall(async (request) => {
 
   return { success: true };
 });
+
+
+type ImportRow = {
+  entity?: unknown; name?: unknown; code?: unknown; numericLevel?: unknown;
+  boardCodes?: unknown; classCodes?: unknown; subjectName?: unknown;
+  chapterName?: unknown; categoryName?: unknown; description?: unknown;
+  sortOrder?: unknown; active?: unknown;
+};
+
+const IMPORT_ORDER: AcademicCollection[] = [
+  "boards","classes","subjects","chapters","topics","skillCategories","skills",
+];
+
+function textValue(value: unknown): string {
+  return typeof value === "string" ? value.trim() : value == null ? "" : String(value).trim();
+}
+function csvList(value: unknown): string[] {
+  return textValue(value).split(/[|;,]/).map((item) => item.trim()).filter(Boolean);
+}
+function entityFromRow(value: unknown): AcademicCollection {
+  const normalized = textValue(value).toLowerCase().replace(/[\s_-]+/g, "");
+  const aliases: Record<string, AcademicCollection> = {
+    board:"boards", boards:"boards", class:"classes", classes:"classes",
+    subject:"subjects", subjects:"subjects", chapter:"chapters", chapters:"chapters",
+    topic:"topics", topics:"topics", skillcategory:"skillCategories",
+    skillcategories:"skillCategories", skill:"skills", skills:"skills",
+  };
+  const result = aliases[normalized];
+  if (!result) throw new HttpsError("invalid-argument", "Each import row needs a valid entity.");
+  return result;
+}
+
+export const bulkImportAcademic = onCall(async (request) => {
+  const { uid, role } = assertRole(request);
+  const payload = request.data as { rows?: unknown } | undefined;
+  if (!Array.isArray(payload?.rows) || payload.rows.length === 0)
+    throw new HttpsError("invalid-argument", "Import must contain at least one row.");
+  if (payload.rows.length > 5000)
+    throw new HttpsError("invalid-argument", "Import is limited to 5,000 rows per upload.");
+
+  const rows = payload.rows as ImportRow[];
+  const db = getFirestore();
+  const existing = new Map<AcademicCollection, Map<string,string>>();
+
+  for (const collection of IMPORT_ORDER) {
+    const snapshot = await db.collection(collection).limit(5000).get();
+    const map = new Map<string,string>();
+    for (const doc of snapshot.docs) {
+      const data = doc.data() as Record<string,unknown>;
+      const key = ["boards","classes","subjects"].includes(collection)
+        ? textValue(data.code).toUpperCase() : textValue(data.name).toLowerCase();
+      if (key) map.set(key, doc.id);
+    }
+    existing.set(collection,map);
+  }
+
+  const planned = new Map<AcademicCollection,Map<string,string>>();
+  for (const collection of IMPORT_ORDER) planned.set(collection,new Map());
+  const prepared: Array<{collection:AcademicCollection;key:string;data:Record<string,unknown>}> = [];
+  const errors: Array<{row:number;message:string}> = [];
+
+  const resolve = (collection:AcademicCollection,value:string,label:string,row:number) => {
+    const key = ["boards","classes","subjects"].includes(collection) ? value.toUpperCase() : value.toLowerCase();
+    const id = planned.get(collection)?.get(key) ?? existing.get(collection)?.get(key);
+    if (!id) { errors.push({row,message:`${label} "${value}" was not found.`}); return null; }
+    return id;
+  };
+
+  for (let i=0;i<rows.length;i+=1) {
+    const rowNumber=i+2, row=rows[i] ?? {};
+    try {
+      const collection=entityFromRow(row.entity);
+      const name=requiredText(row.name,"name");
+      const sortOrder=row.sortOrder===undefined||textValue(row.sortOrder)===""?0:Number(row.sortOrder);
+      if (!Number.isInteger(sortOrder)||sortOrder<0) throw new HttpsError("invalid-argument","sortOrder must be a non-negative integer.");
+      const active=row.active===undefined||textValue(row.active)===""?true:["true","1","yes","active"].includes(textValue(row.active).toLowerCase());
+      const data:Record<string,unknown>={name,active,sortOrder};
+
+      if (["boards","classes","subjects"].includes(collection)) data.code=requiredText(row.code,"code").toUpperCase();
+      if (collection==="classes") {
+        const level=Number(row.numericLevel);
+        if (!Number.isInteger(level)||level<1||level>12) throw new HttpsError("invalid-argument","numericLevel must be an integer from 1 to 12.");
+        data.numericLevel=level;
+      }
+      if (collection==="subjects") {
+        const boards=csvList(row.boardCodes), classes=csvList(row.classCodes);
+        if (!boards.length||!classes.length) throw new HttpsError("invalid-argument","Subjects require boardCodes and classCodes.");
+        data.boardIds=boards.map(v=>resolve("boards",v,"Board",rowNumber)).filter((v):v is string=>Boolean(v));
+        data.classIds=classes.map(v=>resolve("classes",v,"Class",rowNumber)).filter((v):v is string=>Boolean(v));
+      }
+      if (collection==="chapters") {
+        const id=resolve("subjects",requiredText(row.subjectName,"subjectName"),"Subject",rowNumber);
+        if (id) data.subjectId=id;
+      }
+      if (collection==="topics") {
+        const id=resolve("chapters",requiredText(row.chapterName,"chapterName"),"Chapter",rowNumber);
+        if (id) data.chapterId=id;
+      }
+      if (collection==="skillCategories") data.description=textValue(row.description);
+      if (collection==="skills") {
+        const id=resolve("skillCategories",requiredText(row.categoryName,"categoryName"),"Skill category",rowNumber);
+        if (id) data.categoryId=id;
+      }
+
+      const key=["boards","classes","subjects"].includes(collection)?textValue(data.code).toUpperCase():name.toLowerCase();
+      if (existing.get(collection)?.has(key)) throw new HttpsError("already-exists",`"${name}" already exists.`);
+      if (planned.get(collection)?.has(key)) throw new HttpsError("already-exists",`Duplicate row for "${name}".`);
+      const ref=db.collection(collection).doc();
+      planned.get(collection)!.set(key,ref.id);
+      prepared.push({collection,key,data:{...data,createdBy:uid,updatedBy:uid}});
+    } catch (error) {
+      errors.push({row:rowNumber,message:error instanceof HttpsError?error.message:error instanceof Error?error.message:"Invalid import row."});
+    }
+  }
+
+  if (errors.length) return {success:false,imported:0,errors:errors.slice(0,200),totalErrors:errors.length};
+
+  let batch=db.batch(), operations=0;
+  const auditEntries:Array<{collection:AcademicCollection;id:string}>=[];
+
+  for (const collection of IMPORT_ORDER) {
+    for (const item of prepared.filter(entry=>entry.collection===collection)) {
+      const id=planned.get(collection)!.get(item.key)!;
+      const ref=db.collection(collection).doc(id);
+      batch.set(ref,{...item.data,createdAt:FieldValue.serverTimestamp(),updatedAt:FieldValue.serverTimestamp()});
+      auditEntries.push({collection,id});
+      operations++;
+      if (operations===450) { await batch.commit(); batch=db.batch(); operations=0; }
+    }
+  }
+  if (operations) await batch.commit();
+
+  batch=db.batch(); operations=0;
+  for (const entry of auditEntries) {
+    const ref=db.collection("auditLogs").doc();
+    batch.set(ref,auditPayload(uid,role,"BULK_IMPORT_CREATE",entry.collection,entry.id));
+    operations++;
+    if (operations===450) { await batch.commit(); batch=db.batch(); operations=0; }
+  }
+  if (operations) await batch.commit();
+
+  return {success:true,imported:prepared.length,errors:[],totalErrors:0};
+});
