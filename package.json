@@ -7,6 +7,7 @@
   "scripts": {
     "lint": "echo 'lint not configured yet'",
     "test": "echo 'tests not configured yet'",
-    "typecheck": "echo 'typecheck not configured yet'"
+    "typecheck": "echo 'typecheck not configured yet'",
+    "emulators:start:persistent": "mkdir -p emulator-data && npx firebase emulators:start --import=./emulator-data --export-on-exit=./emulator-data"
   }
 }
