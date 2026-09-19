@@ -294,8 +294,11 @@ export const bulkImportAcademic = onCall(async (request) => {
     return id;
   };
 
-  for (let i=0;i<rows.length;i+=1) {
-    const rowNumber=i+2, row=rows[i] ?? {};
+  const orderedRows = rows.map((row, index) => ({ row, originalRow: index + 2 }))
+    .sort((a,b) => IMPORT_ORDER.indexOf(entityFromRow(a.row.entity)) - IMPORT_ORDER.indexOf(entityFromRow(b.row.entity)));
+
+  for (const entry of orderedRows) {
+    const rowNumber=entry.originalRow, row=entry.row ?? {};
     try {
       const collection=entityFromRow(row.entity);
       const name=requiredText(row.name,"name");
