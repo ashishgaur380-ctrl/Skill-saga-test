@@ -1,20 +1,21 @@
 "use client";
 
+import Link from "next/link";
 import { useAuth } from "../components/auth-provider";
 
 const modules = [
-  "Users",
-  "Academic Structure",
-  "Content",
-  "Question Bank",
-  "Quiz Manager",
-  "Competition Manager",
-  "Automation",
-  "Community",
-  "Rewards",
-  "Notifications",
-  "Analytics",
-  "System Settings"
+  { label: "Users", href: null },
+  { label: "Academic Structure", href: "/academic" },
+  { label: "Content", href: null },
+  { label: "Question Bank", href: null },
+  { label: "Quiz Manager", href: null },
+  { label: "Competition Manager", href: null },
+  { label: "Automation", href: null },
+  { label: "Community", href: null },
+  { label: "Rewards", href: null },
+  { label: "Notifications", href: null },
+  { label: "Analytics", href: null },
+  { label: "System Settings", href: null },
 ];
 
 export default function AdminHome() {
@@ -26,11 +27,23 @@ export default function AdminHome() {
         <div className="brand">Skill Saga</div>
         <div className="brand-subtitle">Admin Console</div>
         <nav>
-          {modules.map((module, index) => (
-            <button className={index === 1 ? "nav-item active" : "nav-item"} key={module}>
-              {module}
-            </button>
-          ))}
+          {modules.map((module) => {
+            const className = "nav-item";
+
+            if (module.href) {
+              return (
+                <Link className={className} href={module.href} key={module.label}>
+                  {module.label}
+                </Link>
+              );
+            }
+
+            return (
+              <button className={className} key={module.label} type="button" disabled>
+                {module.label}
+              </button>
+            );
+          })}
         </nav>
       </aside>
 
