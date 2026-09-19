@@ -37,3 +37,10 @@ export {
   updateAutomationRule,
   setAutomationEnabled,
 } from "./automation";
+
+export {
+  listCommunityPosts,
+  createCommunityPost,
+  moderateCommunityPost,
+  archiveCommunityPost,
+} from "./community";
