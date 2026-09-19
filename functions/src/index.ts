@@ -7,4 +7,5 @@ export {
   createAcademic,
   updateAcademic,
   archiveAcademic,
+  bulkImportAcademic,
 } from "./academic";
