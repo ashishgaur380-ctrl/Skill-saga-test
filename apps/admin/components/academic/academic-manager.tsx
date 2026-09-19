@@ -1,8 +1,7 @@
 "use client";
 
-import { httpsCallable } from "firebase/functions";
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { firebaseFunctions } from "../../lib/firebase";
+import { firebaseAuth } from "../../lib/firebase";
 
 type Board = {
   id: string;
@@ -15,22 +14,40 @@ type Board = {
 type AcademicListResponse = { items: Board[] };
 type AcademicIdResponse = { id: string };
 
-const listAcademic = httpsCallable<{ collection: string }, AcademicListResponse>(
-  firebaseFunctions,
-  "listAcademic"
-);
-const createAcademic = httpsCallable<
-  { collection: string; data: Omit<Board, "id"> },
-  AcademicIdResponse
->(firebaseFunctions, "createAcademic");
-const updateAcademic = httpsCallable<
-  { collection: string; id: string; data: Omit<Board, "id"> },
-  { success: boolean }
->(firebaseFunctions, "updateAcademic");
-const archiveAcademic = httpsCallable<
-  { collection: string; id: string },
-  { success: boolean }
->(firebaseFunctions, "archiveAcademic");
+async function callAcademic<T>(
+  action: string,
+  data: Record<string, unknown>
+): Promise<{ data: T }> {
+  const user = firebaseAuth.currentUser;
+  if (!user) {
+    throw new Error("You are not authenticated. Please sign in again.");
+  }
+
+  const token = await user.getIdToken();
+  const response = await fetch("/api/academic", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${token}`,
+    },
+    body: JSON.stringify({ action, data }),
+    cache: "no-store",
+  });
+
+  const payload = (await response.json()) as
+    | { data: T }
+    | { error?: { message?: string } };
+
+  if (!response.ok) {
+    throw new Error(
+      "error" in payload && payload.error?.message
+        ? payload.error.message
+        : "Academic operation failed."
+    );
+  }
+
+  return payload as { data: T };
+}
 
 const modules = [
   ["boards", "Boards", "Supported education boards and curricula."],
@@ -63,7 +80,7 @@ export default function AcademicManager() {
     setLoading(true);
     setError(null);
     try {
-      const result = await listAcademic({ collection: "boards" });
+      const result = await callAcademic<AcademicListResponse>("listAcademic", { collection: "boards" });
       setBoards(result.data.items ?? []);
     } catch (err) {
       setError(
@@ -130,10 +147,10 @@ export default function AcademicManager() {
       };
 
       if (editing) {
-        await updateAcademic({ collection: "boards", id: editing.id, data });
+        await callAcademic<{ success: boolean }>("updateAcademic", { collection: "boards", id: editing.id, data });
         setNotice("Board updated successfully.");
       } else {
-        await createAcademic({ collection: "boards", data });
+        await callAcademic<AcademicIdResponse>("createAcademic", { collection: "boards", data });
         setNotice("Board created successfully.");
       }
 
@@ -157,7 +174,7 @@ export default function AcademicManager() {
     setNotice(null);
 
     try {
-      await archiveAcademic({ collection: "boards", id: board.id });
+      await callAcademic<{ success: boolean }>("archiveAcademic", { collection: "boards", id: board.id });
       setNotice("Board archived.");
       await loadBoards();
     } catch (err) {
