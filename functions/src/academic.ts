@@ -312,6 +312,7 @@ export const bulkImportAcademic = onCall(async (request) => {
     classValues:string[],
     label:string,
     row:number,
+    subjectNameFallback:string,
     mode:"name"|"code"="code",
   ) => {
     const boardIds = boardValues.map(v => resolve("boards", v, "Board", row)).filter((v):v is string => Boolean(v));
@@ -329,8 +330,8 @@ export const bulkImportAcademic = onCall(async (request) => {
 
     // If a supplied subject code is stale/mismatched, safely fall back to the
     // subject name within the exact board+class mapping.
-    if (!id && mode === "code" && textValue(row.subjectName)) {
-      const fallbackKey = "name:" + textValue(row.subjectName).toLowerCase() + "|" + boardKey + "|" + classKey;
+    if (!id && mode === "code" && subjectNameFallback) {
+      const fallbackKey = "name:" + subjectNameFallback.toLowerCase() + "|" + boardKey + "|" + classKey;
       id = planned.get("subjects")?.get(fallbackKey) ?? existing.get("subjects")?.get(fallbackKey);
     }
 
@@ -384,6 +385,7 @@ export const bulkImportAcademic = onCall(async (request) => {
           classValues,
           "Subject",
           rowNumber,
+          subjectName,
           subjectCode ? "code" : "name",
         );
         if (id) data.subjectId=id;
