@@ -92,31 +92,10 @@ function ssQuizForHome(type){
 }
 
 async function homeFinal(){
-  var s=stats(),u=U()||{},cs=competitionStats(u),rankLabel=s.xp>0?'#1':'—',h=await ssReadHomeSettings();
-  if(h.enabled===false){
-    return base('<div class="ss-final"><section class="ss-hero"><div class="ss-hero-copy"><div class="ss-eyebrow">SKILL SAGA</div><h1 class="ss-title">Home temporarily unavailable</h1><div class="ss-sub">The Home screen has been disabled by Skill Saga Admin.</div><button class="ss-action" onclick="window.go(\'play\')">Open Play →</button></div><div class="ss-hero-art"><div class="ss-hero-mascot">🏠</div></div></section></div>','home');
-  }
-  var d=ssQuizForHome('daily'),w=ssQuizForHome('weekly');
-  var dailyTitle=d&&d.title||'Daily Challenge',dailyQs=d&&Array.isArray(d.questions)?d.questions.length:0,dailyDiff=d&&d.difficulty||'Mixed';
-  var weeklyTitle=w&&w.title||'Weekly Challenge',weeklyQs=w&&Array.isArray(w.questions)?w.questions.length:0;
-  var dailyMissionBlock=h.showDailyMission!==false?'<div class="ss-section"><b>Today\'s Mission</b><span onclick="window.go(\'play\')">View all →</span></div>':'';
-  var dailyQuizBlock=h.showDailyQuiz!==false?'<div class="ss-card ss-blue-stats ss-home-challenge ss-home-daily" style="display:block;background:linear-gradient(135deg,#1769ff,#6544ec);color:#fff;padding:16px"><div style="font-size:9px;font-weight:900">DAILY QUIZ</div><div style="font-size:19px;font-weight:1000;margin:7px 0">'+esc(dailyTitle)+'</div><div style="font-size:10px">'+dailyQs+' Questions • '+esc(dailyDiff)+'</div><button class="ss-action" style="background:#fff;color:#1769ff" onclick="window.go(\'play\')">Open in Play →</button></div>':'';
-  var weeklyBlock=h.showWeeklyQuiz!==false?'<div class="ss-section"><b>🏆 Weekly Quiz</b><span onclick="window.go(\'play\')">View in Play →</span></div><div class="ss-card ss-home-challenge ss-home-weekly" style="display:block;background:linear-gradient(135deg,#7a49e8,#b85eea);color:#fff;padding:16px"><div style="font-size:9px;font-weight:900">WEEKLY CHALLENGE</div><div style="font-size:19px;font-weight:1000;margin:7px 0">'+esc(weeklyTitle)+'</div><div style="font-size:10px">'+weeklyQs+' Questions • Weekly Skill Goal</div><button class="ss-action" style="background:#fff;color:#7a49e8" onclick="window.go(\'play\')">Open in Play →</button></div>':'';
-  var statsBlock=h.showStats!==false?'<div class="ss-blue-stats"><div class="ss-stat"><div class="ss-stat-icon">⭐</div><b>'+s.xp.toLocaleString()+'</b><small>XP Points</small></div><div class="ss-stat"><div class="ss-stat-icon">🔥</div><b>'+s.streak+'</b><small>Day Streak</small></div><div class="ss-stat"><div class="ss-stat-icon">🏆</div><b>'+rankLabel+'</b><small>Current Rank</small></div></div>':'';
-  var skillsBlock=h.showSkills!==false?'<div class="ss-section"><b>Your Skills</b><span onclick="window.go(\'learn\')">View all →</span></div><div class="ss-cards">'+[['🔢','Numerical',skillPct(u,'Numerical')+'%','ss-soft'],['🧪','Scientific Thinking',skillPct(u,'Scientific Thinking')+'%','ss-green'],['📖','Vocabulary',skillPct(u,'Vocabulary')+'%','ss-pink'],['🧠','Reasoning',skillPct(u,'Reasoning')+'%','ss-purple']].map(function(x){return '<div class="ss-card '+x[3]+' center"><div class="i">'+x[0]+'</div><b>'+x[1]+'</b><small style="font-weight:1000;color:#172542">'+x[2]+'</small></div>'}).join('')+'</div>':'';
-  var milestoneBlock=h.showMilestone!==false?'<div class="ss-section"><b>Next Milestone</b><span>'+s.xp%500+'/500 XP</span></div><div class="ss-progress-card"><div style="display:flex;justify-content:space-between;font-size:10px;font-weight:900"><b>Level '+s.level+'</b><b>'+s.xp%500+'/500 XP</b></div><div class="ss-bar"><i style="width:'+Math.min(100,(s.xp%500)/5)+'%"></i></div><small style="display:block;color:#78869d;font-size:8px;margin-top:7px">Keep learning to reach your next level.</small></div>':'';
-  var continueBlock=h.showContinueLearning!==false?'<div class="ss-section"><b>Continue Learning</b><span onclick="window.go(\'learn\')">Open Learn →</span></div><div class="ss-progress-card"><div class="ss-progress-row"><div class="ss-thumb">📚</div><div class="ss-progress-copy"><b>Continue your learning journey</b><small>Pick up where you left off in Learn.</small><div class="ss-bar"><i style="width:'+Math.min(100,Math.max(0,skillPct(u,'Numerical')))+'%"></i></div></div></div><button class="ss-action" onclick="window.go(\'learn\')">Continue →</button></div>':'';
-  var notificationsBlock=h.showNotifications!==false?'<div class="ss-section"><b>Notifications</b><span onclick="window.go(\'profile\')">Open →</span></div><div class="ss-final-note">🔔 Stay updated with Skill Saga announcements and learning reminders.</div>':'';
-  var note=h.showBottomNote!==false?'<div class="ss-final-note">💡 “Keep learning, keep growing, and unlock a brighter you!”</div>':'';
-  var heroTitle=esc(h.welcomeTitle||'A smarter way to learn — one challenge at a time.');
-  var quoteText=String(h.welcomeQuote||'Small Steps | Big Achievements!').replace(/\\|/g,'<br>');
-  var heroQuote='<div class="ss-quote">'+quoteText+'</div>';
-  var blocks={stats:statsBlock,dailyMission:dailyMissionBlock,dailyQuiz:dailyQuizBlock,weeklyQuiz:weeklyBlock,skills:skillsBlock,milestone:milestoneBlock,continueLearning:continueBlock,notifications:notificationsBlock,note:note};
-  var order=String(h.sectionOrder||'stats,dailyMission,skills,milestone,continueLearning').split(',').map(function(x){return x.trim()}).filter(Boolean);
-  var ordered='',seenSections={};
-  order.forEach(function(k){if(blocks[k]&&!seenSections[k]){ordered+=blocks[k];seenSections[k]=1;}});
-  ['stats','dailyMission','dailyQuiz','weeklyQuiz','skills','milestone','continueLearning','notifications','note'].forEach(function(k){if(blocks[k]&&!seenSections[k])ordered+=blocks[k]});
-  return base('<div class="ss-final"><section class="ss-hero"><div class="ss-hero-copy"><div class="ss-eyebrow">LEARN • PLAY • COMPETE • GROW</div><h1 class="ss-title">'+heroTitle+'</h1><div class="ss-sub">Explore. Practice. Compete. Build a brighter tomorrow.</div>'+heroQuote+'</div><div class="ss-hero-art"><div class="ss-hero-circle"></div><div class="ss-hero-words">Play<br><b>Learn</b><br>Win<i></i></div><div class="ss-hero-mascot">🎓</div></div></section>'+ordered+'</div>','home');
+  // Keep Home identical to the approved Netlify/Home implementation.
+  // Learn/Play/Compete/Profile remain controlled by this final UI layer.
+  if(typeof legacyHome==='function')return legacyHome();
+  return base('<div class="ss-final"><section class="ss-hero"><h1 class="ss-title">Skill Saga</h1></section></div>','home');
 }
 async function ssLearnCurriculum(cls,board,state,stream){
   var rows=[];
