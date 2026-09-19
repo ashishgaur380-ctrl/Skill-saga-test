@@ -13,7 +13,7 @@ const modules = [
   { label: "Automation", href: "/automation" },
   { label: "Community", href: "/community" },
   { label: "Rewards", href: "/rewards" },
-  { label: "Notifications", href: null },
+  { label: "Notifications", href: "/notifications" },
   { label: "Analytics", href: null },
   { label: "System Settings", href: null },
 ];
