@@ -10,7 +10,7 @@ permissions:
 
 jobs:
   bootstrap:
-    if: ${{ github.event.head_commit.message == 'Initialize test repository' }}
+    if: ${{ github.event.head_commit.message == '__bootstrap_disabled__' }}
     runs-on: ubuntu-latest
     steps:
       - name: Copy current clean-rebuild source
