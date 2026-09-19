@@ -423,7 +423,6 @@ export const bulkImportAcademic = onCall(async (request) => {
       const ref=db.collection(collection).doc();
       planned.get(collection)!.set(key,ref.id);
       if (collection === "subjects") {
-        planned.get(collection)!.set("name:" + name.toLowerCase(), ref.id);
         planned.get(collection)!.set(
           "name:" + name.toLowerCase() + "|" +
           (data.boardIds as string[]).slice().sort().join(",") + "|" +
