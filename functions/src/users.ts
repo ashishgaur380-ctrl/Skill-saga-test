@@ -1,0 +1,64 @@
+import {getAuth} from "firebase-admin/auth";
+import {getFirestore,FieldValue} from "firebase-admin/firestore";
+import {onCall,HttpsError,type CallableRequest} from "firebase-functions/v2/https";
+
+const ADMIN_ROLES=new Set(["super_admin","admin"]);
+const MANAGEABLE_ROLES=["learner","parent","teacher","school_admin","content_manager","moderator","support","finance","admin","super_admin"] as const;
+
+function auth(request:CallableRequest<unknown>){
+  const uid=request.auth?.uid;
+  const role=request.auth?.token.role;
+  if(!uid)throw new HttpsError("unauthenticated","Administrator authentication is required.");
+  if(typeof role!=="string"||!ADMIN_ROLES.has(role))throw new HttpsError("permission-denied","Only administrators can manage users.");
+  return {uid,role};
+}
+const text=(v:unknown)=>typeof v==="string"?v.trim():"";
+
+export const listUsers=onCall(async request=>{
+  auth(request);
+  const result=await getAuth().listUsers(1000);
+  const items=result.users.map(user=>({
+    uid:user.uid,
+    email:user.email??"",
+    displayName:user.displayName??"",
+    disabled:user.disabled,
+    emailVerified:user.emailVerified,
+    createdAt:user.metadata.creationTime??null,
+    lastSignInAt:user.metadata.lastSignInTime??null,
+    role:typeof user.customClaims?.role==="string"?user.customClaims.role:"learner",
+  }));
+  items.sort((a,b)=>a.email.localeCompare(b.email));
+  return {items};
+});
+
+export const updateUser=onCall(async request=>{
+  const {uid:actorUid,role:actorRole}=auth(request);
+  const payload=request.data as any;
+  const uid=text(payload?.uid);
+  if(!uid)throw new HttpsError("invalid-argument","uid is required.");
+  if(uid===actorUid && payload?.disabled===true)throw new HttpsError("failed-precondition","You cannot disable your own administrator account.");
+
+  const target=await getAuth().getUser(uid);
+  const patch:any={};
+  if(typeof payload?.displayName==="string")patch.displayName=text(payload.displayName);
+  if(typeof payload?.disabled==="boolean")patch.disabled=payload.disabled;
+
+  const requestedRole=text(payload?.role);
+  if(requestedRole){
+    if(!MANAGEABLE_ROLES.includes(requestedRole as any))throw new HttpsError("invalid-argument","Unsupported user role.");
+    if(actorRole!=="super_admin" && ["super_admin","admin","finance"].includes(requestedRole)){
+      throw new HttpsError("permission-denied","Only a super administrator can assign this role.");
+    }
+    const currentClaims=target.customClaims??{};
+    await getAuth().setCustomUserClaims(uid,{...currentClaims,role:requestedRole});
+  }
+
+  if(Object.keys(patch).length)await getAuth().updateUser(uid,patch);
+
+  await getFirestore().collection("auditLogs").doc().set({
+    actorUid:actorUid,actorRole,action:"UPDATE",collection:"users",documentId:uid,
+    createdAt:FieldValue.serverTimestamp(),
+    changes:{...patch,...(requestedRole?{role:requestedRole}:{})}
+  });
+  return {success:true};
+});
