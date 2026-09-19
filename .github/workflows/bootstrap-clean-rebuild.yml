@@ -13,14 +13,18 @@ jobs:
     if: ${{ github.event.head_commit.message == 'Initialize test repository' }}
     runs-on: ubuntu-latest
     steps:
-      - name: Copy current clean-rebuild state
+      - name: Copy current clean-rebuild source
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
           set -euo pipefail
-          rm -rf source
+          rm -rf source target
           git clone --branch skill-saga-clean-rebuild --single-branch https://github.com/ashishgaur380-ctrl/Skill-saga.git source
-          cd source
-          git remote remove origin
-          git remote add target https://x-access-token:${GH_TOKEN}@github.com/${GITHUB_REPOSITORY}.git
-          git push target HEAD:main --force
+          git clone https://x-access-token:${GH_TOKEN}@github.com/${GITHUB_REPOSITORY}.git target
+          cd target
+          find . -mindepth 1 -maxdepth 1 ! -name .git ! -name .github -exec rm -rf {} +
+          find . -mindepth 2 -maxdepth 2 -path './.github/workflows/*' -prune -o -type f -print
+          rsync -a --delete --exclude='.git/' --exclude='.github/' ../source/ ./
+          git add -A
+          git commit -m 'Import clean rebuild snapshot' || true
+          git push origin main
