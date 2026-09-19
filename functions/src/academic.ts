@@ -280,6 +280,8 @@ export const bulkImportAcademic = onCall(async (request) => {
       if (collection === "subjects") {
         const mappingKey = codeKey + "|" + (Array.isArray(data.boardIds) ? (data.boardIds as unknown[]).map(String).sort().join(",") : "") + "|" + (Array.isArray(data.classIds) ? (data.classIds as unknown[]).map(String).sort().join(",") : "");
         if (mappingKey) map.set(mappingKey, doc.id);
+        const scopedNameKey = "name:" + nameKey + "|" + (Array.isArray(data.boardIds) ? (data.boardIds as unknown[]).map(String).sort().join(",") : "") + "|" + (Array.isArray(data.classIds) ? (data.classIds as unknown[]).map(String).sort().join(",") : "");
+        if (scopedNameKey) map.set(scopedNameKey, doc.id);
         if (codeKey) map.set("code:" + codeKey, doc.id);
         if (nameKey) map.set("name:" + nameKey, doc.id);
       } else {
@@ -317,11 +319,21 @@ export const bulkImportAcademic = onCall(async (request) => {
     if (boardIds.length !== boardValues.length || classIds.length !== classValues.length) return null;
 
     const normalizedValue = mode === "code" ? value.toUpperCase() : value.toLowerCase();
+    const boardKey = boardIds.slice().sort().join(",");
+    const classKey = classIds.slice().sort().join(",");
     const exactKey = mode === "code"
-      ? normalizedValue + "|" + boardIds.slice().sort().join(",") + "|" + classIds.slice().sort().join(",")
-      : "name:" + normalizedValue;
+      ? normalizedValue + "|" + boardKey + "|" + classKey
+      : "name:" + normalizedValue + "|" + boardKey + "|" + classKey;
 
-    const id = planned.get("subjects")?.get(exactKey) ?? existing.get("subjects")?.get(exactKey);
+    let id = planned.get("subjects")?.get(exactKey) ?? existing.get("subjects")?.get(exactKey);
+
+    // If a supplied subject code is stale/mismatched, safely fall back to the
+    // subject name within the exact board+class mapping.
+    if (!id && mode === "code" && textValue(row.subjectName)) {
+      const fallbackKey = "name:" + textValue(row.subjectName).toLowerCase() + "|" + boardKey + "|" + classKey;
+      id = planned.get("subjects")?.get(fallbackKey) ?? existing.get("subjects")?.get(fallbackKey);
+    }
+
     if (!id) {
       errors.push({
         row,
