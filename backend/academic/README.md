@@ -1,12 +1,12 @@
 # Academic Service
 
-The academic service owns privileged CRUD for:
-- boards
-- classes
-- subjects
-- chapters
-- topics
-- skillCategories
-- skills
+The academic service is the only supported mutation boundary for academic configuration.
 
-Write operations must validate input, authorize the caller, preserve stable IDs, and record audit events.
+Mutation pipeline:
+
+Request → authentication → role authorization → validation → Firestore/Admin SDK → audit log.
+
+Supported collections:
+`boards`, `classes`, `subjects`, `chapters`, `topics`, `skillCategories`, `skills`.
+
+Destructive deletion is intentionally not part of the contract. Use archive/deactivate so historical content can retain references.
