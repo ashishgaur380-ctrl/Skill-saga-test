@@ -1,0 +1,78 @@
+name: Deploy Skill Saga 2.0 Pages
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'apps/learner/**'
+      - 'package.json'
+      - 'pnpm-lock.yaml'
+      - '.github/workflows/deploy-skill-saga-pages.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pages
+  cancel-in-progress: true
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 10.0.0
+          run_install: false
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Build learner for GitHub Pages
+        env:
+          GITHUB_PAGES: "true"
+          NEXT_PUBLIC_DEMO_MODE: "true"
+        run: pnpm build:learner
+
+      - name: Verify login route
+        run: test -f apps/learner/out/login/index.html
+
+      - name: Verify core routes
+        run: |
+          test -f apps/learner/out/index.html
+          test -f apps/learner/out/learn/index.html
+          test -f apps/learner/out/play/index.html
+          test -f apps/learner/out/compete/index.html
+          test -f apps/learner/out/profile/index.html
+
+      - name: Setup Pages
+        uses: actions/configure-pages@v5
+
+      - name: Upload Pages artifact
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: apps/learner/out
+
+  deploy:
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    runs-on: ubuntu-latest
+    needs: build
+    steps:
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4
