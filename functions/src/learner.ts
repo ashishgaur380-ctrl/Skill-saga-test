@@ -10,7 +10,15 @@ function learner(request: CallableRequest<unknown>) {
 }
 
 function text(value: unknown) { return typeof value === "string" ? value.trim() : ""; }
-function quizIsLive(data: any, now = Date.now()) {\n  if (data?.active !== true || data?.status !== "published") return false;\n  const publishAt = Number(data?.publishAtMs);\n  const expireAt = Number(data?.expireAtMs);\n  if (Number.isFinite(publishAt) && publishAt > now) return false;\n  if (Number.isFinite(expireAt) && expireAt <= now) return false;\n  return true;\n}\n
+function quizIsLive(data: any, now = Date.now()) {
+  if (data?.active !== true || data?.status !== "published") return false;
+  const publishAt = Number(data?.publishAtMs);
+  const expireAt = Number(data?.expireAtMs);
+  if (Number.isFinite(publishAt) && publishAt > now) return false;
+  if (Number.isFinite(expireAt) && expireAt <= now) return false;
+  return true;
+}
+
 function calculateStreak(attempts:any[]) {
   const days = new Set<string>();
   for (const a of attempts) {
