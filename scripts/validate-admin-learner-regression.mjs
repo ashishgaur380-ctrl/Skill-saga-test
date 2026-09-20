@@ -2,8 +2,8 @@ import fs from "node:fs";
 import path from "node:path";
 
 const root = process.cwd();
-const read = (p:string) => fs.readFileSync(path.join(root,p),"utf8");
-const must = (label:string, ok:boolean) => { if(!ok) throw new Error("REGRESSION FAIL: "+label); };
+const read = (p) => fs.readFileSync(path.join(root,p),"utf8");
+const must = (label, ok) => { if(!ok) throw new Error("REGRESSION FAIL: "+label); };
 
 const home = read("apps/learner/app/page.tsx");
 const play = read("apps/learner/app/play/page.tsx");
