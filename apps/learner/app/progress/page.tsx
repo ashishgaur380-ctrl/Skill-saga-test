@@ -11,11 +11,13 @@ type ProgressData = {
   summary: { attempts:number; correct:number; questions:number; accuracy:number; xp:number; coins:number; level:number; streak:number };
   subjects: any[];
   topics: any[];
+  skills: any[];
 };
 
 export default function Progress() {
   const [data, setData] = useState<ProgressData | null>(null);
   const [attempts, setAttempts] = useState<any[]>([]);
+  const [openSkill, setOpenSkill] = useState<string | null>(null);
   const [error, setError] = useState("");
 
   useEffect(() => onAuthStateChanged(learnerAuth, async user => {
@@ -80,6 +82,30 @@ export default function Progress() {
               <strong>{x.accuracy}%</strong>
             </div>
           ))}
+        </section>
+
+        <section className="ss-card">
+          <h2>🧬 Skill Mastery</h2>
+          <p>See which skills are strongest and where more practice can help.</p>
+          {!data?.skills?.length && <small>No skill mastery yet. Complete a quiz to build your Skill DNA.</small>}
+          {data?.skills?.map((x:any) => {
+            const relatedTopics = (data?.topics || []).filter((t:any) => Array.isArray(x.topics) && x.topics.includes(t.id));
+            const open = openSkill === x.id;
+            return <div className={"ss-skill-row "+(open ? "open" : "")} key={x.id}>
+              <button className="ss-skill-main" onClick={() => setOpenSkill(open ? null : x.id)}>
+                <div><b>{x.name}</b><small>{x.questions} questions · {x.correct} correct</small></div>
+                <strong>{x.accuracy}% {open ? "⌃" : "⌄"}</strong>
+              </button>
+              {open && <div className="ss-skill-detail">
+                <p><b>Skill detail</b> · {x.marksPercentage}% marks performance</p>
+                {relatedTopics.length ? relatedTopics.slice(0,8).map((t:any) =>
+                  <Link key={t.id} href={"/play?topicId="+encodeURIComponent(t.id)} className="ss-history-row">
+                    <div><b>{t.name}</b><small>{t.questions} questions · {t.accuracy}% accuracy</small></div><span>Practice →</span>
+                  </Link>
+                ) : <small>No linked topic performance yet.</small>}
+              </div>}
+            </div>;
+          })}
         </section>
 
         <section className="ss-card">
