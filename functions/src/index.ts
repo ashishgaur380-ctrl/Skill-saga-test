@@ -16,6 +16,6 @@ export { listPublishedQuizzes, getQuizForAttempt, submitQuizAttempt, getLearnerS
 export { createLearnerLinkCode, linkLearner, listLinkedLearners, getLinkedLearnerProgress } from "./guardian";
 export { listLearningMaterials, createLearningMaterial, updateLearningMaterial, archiveLearningMaterial, bulkCreateLearningMaterials } from "./content";
 export { createAssignment, listAssignments, updateAssignment, archiveAssignment } from "./assignment";
-export { getTeacherDashboard, listTeacherAssignments, listTeacherMaterials, createTeacherMaterial, updateTeacherMaterial } from "./teacher";
+export { getTeacherDashboard, listTeacherAssignments, listTeacherResults, listTeacherMaterials, createTeacherMaterial, updateTeacherMaterial } from "./teacher";
 export { getSchoolDashboard, listSchoolMembers, updateSchoolMember, listSchoolAssignments } from "./school";
 export { sendNotification, listRecipientNotifications, markRecipientNotificationRead } from "./notification-delivery";
