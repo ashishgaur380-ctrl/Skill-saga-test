@@ -1,0 +1,32 @@
+name: Learner 2.0 Build
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'apps/learner/**'
+      - 'package.json'
+      - 'pnpm-lock.yaml'
+      - '.github/workflows/learner-build.yml'
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: pnpm
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 10.0.0
+          run_install: false
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+      - name: Build learner
+        run: pnpm build:learner
