@@ -6,6 +6,7 @@ import { onAuthStateChanged } from "firebase/auth";
 import { learnerAuth } from "../../lib/firebase";
 import { learnerFunction } from "../../lib/learner-api";
 import LearnerNav from "../components/LearnerNav";
+import CompeteTabs from "../components/compete/CompeteTabs";
 
 type Competition = {
   id: string;
@@ -92,49 +93,7 @@ export default function Compete() {
       <main className="ss-page"><div className="ss-card" style={{marginBottom:18}}><div className="ss-card-head"><div><span className="ss-eyebrow">COMMUNITY</span><h2>Discuss & Learn</h2><p>Ask questions, share tips and celebrate progress.</p></div><Link className="ss-primary" href="/community">Open Forum →</Link></div></div>
         {error && <div className="ss-message error">{error}</div>}
 
-        <div className="ss-tabs">
-          {[
-            ["live", "Live"],
-            ["upcoming", "Upcoming"],
-            ["mine", "My Competitions"],
-            ["ended", "Results"],
-          ].map(([value, label]) => (
-            <button key={value} className={tab === value ? "active" : ""} onClick={() => setTab(value as typeof tab)}>
-              {label}
-            </button>
-          ))}
-        </div>
-
-        <div className="ss-competition-list">
-          {visible.map(c => (
-            <article key={c.id}>
-              <span className="ss-comp-icon">🏆</span>
-              <div>
-                <span className="ss-pill">{c.entryType === "paid" ? `PAID · ₹${c.entryFee}` : "FREE"}</span>
-                <h2>{c.name}</h2>
-                <p>{c.description || "Challenge other learners and test your skills."}</p>
-                <small>
-                  {c.state === "upcoming" ? "Starts soon" : c.state === "ended" ? "Ended" : "Live now"}
-                  {" · "}{c.participants || 0}/{c.maxParticipants || "∞"} joined
-                </small>
-
-                <div className="ss-action-row">
-                  {c.state === "live" && c.joined ? (
-                    <Link className="ss-primary" href={"/play?competitionId=" + c.id}>Start Competition</Link>
-                  ) : c.state === "live" && c.entryType === "free" ? (
-                    <button className="ss-primary" disabled={busyId === c.id || c.participants >= c.maxParticipants} onClick={() => void joinCompetition(c)}>
-                      {busyId === c.id ? "Joining…" : c.participants >= c.maxParticipants ? "Full" : "Join Competition"}
-                    </button>
-                  ) : c.state === "live" && c.entryType === "paid" ? (
-                    <button className="ss-primary" disabled>Payment required</button>
-                  ) : (
-                    <span className="ss-secondary">{c.joined ? "Joined" : "Not open yet"}</span>
-                  )}
-
-                  <button className="ss-secondary" disabled={busyId === c.id} onClick={() => void showLeaderboard(c)}>
-                    Leaderboard
-                  </button>
-                </div>
+        <CompeteTabs tab={tab} onTab={setTab}/>
               </div>
             </article>
           ))}
