@@ -89,7 +89,7 @@ export default function Compete() {
         <div><b>Compete</b><small>Challenge yourself and climb the leaderboard!</small></div>
       </header>
 
-      <main className="ss-page">
+      <main className="ss-page"><div className="ss-card" style={{marginBottom:18}}><div className="ss-card-head"><div><span className="ss-eyebrow">COMMUNITY</span><h2>Discuss & Learn</h2><p>Ask questions, share tips and celebrate progress.</p></div><Link className="ss-primary" href="/community">Open Forum →</Link></div></div>
         {error && <div className="ss-message error">{error}</div>}
 
         <div className="ss-tabs">
