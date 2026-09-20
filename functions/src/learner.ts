@@ -512,6 +512,18 @@ export const getLearnerProgress = onCall(async (request) => {
     for (const doc of docs) if (doc.exists) chapterMap.set(doc.id, doc.data());
   }
 
+  const skillIds = Array.from(new Set(
+    Array.from(questionMap.values()).map((q:any) => text(q.skillId)).filter(Boolean)
+  ));
+  const skillMap = new Map<string, any>();
+  if (skillIds.length) {
+    for (let i = 0; i < skillIds.length; i += 100) {
+      const batch = skillIds.slice(i, i + 100);
+      const docs = await db.getAll(...batch.map(id => db.collection("skills").doc(id)));
+      for (const doc of docs) if (doc.exists) skillMap.set(doc.id, doc.data());
+    }
+  }
+
   const topicIds = Array.from(new Set(
     Array.from(questionMap.values()).map((q:any) => text(q.topicId)).filter(Boolean)
   ));
@@ -527,6 +539,7 @@ export const getLearnerProgress = onCall(async (request) => {
     questions:number; correct:number; marks:number; totalMarks:number; attempts:number;
   };
   const topicBuckets = new Map<string, Bucket>();
+  const skillBuckets = new Map<string, {id:string;name:string;questions:number;correct:number;marks:number;totalMarks:number;topics:Set<string>}>();
   const subjectBuckets = new Map<string, {id:string;name:string;questions:number;correct:number;marks:number;totalMarks:number}>();
 
   for (const attempt of attempts) {
@@ -537,6 +550,7 @@ export const getLearnerProgress = onCall(async (request) => {
       const questionId = text(answer?.questionId);
       const question = questionMap.get(questionId);
       if (!questionId || !question) continue;
+      const skillId = text(question.skillId);
 
       const chapterId = text(question.chapterId);
       const chapter = chapterMap.get(chapterId);
@@ -554,6 +568,15 @@ export const getLearnerProgress = onCall(async (request) => {
       }
       bucket.questions++;
       if (answer?.correct === true) bucket.correct++;
+
+      if (skillId) {
+        let skill = skillBuckets.get(skillId);
+        if (!skill) skill = {id:skillId,name:text(skillMap.get(skillId)?.name)||"Skill",questions:0,correct:0,marks:0,totalMarks:0,topics:new Set<string>()};
+        skill.questions++; if (answer?.correct === true) skill.correct++;
+        skill.marks += Number(answer?.marks)||0; skill.totalMarks += Number(answer?.maxMarks)||0;
+        if (topicId !== "__unassigned__") skill.topics.add(topicId);
+        skillBuckets.set(skillId,skill);
+      }
       bucket.marks += Number(answer?.marks) || 0;
       bucket.totalMarks += Number(answer?.maxMarks) || 0;
       seenTopics.add(topicId);
@@ -582,6 +605,8 @@ export const getLearnerProgress = onCall(async (request) => {
     .map(x => ({...x, accuracy:toAccuracy(x.correct,x.questions), marksPercentage:x.totalMarks ? Math.round((x.marks/x.totalMarks)*10000)/100 : 0}))
     .sort((a,b) => b.questions-a.questions || b.accuracy-a.accuracy);
 
+  const skills = Array.from(skillBuckets.values()).map(x=>({...x,topics:Array.from(x.topics),accuracy:toAccuracy(x.correct,x.questions),marksPercentage:x.totalMarks?Math.round((x.marks/x.totalMarks)*10000)/100:0})).sort((a,b)=>b.questions-a.questions||b.accuracy-a.accuracy);
+
   const subjects = Array.from(subjectBuckets.values())
     .map(x => ({...x, accuracy:toAccuracy(x.correct,x.questions), marksPercentage:x.totalMarks ? Math.round((x.marks/x.totalMarks)*10000)/100 : 0}))
     .sort((a,b) => b.questions-a.questions || b.accuracy-a.accuracy);
@@ -603,6 +628,7 @@ export const getLearnerProgress = onCall(async (request) => {
     },
     subjects,
     topics,
+    skills,
   };
 });
 
