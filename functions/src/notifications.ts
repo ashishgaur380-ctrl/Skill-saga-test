@@ -9,3 +9,22 @@ export const listNotificationTemplates=onCall(async r=>{auth(r);const s=await ge
 export const createNotificationTemplate=onCall(async r=>{const{uid,role}=auth(r);const data=validate((r.data as any)?.data??{});const db=getFirestore(),ref=db.collection("notificationTemplates").doc();await ref.set({...data,createdBy:uid,updatedBy:uid,createdAt:FieldValue.serverTimestamp(),updatedAt:FieldValue.serverTimestamp()});await db.collection("auditLogs").doc().set(audit(uid,role,"CREATE",ref.id));return{id:ref.id};});
 export const updateNotificationTemplate=onCall(async r=>{const{uid,role}=auth(r);const p=r.data as any,id=text(p?.id);if(!id)throw new HttpsError("invalid-argument","id is required.");const data=validate(p?.data??{});const db=getFirestore(),ref=db.collection("notificationTemplates").doc(id);if(!(await ref.get()).exists)throw new HttpsError("not-found","Notification template was not found.");await ref.update({...data,updatedBy:uid,updatedAt:FieldValue.serverTimestamp()});await db.collection("auditLogs").doc().set(audit(uid,role,"UPDATE",id));return{success:true};});
 export const archiveNotificationTemplate=onCall(async r=>{const{uid,role}=auth(r),id=text((r.data as any)?.id);if(!id)throw new HttpsError("invalid-argument","id is required.");const db=getFirestore(),ref=db.collection("notificationTemplates").doc(id);if(!(await ref.get()).exists)throw new HttpsError("not-found","Notification template was not found.");await ref.update({active:false,updatedBy:uid,updatedAt:FieldValue.serverTimestamp()});await db.collection("auditLogs").doc().set(audit(uid,role,"ARCHIVE",id));return{success:true};});
+
+export const listLearnerNotifications=onCall(async r=>{
+  const uid=r.auth?.uid;
+  if(!uid) throw new HttpsError("unauthenticated","Authentication is required.");
+  const db=getFirestore();
+  const snap=await db.collection("notifications").where("learnerId","==",uid).orderBy("createdAt","desc").limit(50).get();
+  return {items:snap.docs.map(d=>({id:d.id,...d.data()}))};
+});
+export const markNotificationRead=onCall(async r=>{
+  const uid=r.auth?.uid;
+  if(!uid) throw new HttpsError("unauthenticated","Authentication is required.");
+  const id=text((r.data as any)?.id);
+  if(!id) throw new HttpsError("invalid-argument","Notification id is required.");
+  const ref=getFirestore().collection("notifications").doc(id);
+  const snap=await ref.get();
+  if(!snap.exists||snap.data()?.learnerId!==uid) throw new HttpsError("not-found","Notification was not found.");
+  await ref.update({readAt:FieldValue.serverTimestamp()});
+  return {success:true};
+});
