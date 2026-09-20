@@ -696,6 +696,59 @@ export const listLearnerAssignments = onCall(async (request) => {
   return {items};
 });
 
+export const getLearnerLeaderboard = onCall(async (request) => {
+  const uid = learner(request);
+  const scope = text((request.data as any)?.scope) || "class";
+  const db = getFirestore();
+  const meSnap = await db.collection("users").doc(uid).get();
+  const me = meSnap.data() || {};
+  const usersSnap = await db.collection("users").limit(1000).get();
+  const users = new Map<string, any>();
+  usersSnap.docs.forEach(doc => users.set(doc.id, { id: doc.id, ...doc.data() }));
+
+  const matches = (u:any) => {
+    if (scope === "national") return true;
+    if (scope === "class") return text(u.classId) === text(me.classId);
+    if (scope === "school") return text(u.schoolId) === text(me.schoolId);
+    if (scope === "district") return text(u.districtId) === text(me.districtId);
+    if (scope === "state") return text(u.stateId) === text(me.stateId);
+    return true;
+  };
+
+  const attemptSnap = await db.collection("quizAttempts").limit(5000).get();
+  const totals = new Map<string, {xp:number;coins:number;correct:number;answered:number;attempts:number}>();
+  for (const doc of attemptSnap.docs) {
+    const d = doc.data();
+    const learnerId = text(d.learnerId);
+    if (!learnerId || !users.has(learnerId) || !matches(users.get(learnerId))) continue;
+    const row = totals.get(learnerId) || {xp:0,coins:0,correct:0,answered:0,attempts:0};
+    row.xp += Number(d.xpEarned) || 0;
+    row.coins += Number(d.coinsEarned) || 0;
+    row.correct += Number(d.correct) || 0;
+    row.answered += Array.isArray(d.answers) ? d.answers.length : Number(d.total) || 0;
+    row.attempts++;
+    totals.set(learnerId,row);
+  }
+
+  const rows = Array.from(totals.entries()).map(([learnerId, s]) => {
+    const u = users.get(learnerId) || {};
+    const answered = s.answered || 0;
+    return {
+      learnerId,
+      displayName: text(u.displayName) || "Learner",
+      xp: s.xp,
+      coins: s.coins,
+      attempts: s.attempts,
+      accuracy: answered ? Math.round((s.correct / answered) * 100) : 0,
+      isCurrentUser: learnerId === uid,
+    };
+  }).sort((a,b) => b.xp-a.xp || b.accuracy-a.accuracy || b.attempts-a.attempts || a.learnerId.localeCompare(b.learnerId))
+    .slice(0,100)
+    .map((row,index) => ({...row,rank:index+1}));
+
+  return {scope, rows};
+});
+
 export const listPublishedCompetitions = onCall(async (request) => {
   const uid = learner(request);
   const db = getFirestore();
