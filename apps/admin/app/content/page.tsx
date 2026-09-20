@@ -1,10 +1,11 @@
 "use client";
+import {firebaseAuth} from "../../lib/firebase";
 import {useEffect,useState} from "react";
 type M={id?:string;title:string;description:string;type:string;boardId:string;classId:string;subjectId:string;chapterId:string;topicId:string;language:string;accessType:string;status:string;fileUrl:string;thumbnailUrl:string;publishAtMs?:number|null;expireAtMs?:number|null};
 const blank:M={title:"",description:"",type:"pdf",boardId:"",classId:"",subjectId:"",chapterId:"",topicId:"",language:"English",accessType:"free",status:"draft",fileUrl:"",thumbnailUrl:""};
 async function call(action:string,data:any={},token=""){const r=await fetch("/api/content",{method:"POST",headers:{Authorization:`Bearer ${token}`,"Content-Type":"application/json"},body:JSON.stringify({action,data})});const p=await r.json();if(!r.ok)throw new Error(p?.error?.message||"Request failed");return p?.data??p;}
 export default function ContentPage(){const [items,setItems]=useState<M[]>([]),[form,setForm]=useState<M>(blank),[token,setToken]=useState(""),[editing,setEditing]=useState<string|null>(null),[msg,setMsg]=useState("");
-useEffect(()=>{const t=localStorage.getItem("skillSagaAdminToken")||"";setToken(t);if(t)call("listLearningMaterials",{},t).then(x=>setItems(x.items||[])).catch(e=>setMsg(e.message));},[]);
+useEffect(()=>{const u=firebaseAuth.currentUser;if(!u){setMsg("You are not authenticated.");return;}u.getIdToken().then(t=>{setToken(t);return call("listLearningMaterials",{},t)}).then(x=>setItems(x.items||[])).catch(e=>setMsg(e.message));},[]);
 const set=(k:keyof M,v:any)=>setForm(x=>({...x,[k]:v}));
 async function save(){try{setMsg("Saving…");const data={...form,publishAtMs:form.publishAtMs?Number(form.publishAtMs):null,expireAtMs:form.expireAtMs?Number(form.expireAtMs):null};if(editing)await call("updateLearningMaterial",{id:editing,data},token);else await call("createLearningMaterial",data,token);const x=await call("listLearningMaterials",{},token);setItems(x.items||[]);setForm(blank);setEditing(null);setMsg("Saved.");}catch(e:any){setMsg(e.message)}}
 async function archive(id:string){try{await call("archiveLearningMaterial",{id},token);setItems(x=>x.map(i=>i.id===id?{...i,status:"archived"}:i));}catch(e:any){setMsg(e.message)}}
