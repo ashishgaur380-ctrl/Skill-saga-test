@@ -393,7 +393,7 @@ export const getLearnerAcademic = onCall(async (request) => {
 });
 
 
-export const listLearnerLearningMaterials = onCall(async (request) => {
+export const listPublishedLearningMaterials = onCall(async (request) => {
   learner(request);
   const db = getFirestore();
   const boardId = text((request.data as any)?.boardId);
