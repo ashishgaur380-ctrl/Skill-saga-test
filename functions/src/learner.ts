@@ -10,7 +10,7 @@ function learner(request: CallableRequest<unknown>) {
 }
 
 function text(value: unknown) { return typeof value === "string" ? value.trim() : ""; }
-function quizIsLive(data: any, now = Date.now()) {
+function getQuizAccess(user:any, quiz:any){const mode=String(quiz?.accessMode||"FREE").toUpperCase();if(mode==="FREE")return{allowed:true};if(mode==="ASSIGNED")return{allowed:Array.isArray(user?.assignedQuizIds)&&user.assignedQuizIds.includes(quiz.id)};if(mode==="XP_UNLOCK")return{allowed:(Number(user?.xp)||0)>=(Number(quiz.requiredXp)||0)};if(mode==="COIN_UNLOCK")return{allowed:(Number(user?.coins)||0)>=(Number(quiz.requiredCoins)||0)};if(mode==="PREMIUM")return{allowed:user?.premiumActive===true};return{allowed:false};}\n\nfunction quizIsLive(data: any, now = Date.now()) {
   if (data?.active !== true || data?.status !== "published") return false;
   const publishAt = Number(data?.publishAtMs);
   const expireAt = Number(data?.expireAtMs);
