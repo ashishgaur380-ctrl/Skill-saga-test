@@ -10,7 +10,7 @@ function learner(request: CallableRequest<unknown>) {
 }
 
 function text(value: unknown) { return typeof value === "string" ? value.trim() : ""; }
-
+function quizIsLive(data: any, now = Date.now()) {\n  if (data?.active !== true || data?.status !== "published") return false;\n  const publishAt = Number(data?.publishAtMs);\n  const expireAt = Number(data?.expireAtMs);\n  if (Number.isFinite(publishAt) && publishAt > now) return false;\n  if (Number.isFinite(expireAt) && expireAt <= now) return false;\n  return true;\n}\n
 function calculateStreak(attempts:any[]) {
   const days = new Set<string>();
   for (const a of attempts) {
@@ -65,7 +65,7 @@ export const getQuizForAttempt = onCall(async (request) => {
 
   const db = getFirestore();
   const quizSnap = await db.collection("quizzes").doc(id).get();
-  if (!quizSnap.exists || quizSnap.data()?.active !== true || quizSnap.data()?.status !== "published") {
+  if (!quizSnap.exists || !quizIsLive(quizSnap.data())) {
     throw new HttpsError("not-found", "Published quiz was not found.");
   }
 
@@ -221,7 +221,7 @@ export const getLearnerHome = onCall(async (request) => {
     answered += Array.isArray(d.answers) ? d.answers.length : Number(d.total) || 0;
   }
 
-  const quizzes = quizSnap.docs.map(doc => {
+  const quizzes = quizSnap.docs.filter(doc => quizIsLive(doc.data())).map(doc => {
     const d = doc.data();
     return {
       id: doc.id, title: text(d.title), description: text(d.description),
@@ -539,7 +539,7 @@ export const getCompetitionQuiz = onCall(async (request) => {
   if(!c.exists||c.data()?.active!==true||c.data()?.status!=="published") throw new HttpsError("not-found","Competition was not found.");
   if(!(await db.collection("competitionEntries").doc(`${competitionId}_${uid}`).get()).exists) throw new HttpsError("permission-denied","Join the competition before starting it.");
   const quizId=text(c.data()?.quizId), q=await db.collection("quizzes").doc(quizId).get();
-  if(!q.exists||q.data()?.active!==true||q.data()?.status!=="published") throw new HttpsError("failed-precondition","Competition quiz is unavailable.");
+  if(!q.exists||!quizIsLive(q.data())) throw new HttpsError("failed-precondition","Competition quiz is unavailable.");
   const ids=Array.isArray(q.data()?.questionIds)?q.data()!.questionIds.map(text).filter(Boolean):[];
   const docs=await db.getAll(...ids.map((id:string)=>db.collection("questions").doc(id)));
   if(docs.some(x=>!x.exists||x.data()?.active!==true||x.data()?.status!=="published")) throw new HttpsError("failed-precondition","Competition contains unavailable questions.");
