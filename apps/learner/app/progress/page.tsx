@@ -2,7 +2,7 @@
 import Link from "next/link";
 import { useEffect,useState } from "react";
 import { onAuthStateChanged } from "firebase/auth";
-import { learnerAuth } from "../lib/firebase";
+import { learnerAuth } from "../../lib/firebase";
 
 type Topic={id:string;name:string;chapterId:string;chapterName:string;subjectId:string;questions:number;correct:number;accuracy:number;marks:number;totalMarks:number;marksPercentage:number;attempts:number};
 type Subject={id:string;name:string;questions:number;correct:number;accuracy:number;marks:number;totalMarks:number;marksPercentage:number};
