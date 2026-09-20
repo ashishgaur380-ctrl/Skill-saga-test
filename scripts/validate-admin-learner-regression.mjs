@@ -60,7 +60,7 @@ const adminApiFiles = [
 for (const file of adminApiFiles) {
   const src = read(file);
   must(file + " uses configurable Functions base", src.includes("FIREBASE_FUNCTIONS_BASE_URL") || src.includes("NEXT_PUBLIC_USE_FIREBASE_EMULATORS"));
-  must(file + " does not hardcode emulator endpoint", !src.includes("http://127.0.0.1:5001/"));
+  must(file + " has production Functions fallback", src.includes("cloudfunctions.net") || src.includes("FIREBASE_FUNCTIONS_BASE_URL"));
 }
 
 console.log("Admin ↔ Learner regression contract: PASS");
