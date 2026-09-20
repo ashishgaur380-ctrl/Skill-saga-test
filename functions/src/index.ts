@@ -80,3 +80,5 @@ export {
   getLearnerProgress,
 } from "./learner";
 export { getLearnerRewards, redeemReward } from "./learner";
+
+export { createLearnerLinkCode, linkLearner, listLinkedLearners, getLinkedLearnerProgress } from "./guardian";
