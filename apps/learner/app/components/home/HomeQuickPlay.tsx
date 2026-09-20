@@ -1,0 +1,2 @@
+import Link from "next/link";
+export default function HomeQuickPlay({dailyQuizId,weeklyQuizId}:{dailyQuizId:string;weeklyQuizId:string}){return <div className="ss-quick"><Link href={dailyQuizId?"/play?quizId="+dailyQuizId:"/play"}>📝<b>Daily Quiz</b></Link><Link href={weeklyQuizId?"/play?quizId="+weeklyQuizId:"/play"}>🏆<b>Weekly Quiz</b></Link><Link href="/learn">📚<b>Learn</b></Link><Link href="/compete">🏅<b>Compete</b></Link></div>;}
