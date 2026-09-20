@@ -102,3 +102,5 @@ export {
 } from "./content";
 
 export { createAssignment, listAssignments, updateAssignment, archiveAssignment } from "./assignment";
+
+export { getTeacherDashboard } from "./teacher";
