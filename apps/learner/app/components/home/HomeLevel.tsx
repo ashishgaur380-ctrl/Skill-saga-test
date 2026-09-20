@@ -1,0 +1,2 @@
+import React from "react";
+export default function HomeLevel({level,xp}:{level:number;xp:number}){return <section className="ss-level"><div className="ss-level-icon">⭐</div><div><b>Level {level}</b><span>{xp} / 500 XP</span><div className="ss-bar"><i style={{width:Math.min(100,(xp/500)*100)+"%"}}/></div></div><strong>›</strong></section>;}
