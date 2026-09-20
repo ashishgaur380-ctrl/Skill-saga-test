@@ -3,6 +3,13 @@ name: Skill Saga Firebase Deploy
 on:
   workflow_dispatch:
 
+permissions:
+  contents: read
+
+concurrency:
+  group: skill-saga-production-deploy
+  cancel-in-progress: false
+
 jobs:
   deploy:
     runs-on: ubuntu-latest
@@ -22,7 +29,10 @@ jobs:
         env:
           FIREBASE_SERVICE_ACCOUNT_JSON: ${{ secrets.FIREBASE_SERVICE_ACCOUNT_JSON }}
         run: |
+          set -eu
+          test -n "$FIREBASE_SERVICE_ACCOUNT_JSON"
           printf '%s' "$FIREBASE_SERVICE_ACCOUNT_JSON" > "$RUNNER_TEMP/firebase-service-account.json"
+          chmod 600 "$RUNNER_TEMP/firebase-service-account.json"
       - name: Deploy Firebase backend and rules
         run: npx firebase-tools deploy --only functions,firestore:rules,storage --project "${{ vars.FIREBASE_PROJECT_ID }}"
         env:
