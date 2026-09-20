@@ -61,7 +61,7 @@ export {
   listNotificationTemplates,
   createNotificationTemplate,
   updateNotificationTemplate,
-  archiveNotificationTemplate,
+  archiveNotificationTemplate,\n  listLearnerNotifications,\n  markNotificationRead,
 } from "./notifications";
 
 export { getAnalyticsSummary } from "./analytics";
