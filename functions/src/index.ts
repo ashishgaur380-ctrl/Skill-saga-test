@@ -1,3 +1,4 @@
+// Skill Saga 2.0 learner callable deployment sync: 2026-09-20
 import { initializeApp } from "firebase-admin/app";
 initializeApp();
 export { listAcademic, createAcademic, updateAcademic, archiveAcademic, bulkImportAcademic } from "./academic";
