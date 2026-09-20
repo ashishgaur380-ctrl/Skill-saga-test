@@ -9,10 +9,10 @@ const automation=read("functions/src/automation.ts");
 
 assert.match(quiz,/publishAtMs/);
 assert.match(quiz,/expireAtMs/);
-assert.match(quiz,/expireAtMs <= publishAtMs/);
+assert.match(quiz,/expireAtMs\s*<=\s*publishAtMs/);
 assert.match(competition,/startAtMs/);
 assert.match(competition,/endAtMs/);
-assert.match(competition,/endAtMs <= startAtMs/);
+assert.match(competition,/endAtMs\s*<=\s*startAtMs/);
 assert.match(learner,/function quizIsLive/);
 assert.match(learner,/publishAt > now/);
 assert.match(learner,/expireAt <= now/);
