@@ -1,29 +1,11 @@
-export default function ContentPage() {
-  return (
-    <main className="shell">
-      <aside className="sidebar">
-        <div className="brand">Skill Saga</div>
-        <div className="brand-subtitle">Admin Console</div>
-        <nav>
-          <a className="nav-item" href="/">Dashboard</a>
-          <a className="nav-item" href="/academic">Academic Structure</a>
-          <a className="nav-item" href="/content">Content</a>
-          <a className="nav-item" href="/question-bank">Question Bank</a>
-        </nav>
-      </aside>
-      <section className="content">
-        <header className="topbar">
-          <div>
-            <p className="eyebrow">CONTENT</p>
-            <h1>Content Management</h1>
-            <p className="muted">Central management for learning content.</p>
-          </div>
-        </header>
-        <section className="panel">
-          <h2>Content module</h2>
-          <p>Module route is active. Content workflows will be added and tested here.</p>
-        </section>
-      </section>
-    </main>
-  );
-}
+"use client";
+import {useEffect,useState} from "react";
+type M={id?:string;title:string;description:string;type:string;boardId:string;classId:string;subjectId:string;chapterId:string;topicId:string;language:string;accessType:string;status:string;fileUrl:string;thumbnailUrl:string;publishAtMs?:number|null;expireAtMs?:number|null};
+const blank:M={title:"",description:"",type:"pdf",boardId:"",classId:"",subjectId:"",chapterId:"",topicId:"",language:"English",accessType:"free",status:"draft",fileUrl:"",thumbnailUrl:""};
+async function call(action:string,data:any={},token=""){const r=await fetch("/api/content",{method:"POST",headers:{Authorization:`Bearer ${token}`,"Content-Type":"application/json"},body:JSON.stringify({action,data})});const p=await r.json();if(!r.ok)throw new Error(p?.error?.message||"Request failed");return p?.data??p;}
+export default function ContentPage(){const [items,setItems]=useState<M[]>([]),[form,setForm]=useState<M>(blank),[token,setToken]=useState(""),[editing,setEditing]=useState<string|null>(null),[msg,setMsg]=useState("");
+useEffect(()=>{const t=localStorage.getItem("skillSagaAdminToken")||"";setToken(t);if(t)call("listLearningMaterials",{},t).then(x=>setItems(x.items||[])).catch(e=>setMsg(e.message));},[]);
+const set=(k:keyof M,v:any)=>setForm(x=>({...x,[k]:v}));
+async function save(){try{setMsg("Saving…");const data={...form,publishAtMs:form.publishAtMs?Number(form.publishAtMs):null,expireAtMs:form.expireAtMs?Number(form.expireAtMs):null};if(editing)await call("updateLearningMaterial",{id:editing,data},token);else await call("createLearningMaterial",data,token);const x=await call("listLearningMaterials",{},token);setItems(x.items||[]);setForm(blank);setEditing(null);setMsg("Saved.");}catch(e:any){setMsg(e.message)}}
+async function archive(id:string){try{await call("archiveLearningMaterial",{id},token);setItems(x=>x.map(i=>i.id===id?{...i,status:"archived"}:i));}catch(e:any){setMsg(e.message)}}
+return <main className="shell"><aside className="sidebar"><div className="brand">Skill Saga</div><div className="brand-subtitle">Admin Console</div><nav><a className="nav-item" href="/">Dashboard</a><a className="nav-item" href="/academic">Academic Structure</a><a className="nav-item" href="/content">Content</a><a className="nav-item" href="/question-bank">Question Bank</a></nav></aside><section className="content"><header className="topbar"><div><p className="eyebrow">CONTENT</p><h1>Learning Content Manager</h1><p className="muted">Create, map, schedule and publish learner content.</p></div></header><section className="panel"><h2>{editing?"Edit content":"Add learning content"}</h2><div className="grid"><label>Title<input value={form.title} onChange={e=>set("title",e.target.value)}/></label><label>Description<input value={form.description} onChange={e=>set("description",e.target.value)}/></label><label>Type<select value={form.type} onChange={e=>set("type",e.target.value)}><option value="pdf">PDF</option><option value="video">Video</option><option value="article">Article</option><option value="link">Link</option></select></label><label>Board ID<input value={form.boardId} onChange={e=>set("boardId",e.target.value)}/></label><label>Class ID<input value={form.classId} onChange={e=>set("classId",e.target.value)}/></label><label>Subject ID<input value={form.subjectId} onChange={e=>set("subjectId",e.target.value)}/></label><label>Chapter ID<input value={form.chapterId} onChange={e=>set("chapterId",e.target.value)}/></label><label>Topic ID<input value={form.topicId} onChange={e=>set("topicId",e.target.value)}/></label><label>Language<input value={form.language} onChange={e=>set("language",e.target.value)}/></label><label>Access<select value={form.accessType} onChange={e=>set("accessType",e.target.value)}><option>free</option><option>premium</option><option>assigned</option></select></label><label>Status<select value={form.status} onChange={e=>set("status",e.target.value)}><option>draft</option><option>published</option><option>archived</option></select></label><label>File URL<input value={form.fileUrl} onChange={e=>set("fileUrl",e.target.value)}/></label><label>Publish at Unix ms<input type="number" value={form.publishAtMs??""} onChange={e=>set("publishAtMs",e.target.value)}/></label><label>Expire at Unix ms<input type="number" value={form.expireAtMs??""} onChange={e=>set("expireAtMs",e.target.value)}/></label></div><div className="actions"><button onClick={save}>{editing?"Update":"Create"}</button>{editing&&<button onClick={()=>{setEditing(null);setForm(blank)}}>Cancel</button>}<span>{msg}</span></div></section><section className="panel"><h2>Content library</h2>{items.map(i=><article className="panel" key={i.id}><strong>{i.title}</strong><p>{i.type} · {i.status} · {i.boardId||"All boards"} · {i.classId||"All classes"} · {i.subjectId||"All subjects"}</p><p>{i.description}</p><button onClick={()=>{setEditing(i.id!);setForm(i)}}>Edit</button>{" "}<button onClick={()=>archive(i.id!)}>Archive</button></article>)}</section></section></main>}
