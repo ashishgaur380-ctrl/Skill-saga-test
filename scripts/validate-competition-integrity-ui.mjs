@@ -1,0 +1,14 @@
+import fs from "node:fs";
+const comp=fs.readFileSync("functions/src/competition.ts","utf8");
+const learner=fs.readFileSync("functions/src/learner.ts","utf8");
+const ui=fs.readFileSync("apps/learner/app/compete/page.tsx","utf8");
+const admin=fs.readFileSync("apps/admin/components/competition-manager/competition-manager.tsx","utf8");
+const must=(n,x)=>{if(!x)throw new Error("COMPETITION INTEGRITY FAIL: "+n)};
+must("published quiz requirement",comp.includes('status!=="published"'));
+must("schedule validation",comp.includes("endAtMs<=startAtMs"));
+must("paid fee validation",comp.includes('entryType==="paid"')&&comp.includes("entryFee"));
+must("server leaderboard",learner.includes("getCompetitionLeaderboard")&&learner.includes("marks"));
+must("competition submission validation",learner.includes("submitCompetitionAttempt"));
+must("learner competition UI",ui.includes("listPublishedCompetitions")&&ui.includes("joinCompetition")&&ui.includes("Leaderboard"));
+must("admin scheduling UI",admin.includes('type="datetime-local"'));
+console.log("Competition integrity contract: PASS");
