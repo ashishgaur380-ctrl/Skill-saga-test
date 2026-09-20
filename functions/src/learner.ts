@@ -171,6 +171,25 @@ export const submitQuizAttempt = onCall(async (request) => {
     createdAt: FieldValue.serverTimestamp(),
   });
 
+  try {
+    const userSnap = await db.collection("users").doc(uid).get();
+    const displayName = String(userSnap.data()?.displayName || "Learner");
+    const links = await db.collection("learnerLinks").where("learnerId","==",uid).where("status","==","active").limit(20).get();
+    const recipients = new Set<string>();
+    links.docs.forEach(d => recipients.add(String(d.data().guardianId || "")));
+    if (recipients.size) {
+      const batch = db.batch();
+      recipients.forEach(parentId => {
+        if (parentId) batch.set(db.collection("notifications").doc(), {
+          recipientId: parentId, recipientRole: "parent", title: "Quiz result available",
+          message: displayName + " completed a quiz with " + percentage + "% accuracy and earned " + xpEarned + " XP.",
+          type: "result", createdAt: FieldValue.serverTimestamp(), createdBy: uid, createdByRole: "system"
+        });
+      });
+      await batch.commit();
+    }
+  } catch {}
+
   return { attemptId: attemptRef.id, duplicate: false, result: { correct, total: ids.length, marks, totalMarks, percentage, xpEarned, coinsEarned } };
 });
 
