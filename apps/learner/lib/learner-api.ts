@@ -1,9 +1,13 @@
 import { httpsCallable } from "firebase/functions";
 import { learnerFunctions } from "./firebase";
 
-export async function learnerFunction(action: string, data: unknown, _token?: string) {
+export async function learnerFunction(
+  action: string,
+  data: unknown,
+  _token?: string
+): Promise<any> {
   try {
-    const callable = httpsCallable(learnerFunctions, action);
+    const callable = httpsCallable<any, any>(learnerFunctions, action);
     const result = await callable(data);
     return result.data;
   } catch (error: any) {
