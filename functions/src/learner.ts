@@ -393,25 +393,6 @@ export const getLearnerAcademic = onCall(async (request) => {
 });
 
 
-export const listPublishedLearningMaterials = onCall(async (request) => {
-  learner(request);
-  const db = getFirestore();
-  const boardId = text((request.data as any)?.boardId);
-  const classId = text((request.data as any)?.classId);
-  const subjectId = text((request.data as any)?.subjectId);
-  const snap = await db.collection("learningMaterials")
-    .where("status", "==", "published")
-    .limit(500)
-    .get();
-  const items = snap.docs.map(d => ({ id:d.id, ...d.data() })).filter((x:any) =>
-    (!boardId || !x.boardId || x.boardId===boardId) &&
-    (!classId || !x.classId || x.classId===classId) &&
-    (!subjectId || !x.subjectId || x.subjectId===subjectId)
-  );
-  items.sort((a:any,b:any) => String(a.title||"").localeCompare(String(b.title||"")));
-  return {items};
-});
-
 export const getTopicPractice = onCall(async (request) => {
   learner(request);
   const topicId = text((request.data as any)?.topicId);
