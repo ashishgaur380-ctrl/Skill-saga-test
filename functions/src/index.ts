@@ -21,3 +21,5 @@ export { getSchoolDashboard, listSchoolMembers, updateSchoolMember, listSchoolAs
 export { sendNotification, listRecipientNotifications, markRecipientNotificationRead } from "./notification-delivery";
 
 export { requestAccountDeletion } from "./account";
+
+export {runCompetitionLifecycle} from "./competition-lifecycle";
