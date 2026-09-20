@@ -68,6 +68,7 @@ export default function Profile() {
           </button>
           {linkCode && <div className="ss-link-code"><small>Share this 15-minute code</small><strong>{linkCode}</strong></div>}
           <Link href="/rewards">🎁 <b>Rewards & Coins</b> <span>›</span></Link>
+          <Link href="/community">💬 <b>Community</b> <span>›</span></Link>
           <Link href="/profile">⚙️ <b>Settings</b> <span>›</span></Link>
           <Link href="/profile">❔ <b>Help & Support</b> <span>›</span></Link>
           <button className="ss-logout" onClick={() => void signOut(learnerAuth)}>↪ Log Out</button>
