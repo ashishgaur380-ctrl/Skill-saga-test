@@ -10,3 +10,18 @@ export const listLearningMaterials=onCall(async r=>{auth(r);const s=await getFir
 export const createLearningMaterial=onCall(async r=>{const {uid}=auth(r);const d:any=r.data||{};validate(d);const ref=getFirestore().collection("learningMaterials").doc();const now=FieldValue.serverTimestamp();await ref.set({...d,title:text(d.title),type:text(d.type)||"pdf",status:text(d.status)||"draft",createdBy:uid,createdAt:now,updatedAt:now});return {id:ref.id};});
 export const updateLearningMaterial=onCall(async r=>{auth(r);const id=text((r.data as any)?.id),d:any=(r.data as any)?.data;if(!id||!d)throw new HttpsError("invalid-argument","id and data are required.");validate(d);await getFirestore().collection("learningMaterials").doc(id).set({...d,updatedAt:FieldValue.serverTimestamp()},{merge:true});return {id};});
 export const archiveLearningMaterial=onCall(async r=>{auth(r);const id=text((r.data as any)?.id);if(!id)throw new HttpsError("invalid-argument","id is required.");await getFirestore().collection("learningMaterials").doc(id).set({status:"archived",updatedAt:FieldValue.serverTimestamp()},{merge:true});return {id};});
+
+export const bulkCreateLearningMaterials=onCall(async r=>{
+  const {uid}=auth(r);
+  const rows=Array.isArray((r.data as any)?.rows)?(r.data as any).rows:[];
+  if(!rows.length||rows.length>500) throw new HttpsError("invalid-argument","Upload between 1 and 500 content rows.");
+  const db=getFirestore(), batch=db.batch(), now=FieldValue.serverTimestamp();
+  rows.forEach((raw:any,index:number)=>{
+    const d={...raw};
+    try{validate(d);}catch(e){throw new HttpsError("invalid-argument",`Row ${index+1}: ${e instanceof Error?e.message:"invalid content"}`);}
+    const ref=db.collection("learningMaterials").doc();
+    batch.set(ref,{...d,title:text(d.title),type:text(d.type)||"pdf",status:text(d.status)||"draft",createdBy:uid,createdAt:now,updatedAt:now});
+  });
+  await batch.commit();
+  return {created:rows.length};
+});
