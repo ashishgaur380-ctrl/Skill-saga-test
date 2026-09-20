@@ -73,7 +73,7 @@ export default function Profile() {
 
         {message && <div className="ss-message">{message}</div>}
 
-        <ProfileMenu onLinkCode={()=>void createLinkCode()} onDelete={()=>void deleteAccount}/>
+        <ProfileMenu linkCode={linkCode} onLinkCode={()=>void createLinkCode()} onDelete={()=>void deleteAccount()}/>
       </main>
 
       <LearnerNav active="Profile" />
