@@ -308,7 +308,7 @@ export const getLearnerHome = onCall(async (request) => {
 
   const [attemptSnap, quizSnap, settingsSnap] = await Promise.all([
     db.collection("quizAttempts").where("learnerId", "==", uid).limit(500).get(),
-    db.collection("quizzes").where("active", "==", true).where("status", "==", "published").limit(100).get(),
+    db.collection("quizzes").where("active", "==", true).limit(100).get(),
     db.collection("systemSettings").doc("platform").get(),
   ]);
 
@@ -321,7 +321,7 @@ export const getLearnerHome = onCall(async (request) => {
     answered += Array.isArray(d.answers) ? d.answers.length : Number(d.total) || 0;
   }
 
-  const quizzes = quizSnap.docs.filter(doc => quizIsLive(doc.data())).map(doc => {
+  const quizzes = quizSnap.docs.filter(doc => quizIsLive(doc.data()) && text(doc.data().status) === "published").map(doc => {
     const d = doc.data();
     return {
       id: doc.id, title: text(d.title), description: text(d.description),
@@ -759,7 +759,8 @@ export const listPublishedCompetitions = onCall(async (request) => {
     .get();
 
   const now = Date.now();
-  const items = await Promise.all(snap.docs.map(async doc => {
+  const publishedDocs = snap.docs.filter(doc => text(doc.data().status) === "published");
+  const items = await Promise.all(publishedDocs.map(async doc => {
     const d = doc.data();
     const joined = await db.collection("competitionEntries").doc(`${doc.id}_${uid}`).get();
     const entryCount = (await db.collection("competitionEntries")
