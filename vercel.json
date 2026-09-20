@@ -1,0 +1,6 @@
+{
+  "framework": "nextjs",
+  "buildCommand": "pnpm --dir apps/learner build",
+  "installCommand": "corepack enable && pnpm install --frozen-lockfile",
+  "devCommand": "pnpm --dir apps/learner dev"
+}
