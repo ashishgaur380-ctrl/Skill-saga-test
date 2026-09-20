@@ -94,9 +94,8 @@ export default function Compete() {
         {error && <div className="ss-message error">{error}</div>}
 
         <CompeteTabs tab={tab} onTab={setTab}/>
-              </div>
-            </article>
-          ))}
+
+        <div className="ss-competition-list">
 
           {!visible.length && (
             <div className="ss-empty">
