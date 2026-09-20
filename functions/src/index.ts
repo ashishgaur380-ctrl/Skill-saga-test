@@ -76,7 +76,7 @@ export {
   submitQuizAttempt,
   getLearnerStats,
   listLearnerAttempts,
-  getLearnerHome,
+  getLearnerHome,\n  listLearnerNotifications,\n  markNotificationRead,
   getLearnerAcademic,
   getTopicPractice,
   submitTopicPractice,
