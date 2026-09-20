@@ -6,6 +6,7 @@ export { listQuizzes, createQuiz, updateQuiz, archiveQuiz } from "./quiz";
 export { listCompetitions, createCompetition, updateCompetition, archiveCompetition } from "./competition";
 export { listAutomationRules, createAutomationRule, updateAutomationRule, setAutomationEnabled, runAutomationEngine, runAutomationEngineNow } from "./automation";
 export { listCommunityPosts, createCommunityPost, moderateCommunityPost, archiveCommunityPost } from "./community";
+export { listLearnerCommunity, createLearnerCommunityPost, addCommunityComment, listCommunityComments, reportCommunityPost } from "./community-public";
 export { listRewards, createReward, updateReward, archiveReward, listRewardRedemptions, updateRewardRedemptionStatus } from "./rewards";
 export { listNotificationTemplates, createNotificationTemplate, updateNotificationTemplate, archiveNotificationTemplate } from "./notifications";
 export { getAnalyticsSummary } from "./analytics";
