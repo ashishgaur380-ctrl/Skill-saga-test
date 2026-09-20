@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-const allowedActions=new Set(["listQuizzes","createQuiz","updateQuiz","archiveQuiz"]);
+const allowedActions=new Set(["listQuizzes","createQuiz","updateQuiz","archiveQuiz","listLearningMaterials","createLearningMaterial","updateLearningMaterial","archiveLearningMaterial"]);
 const projectId=process.env.GCLOUD_PROJECT??"skill-saga-2";
 export async function POST(request:NextRequest){
  const authorization=request.headers.get("authorization");
