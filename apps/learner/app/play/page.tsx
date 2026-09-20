@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { onAuthStateChanged } from "firebase/auth";
 import { learnerAuth } from "../../lib/firebase";
+import { learnerFunction } from "../../lib/learner-api";
 
 type Quiz={id:string;title:string;description:string;questionCount:number};
 type Question={id:string;questionText:string;options:string[];marks:number};
