@@ -7,7 +7,7 @@ must("learner authorization", learner.includes("export const joinCompetition") &
 must("live competition check", learner.includes("!competitionIsLive(snap.data())"));
 must("paid entry cannot bypass payment", learner.includes('entryType)==="paid"') && learner.includes("Paid competition entry is not available yet."));
 must("duplicate join is idempotent", learner.includes("entryRef.get()).exists) return {joined:true}"));
-must("capacity check", learner.includes("maxParticipants") && learner.includes("Competition is full."));
+must("capacity check", learner.includes("maxParticipants") && learner.includes("This competition is full."));
 must("quiz requires prior entry", learner.includes("Join the competition before starting it."));
 must("quiz rechecks live quiz", learner.includes("!quizIsLive(q.data())"));
 const delivery=learner.slice(learner.indexOf("export const getCompetitionQuiz"),learner.indexOf("export const submitCompetitionAttempt"));
