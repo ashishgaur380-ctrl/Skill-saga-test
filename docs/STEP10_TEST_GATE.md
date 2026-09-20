@@ -90,17 +90,19 @@ Automation Rule → Scheduler → Idempotency Lock → Action → Automation Run
 
 ## Gate G — Security
 
-### Critical finding
+### Security baseline
 
-The current Firestore rule for `quizAttempts` permits an authenticated learner to create a record containing client-supplied `score`, `total`, and `percentage`.
+The current Firestore rules use a **server-authoritative default-deny model**: direct client writes are denied except where explicitly permitted. Learner quiz results are written through the server-side callable quiz service, which loads the published quiz/questions, validates submitted answers, calculates marks/percentage/XP/coins, and writes the attempt. The client does not supply the final score fields.
 
-This means the prototype is **not yet production-secure for authoritative scoring/rewards**.
+The learner quiz service now also supports an idempotent `submissionId`, so a retried submission can return the existing authoritative result instead of creating a second result.
 
 Required production architecture:
 
 Learner submits answers → server validates answers → server calculates score → server writes authoritative result → server awards XP/coins/badges.
 
 The client must never be trusted to decide final score, XP, coins, leaderboard position, or entitlement.
+
+**Remaining security work:** emulator-based abuse tests, competition eligibility/result tamper tests, parent/teacher relationship tests, and a production rules/deployment verification pass.
 
 ### Additional security checks
 
