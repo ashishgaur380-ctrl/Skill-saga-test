@@ -5,6 +5,7 @@ import {onAuthStateChanged} from "firebase/auth";
 import {learnerAuth} from "../../lib/firebase";
 import {learnerFunction} from "../../lib/learner-api";
 import LearnerNav from "../components/LearnerNav";
+import LearningSelectors from "../components/learn/LearningSelectors";
 
 type Item={id:string;name:string;boardIds?:string[];classIds?:string[];subjectId?:string;chapterId?:string;sortOrder?:number;active?:boolean};
 type Material={id:string;title:string;description?:string;type:string;language?:string;fileUrl?:string;boardId?:string;classId?:string;subjectId?:string;skillId?:string;otherCategory?:string;otherTopic?:string};
@@ -89,10 +90,7 @@ export default function Learn(){
   <header className="ss-inner-header"><Link href="/">‹</Link><div><b>Learn</b><small>Choose your learning journey</small></div><Link href="/progress">📈</Link></header>
   <main className="ss-page">
    <div className="ss-learning-hero"><div><span className="ss-eyebrow">YOUR LEARNING PATH</span><h1>{selectedSubject?.name||"Start Learning"}</h1><p>{selectedChapter?.name||"Pick your board, class and subject to explore lessons."}</p></div><span>📚</span></div>
-   <div className="ss-selects">
-    <select value={boardId} onChange={e=>void changeBoard(e.target.value)} aria-label="Board"><option value="">Choose Board</option>{boards.map(x=><option key={x.id} value={x.id}>{x.name}</option>)}</select>
-    <select value={classId} onChange={e=>void changeClass(e.target.value)} aria-label="Class"><option value="">Choose Class</option>{visibleClasses.map(x=><option key={x.id} value={x.id}>{x.name}</option>)}</select>
-   </div>
+   <LearningSelectors boards={boards} classes={classes} boardId={boardId} classId={classId} onBoard={id=>void changeBoard(id)} onClass={id=>void changeClass(id)} visibleClasses={visibleClasses}/>
    {error&&<div className="ss-message error">{error}</div>}
    {loading?<section className="ss-library"><p>Loading your learning path…</p></section>:<>
     <div className="ss-step-label"><span>1</span><b>Choose a subject</b></div>
