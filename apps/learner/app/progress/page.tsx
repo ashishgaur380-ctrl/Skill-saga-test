@@ -4,12 +4,13 @@ import { useEffect,useState } from "react";
 import { onAuthStateChanged } from "firebase/auth";
 import { learnerAuth } from "../../lib/firebase";
 import { learnerFunction } from "../../lib/learner-api";
+import LearnerNav from "../components/LearnerNav";
 
 type Topic={id:string;name:string;chapterId:string;chapterName:string;subjectId:string;questions:number;correct:number;accuracy:number;marks:number;totalMarks:number;marksPercentage:number;attempts:number};
 type Subject={id:string;name:string;questions:number;correct:number;accuracy:number;marks:number;totalMarks:number;marksPercentage:number};
 type Data={summary:{attempts:number;questions:number;correct:number;accuracy:number;marks:number;totalMarks:number;marksPercentage:number};subjects:Subject[];topics:Topic[]};
 
-async function call(token:string){const r=await learnerFunction("getLearnerProgress", {}, token);const p=await r.json();if(!r.ok)throw new Error(p?.error?.message||"Request failed.");return p?.data??p;}
+async function call(token:string){return learnerFunction("getLearnerProgress",{},token);}, token);const p=await r.json();if(!r.ok)throw new Error(p?.error?.message||"Request failed.");return p?.data??p;}
 
 export default function Progress(){
  const [data,setData]=useState<Data|null>(null),[error,setError]=useState(""),[loading,setLoading]=useState(true);
@@ -31,4 +32,4 @@ export default function Progress(){
  <div className="ss-actions"><Link href="/learn" className="ss-btn primary">Continue Learning</Link><Link href="/profile" className="ss-btn">Profile</Link><Link href="/" className="ss-btn">Home</Link></div>
  </main><Nav/></div>;
 }
-function Nav(){return <nav className="ss-nav"><div className="ss-nav-inner">{[["⌂","Home","/"],["📚","Learn","/learn"],["▶","Play","/play"],["🏆","Compete","/compete"],["👤","Profile","/profile"]].map(([i,l,h])=><Link key={l} className={l==="Profile"?"active":""} href={h}><span className="ss-icon">{i}</span>{l}</Link>)}</div></nav>}
+function Nav(){return <LearnerNav active="Profile"/>}
