@@ -242,6 +242,66 @@ export const listLearnerAttempts = onCall(async (request) => {
 });
 
 
+export const getLearnerAttemptDetails = onCall(async (request) => {
+  const uid = learner(request);
+  const attemptId = text((request.data as any)?.attemptId);
+  if (!attemptId) throw new HttpsError("invalid-argument", "attemptId is required.");
+
+  const db = getFirestore();
+  const attemptSnap = await db.collection("quizAttempts").doc(attemptId).get();
+  if (!attemptSnap.exists || text(attemptSnap.data()?.learnerId) !== uid) {
+    throw new HttpsError("not-found", "Quiz attempt was not found.");
+  }
+
+  const attempt = attemptSnap.data()!;
+  const answers = Array.isArray(attempt.answers) ? attempt.answers : [];
+  const questionIds = answers.map((a:any) => text(a?.questionId)).filter(Boolean);
+  const questionDocs = questionIds.length
+    ? await db.getAll(...questionIds.map((id:string) => db.collection("questions").doc(id)))
+    : [];
+  const questionMap = new Map(questionDocs.filter(d => d.exists).map(d => [d.id, d.data()!]));
+
+  let title = "Quiz Attempt";
+  const quizId = text(attempt.quizId);
+  if (quizId) {
+    const quizSnap = await db.collection("quizzes").doc(quizId).get();
+    if (quizSnap.exists) title = text(quizSnap.data()?.title) || title;
+  }
+  if (text(attempt.practiceType) === "topic") title = "Topic Practice";
+
+  const questions = answers.map((answer:any, index:number) => {
+    const question = questionMap.get(text(answer?.questionId)) || {};
+    return {
+      number: index + 1,
+      questionId: text(answer?.questionId),
+      questionText: text(question.questionText) || "Question",
+      options: Array.isArray(question.options) ? question.options.map(text) : [],
+      selectedOption: Number.isInteger(Number(answer?.selectedOption)) ? Number(answer.selectedOption) : null,
+      correctOption: Number.isInteger(Number(question.correctOption)) ? Number(question.correctOption) : null,
+      correct: answer?.correct === true,
+      marks: Number(answer?.marks) || 0,
+      maxMarks: Number(answer?.maxMarks) || 0,
+    };
+  });
+
+  return {
+    attempt: {
+      id: attemptSnap.id,
+      title,
+      quizId,
+      practiceType: text(attempt.practiceType),
+      correct: Number(attempt.correct) || 0,
+      total: Number(attempt.total) || questions.length,
+      percentage: Number(attempt.percentage) || 0,
+      xpEarned: Number(attempt.xpEarned) || 0,
+      coinsEarned: Number(attempt.coinsEarned) || 0,
+      createdAt: attempt.createdAt ?? null,
+    },
+    questions,
+  };
+});
+
+
 export const getLearnerHome = onCall(async (request) => {
   const uid = learner(request);
   const db = getFirestore();
