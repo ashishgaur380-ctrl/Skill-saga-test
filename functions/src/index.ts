@@ -12,7 +12,7 @@ export { listNotificationTemplates, createNotificationTemplate, updateNotificati
 export { getAnalyticsSummary } from "./analytics";
 export { getSystemSettings, updateSystemSettings } from "./system";
 export { listUsers, updateUser } from "./users";
-export { listPublishedQuizzes, getQuizForAttempt, submitQuizAttempt, getLearnerStats, listLearnerAttempts, getLearnerHome, listLearnerNotifications, markNotificationRead, getLearnerAcademic, getTopicPractice, submitTopicPractice, getLearnerProgress, listLearnerAssignments, listCommunityFeed, listPublishedCompetitions, joinCompetition, getCompetitionQuiz, submitCompetitionAttempt, getCompetitionLeaderboard, getLearnerRewards, redeemReward } from "./learner";
+export { listPublishedQuizzes, getQuizForAttempt, submitQuizAttempt, getLearnerStats, listLearnerAttempts, getLearnerHome, listLearnerNotifications, markNotificationRead, getLearnerAcademic, getTopicPractice, submitTopicPractice, getLearnerProgress, listLearnerAssignments, listPublishedCompetitions, joinCompetition, getCompetitionQuiz, submitCompetitionAttempt, getCompetitionLeaderboard, getLearnerRewards, redeemReward } from "./learner";
 export { createLearnerLinkCode, linkLearner, listLinkedLearners, getLinkedLearnerProgress } from "./guardian";
 export { listLearningMaterials, createLearningMaterial, updateLearningMaterial, archiveLearningMaterial, bulkCreateLearningMaterials } from "./content";
 export { createAssignment, listAssignments, updateAssignment, archiveAssignment } from "./assignment";
