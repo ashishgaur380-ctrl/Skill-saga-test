@@ -31,7 +31,8 @@ function validate(raw:any) {
   if (publishAtMs !== null && expireAtMs !== null && expireAtMs <= publishAtMs) throw new HttpsError("invalid-argument","expireAtMs must be later than publishAtMs.");
   return {
     title, description:text(raw.description), questionIds:[...new Set(questionIds.map(text))] as string[],
-    boardId:text(raw.boardId), classId:text(raw.classId), subjectId:text(raw.subjectId),\n    accessMode, requiredXp, requiredCoins, premiumRequired:accessMode==="PREMIUM", assignedOnly:accessMode==="ASSIGNED",
+    boardId:text(raw.boardId), classId:text(raw.classId), subjectId:text(raw.subjectId),
+    accessMode, requiredXp, requiredCoins, premiumRequired:accessMode==="PREMIUM", assignedOnly:accessMode==="ASSIGNED",
     publishAtMs, expireAtMs, status, active:raw.active===undefined?true:Boolean(raw.active)
   };
 }
