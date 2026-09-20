@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 
 const projectId = process.env.GCLOUD_PROJECT ?? "skill-saga-2";
-const allowedActions = new Set(["listPublishedQuizzes", "getQuizForAttempt", "submitQuizAttempt"]);
+const allowedActions = new Set(["listPublishedQuizzes", "getQuizForAttempt", "submitQuizAttempt", "getLearnerStats", "listLearnerAttempts"]);
 
 export async function POST(request: NextRequest) {
   const authorization = request.headers.get("authorization");
