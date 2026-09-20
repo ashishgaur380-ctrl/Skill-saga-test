@@ -578,7 +578,7 @@ export const getLearnerRewards = onCall(async (request) => {
     db.collection("rewardRedemptions").where("learnerId","==",uid).limit(500).get(),
   ]);
   const earned = attemptSnap.docs.reduce((n,d)=>n+(Number(d.data().coinsEarned)||0),0);
-  const spent = redemptionSnap.docs.reduce((n,d)=>n+(Number(d.data().coinCost)||0),0);
+  const spent = redemptionSnap.docs.reduce((n,d)=>{const status=text(d.data().status)||"pending";return ["pending","approved","fulfilled"].includes(status)?n+(Number(d.data().coinCost)||0):n;},0);
   const balance = Math.max(0,earned-spent);
   const rewards = rewardSnap.docs.map(d=>{const x=d.data();return{id:d.id,name:text(x.name),type:text(x.type),description:text(x.description),coinCost:Number(x.coinCost)||0};})
     .sort((a,b)=>a.coinCost-b.coinCost||a.name.localeCompare(b.name));
@@ -598,7 +598,7 @@ export const redeemReward = onCall(async (request) => {
     db.collection("rewardRedemptions").where("learnerId","==",uid).limit(500).get(),
   ]);
   const earned=attemptSnap.docs.reduce((n,d)=>n+(Number(d.data().coinsEarned)||0),0);
-  const spent=redemptionSnap.docs.reduce((n,d)=>n+(Number(d.data().coinCost)||0),0);
+  const spent=redemptionSnap.docs.reduce((n,d)=>{const status=text(d.data().status)||"pending";return ["pending","approved","fulfilled"].includes(status)?n+(Number(d.data().coinCost)||0):n;},0);
   const available=earned-spent;
   if(cost>available) throw new HttpsError("failed-precondition",`You need ${cost-available} more coins.`);
   const ref=db.collection("rewardRedemptions").doc();
