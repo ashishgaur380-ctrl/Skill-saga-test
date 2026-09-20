@@ -111,9 +111,13 @@ export const runAutomationEngineNow=onCall(async r=>{
     }
     const type=text(rule.type).toLowerCase();
     let result:any;
-    if(type==="daily_quiz"||type==="weekly_quiz") result=await runQuizAutomation(db,{id:doc.id,...rule});
-    else if(type==="notification") result=await runNotificationAutomation(db,{id:doc.id,...rule});
-    else continue;
+    try {
+      if(type==="daily_quiz"||type==="weekly_quiz") result=await runQuizAutomation(db,{id:doc.id,...rule});
+      else if(type==="notification") result=await runNotificationAutomation(db,{id:doc.id,...rule});
+      else continue;
+    } catch(error:any) {
+      result={success:false,message:error?.message??"Automation action failed."};
+    }
     await db.collection("automationRuns").doc().set({ruleId:doc.id,type,success:result.success,message:result.message??null,targetId:result.quizId??result.jobId??null,ranAt:FieldValue.serverTimestamp(),runKey:key});
     results.push({ruleId:doc.id,...result});
   }
