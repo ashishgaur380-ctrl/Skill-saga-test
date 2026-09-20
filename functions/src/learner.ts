@@ -126,3 +126,46 @@ export const submitQuizAttempt = onCall(async (request) => {
 
   return { attemptId: attemptRef.id, result: { correct, total: ids.length, marks, totalMarks, percentage, xpEarned, coinsEarned } };
 });
+
+
+export const getLearnerStats = onCall(async (request) => {
+  const uid = learner(request);
+  const db = getFirestore();
+  const snap = await db.collection("quizAttempts").where("learnerId", "==", uid).limit(500).get();
+  let xp = 0, coins = 0, correct = 0, answered = 0, totalMarks = 0, earnedMarks = 0;
+  const attempts = snap.docs.map(doc => ({ id: doc.id, ...doc.data() })) as any[];
+  for (const a of attempts) {
+    xp += Number(a.xpEarned) || 0;
+    coins += Number(a.coinsEarned) || 0;
+    correct += Number(a.correct) || 0;
+    const total = Array.isArray(a.answers) ? a.answers.length : Number(a.total) || 0;
+    answered += total;
+    earnedMarks += Number(a.marks) || 0;
+    totalMarks += Number(a.totalMarks) || 0;
+  }
+  attempts.sort((a,b) => String(b.createdAt?.toMillis?.() ?? "").localeCompare(String(a.createdAt?.toMillis?.() ?? "")));
+  return {
+    stats: {
+      xp, coins, level: Math.max(1, Math.floor(xp / 100) + 1),
+      streak: 0, attempts: attempts.length, correct, answered,
+      accuracy: answered ? Math.round((correct / answered) * 10000) / 100 : 0,
+      marks: earnedMarks, totalMarks,
+    },
+  };
+});
+
+export const listLearnerAttempts = onCall(async (request) => {
+  const uid = learner(request);
+  const snap = await getFirestore().collection("quizAttempts").where("learnerId", "==", uid).limit(100).get();
+  const items = snap.docs.map(doc => {
+    const d = doc.data();
+    return {
+      id: doc.id, quizId: text(d.quizId), correct: Number(d.correct) || 0,
+      total: Number(d.total) || (Array.isArray(d.answers) ? d.answers.length : 0),
+      percentage: Number(d.percentage) || 0, xpEarned: Number(d.xpEarned) || 0,
+      coinsEarned: Number(d.coinsEarned) || 0, createdAt: d.createdAt ?? null,
+    };
+  });
+  items.sort((a,b) => String(b.createdAt?.toMillis?.() ?? "").localeCompare(String(a.createdAt?.toMillis?.() ?? "")));
+  return { items };
+});
