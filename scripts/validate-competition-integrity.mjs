@@ -5,7 +5,7 @@ const rules=fs.readFileSync("security/firestore.rules","utf8");
 const must=(label,ok)=>{if(!ok)throw new Error("COMPETITION INTEGRITY FAIL: "+label);};
 must("learner authorization", learner.includes("export const joinCompetition") && learner.includes("const uid=learner(request)"));
 must("live competition check", learner.includes("!competitionIsLive(snap.data())"));
-must("paid entry cannot bypass payment", learner.includes('entryType)==="paid"') && learner.includes("Paid competition entry is not available yet."));
+must("paid entry cannot bypass payment", learner.includes('text(d.entryType) === "paid"') && learner.includes("Paid competition entry is not available yet."));
 must("duplicate join is idempotent", learner.includes("entryRef.get()).exists") && learner.includes("return { joined: true }"));
 must("capacity check", learner.includes("maxParticipants") && learner.includes("This competition is full."));
 must("quiz requires prior entry", learner.includes("Join the competition before starting it."));
