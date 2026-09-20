@@ -25,7 +25,7 @@ export default function Profile() {
     }
   }), []);
 
-  async function createLinkCode() {
+  async function deleteAccount() {\n    if (!window.confirm("Request deletion of your Skill Saga account? You will be signed out and access will be disabled.")) return;\n    const user = learnerAuth.currentUser;\n    if (!user) return;\n    try {\n      await learnerFunction("requestAccountDeletion", {}, await user.getIdToken());\n      setMessage("Account deletion requested. Your account has been disabled.");\n      await signOut(learnerAuth);\n      window.location.href = "/login/";\n    } catch (e) { setMessage(e instanceof Error ? e.message : "Unable to request account deletion."); }\n  }\n\n  async function createLinkCode() {
     const user = learnerAuth.currentUser;
     if (!user) return;
     try {
@@ -70,7 +70,7 @@ export default function Profile() {
           <Link href="/rewards">🎁 <b>Rewards & Coins</b> <span>›</span></Link>
           <Link href="/community">💬 <b>Community</b> <span>›</span></Link>
           <Link href="/profile">⚙️ <b>Settings</b> <span>›</span></Link>
-          <Link href="/profile">❔ <b>Help & Support</b> <span>›</span></Link>
+          <Link href="/privacy">🔒 <b>Privacy Policy</b> <span>›</span></Link>\n          <Link href="/terms">📄 <b>Terms of Use</b> <span>›</span></Link>\n          <button className="ss-menu-button" onClick={() => void deleteAccount()}>🗑️ <b>Request Account Deletion</b> <span>›</span></button>\n          <Link href="/profile">❔ <b>Help & Support</b> <span>›</span></Link>
           <button className="ss-logout" onClick={() => void signOut(learnerAuth)}>↪ Log Out</button>
         </div>
       </main>
