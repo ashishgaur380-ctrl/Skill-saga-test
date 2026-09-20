@@ -3,7 +3,7 @@
 import { useRef, useState } from "react";
 import { firebaseAuth } from "../../lib/firebase";
 
-type ImportResult = { imported: number; errors: Array<{ row: number; message: string }>; totalErrors: number };
+type ImportResult = { success: boolean; imported: number; errors: Array<{ row: number; message: string }>; totalErrors: number };
 
 const HEADERS = [
   "entity","name","code","numericLevel","boardCodes","classCodes",
