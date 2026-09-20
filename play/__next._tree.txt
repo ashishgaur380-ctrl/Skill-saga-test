@@ -1,2 +1,2 @@
-:HL["/Skill-saga-test/_next/static/chunks/3k1s6y4fo2y0j.css","style"]
-0:{"tree":{"name":"","param":null,"prefetchHints":4176,"slots":{"children":{"name":"play","param":null,"prefetchHints":4192,"slots":{"children":{"name":"__PAGE__","param":null,"prefetchHints":4256,"slots":null}}}}},"staleTime":300,"buildId":"aEU14gArPQuS_WKF0SRXx"}
+:HL["/Skill-saga-test/_next/static/chunks/16zvsznwkjzd-.css","style"]
+0:{"tree":{"name":"","param":null,"prefetchHints":4176,"slots":{"children":{"name":"play","param":null,"prefetchHints":4192,"slots":{"children":{"name":"__PAGE__","param":null,"prefetchHints":4256,"slots":null}}}}},"staleTime":300,"buildId":"pOVy-OIVf6_eM7s4H_QCy"}
