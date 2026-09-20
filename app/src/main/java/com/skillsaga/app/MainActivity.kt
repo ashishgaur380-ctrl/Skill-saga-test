@@ -12,6 +12,7 @@ import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
 
 class MainActivity : AppCompatActivity() {
+    // Skill Saga 2.0 test build loads the frozen learner web app.
 
     private lateinit var webView: WebView
 
