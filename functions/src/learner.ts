@@ -42,7 +42,7 @@ export const listPublishedQuizzes = onCall(async (request) => {
     .limit(100)
     .get();
 
-  const items = snap.docs.map(doc => {
+  const items = snap.docs.filter(doc => quizIsLive(doc.data())).map(doc => {
     const data = doc.data();
     return {
       id: doc.id,
