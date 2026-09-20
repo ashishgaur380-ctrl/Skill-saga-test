@@ -8,7 +8,7 @@ import LearnerNav from "../components/LearnerNav";
 
 type Item={id:string;name:string;code?:string;numericLevel?:number};
 type Material={id:string;title:string;description:string;type:string;boardId:string;classId:string;subjectId:string;chapterId:string;topicId:string;language:string;accessType:string;fileUrl:string};
-async function load(collection:string,token:string,data:any={}){const r=await learnerFunction("getLearnerAcademic", {collection,...data}, token);const p=await r.json();if(!r.ok)throw new Error(p?.error?.message||"Unable to load academic data.");return p?.data?.items||[];}
+async function load(collection:string,token:string,data:any={}){return (await learnerFunction("getLearnerAcademic",{collection,...data},token))?.items||[];}
 
 function Nav(){return <nav className="ss-nav"><div className="ss-nav-inner">{[["⌂","Home","/"],["📚","Learn","/learn"],["▶","Play","/play"],["🏆","Compete","/compete"],["👤","Profile","/profile"]].map(([i,l,h])=><Link key={l} className={l==="Learn"?"active":""} href={h}><span className="ss-icon">{i}</span>{l}</Link>)}</div></nav>}
 
