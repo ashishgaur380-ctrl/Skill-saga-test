@@ -18,7 +18,7 @@ function isDue(schedule:string, now:Date){
   return false;
 }
 
-async function runQuizAutomation(db:FirebaseFirestore.Firestore, rule:any){
+async function runQuizAutomation(db:any, rule:any){
   const type=text(rule.type).toLowerCase();
   const pattern=type==="daily_quiz"?/daily/i:/weekly/i;
   const snap=await db.collection("quizzes").where("active","==",true).where("status","==","published").limit(100).get();
