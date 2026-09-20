@@ -1,0 +1,28 @@
+rules_version = '2';
+
+service firebase.storage {
+  match /b/{bucket}/o {
+    function signedIn() {
+      return request.auth != null;
+    }
+
+    function contentManager() {
+      return signedIn() &&
+        request.auth.token.role in ['admin', 'super_admin', 'content_manager'];
+    }
+
+    match /learning-materials/{uid}/{allPaths=**} {
+      allow read: if signedIn();
+      allow write: if contentManager() &&
+        request.resource.size < 50 * 1024 * 1024 &&
+        request.resource.contentType in [
+          'application/pdf',
+          'video/mp4',
+          'video/webm',
+          'image/jpeg',
+          'image/png'
+        ];
+      allow delete: if contentManager();
+    }
+  }
+}
