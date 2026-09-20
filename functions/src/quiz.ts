@@ -35,7 +35,7 @@ async function ensureQuestions(ids:string[], published:boolean) {
   for(const id of ids) {
     const snap=await db.collection("questions").doc(id).get();
     if(!snap.exists) throw new HttpsError("not-found",`Question ${id} was not found.`);
-    if(published && snap.data()?.active !== true) throw new HttpsError("failed-precondition","Published quizzes can only contain active questions.");
+    if(published && (snap.data()?.active !== true || snap.data()?.status !== "published")) throw new HttpsError("failed-precondition","Published quizzes can only contain active published questions.");
   }
 }
 function audit(uid:string,role:string,action:string,id:string){
