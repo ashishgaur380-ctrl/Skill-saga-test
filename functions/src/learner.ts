@@ -101,6 +101,7 @@ export const submitQuizAttempt = onCall(async (request) => {
   const payload = request.data as any;
   const quizId = text(payload?.quizId);
   const answers = payload?.answers;
+  const submissionId = text(payload?.submissionId);
 
   if (!quizId || !Array.isArray(answers)) {
     throw new HttpsError("invalid-argument", "quizId and answers are required.");
@@ -139,14 +140,22 @@ export const submitQuizAttempt = onCall(async (request) => {
   const xpEarned = correct * 10;
   const coinsEarned = correct * 2;
 
-  const attemptRef = db.collection("quizAttempts").doc();
-  await attemptRef.set({
-    learnerId: uid, quizId, correct, marks, totalMarks, percentage,
+  const attemptRef = submissionId
+    ? db.collection("quizAttempts").doc(`${uid}_${quizId}_${submissionId.replace(/[^a-zA-Z0-9_-]/g, "").slice(0, 80)}`)
+    : db.collection("quizAttempts").doc();
+  const existing = await attemptRef.get();
+  if (existing.exists) {
+    const d = existing.data()!;
+    return { attemptId: attemptRef.id, duplicate: true, result: { correct: Number(d.correct)||0, total: Number(d.total)||ids.length, marks: Number(d.marks)||0, totalMarks: Number(d.totalMarks)||0, percentage: Number(d.percentage)||0, xpEarned: Number(d.xpEarned)||0, coinsEarned: Number(d.coinsEarned)||0 } };
+  }
+  await attemptRef.create({
+    learnerId: uid, quizId, correct, total: ids.length, marks, totalMarks, percentage,
     xpEarned, coinsEarned, answers: answerResults,
+    submissionId: submissionId || null,
     createdAt: FieldValue.serverTimestamp(),
   });
 
-  return { attemptId: attemptRef.id, result: { correct, total: ids.length, marks, totalMarks, percentage, xpEarned, coinsEarned } };
+  return { attemptId: attemptRef.id, duplicate: false, result: { correct, total: ids.length, marks, totalMarks, percentage, xpEarned, coinsEarned } };
 });
 
 
@@ -221,10 +230,11 @@ export const getLearnerHome = onCall(async (request) => {
     };
   }).sort((a,b) => a.title.localeCompare(b.title));
 
-  const daily = quizzes.find(q => /daily/i.test(q.title)) ?? null;
-  const weekly = quizzes.find(q => /weekly/i.test(q.title)) ?? null;
-
   const platform = settingsSnap.exists ? settingsSnap.data()! : {};
+  const dailyId = text(platform.dailyQuizId);
+  const weeklyId = text(platform.weeklyQuizId);
+  const daily = quizzes.find(q => q.id === dailyId) ?? quizzes.find(q => /daily/i.test(q.title)) ?? null;
+  const weekly = quizzes.find(q => q.id === weeklyId) ?? quizzes.find(q => /weekly/i.test(q.title)) ?? null;
   return {
     settings: {
       appName: text(platform.appName) || "Skill Saga",
