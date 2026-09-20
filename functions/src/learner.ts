@@ -11,6 +11,28 @@ function learner(request: CallableRequest<unknown>) {
 
 function text(value: unknown) { return typeof value === "string" ? value.trim() : ""; }
 
+function calculateStreak(attempts:any[]) {
+  const days = new Set<string>();
+  for (const a of attempts) {
+    const ts = a.createdAt?.toDate?.() ?? (a.createdAt instanceof Date ? a.createdAt : null);
+    if (ts) days.add(ts.toISOString().slice(0,10));
+  }
+  const today = new Date();
+  const todayKey = today.toISOString().slice(0,10);
+  const yesterday = new Date(today); yesterday.setUTCDate(yesterday.getUTCDate()-1);
+  const yesterdayKey = yesterday.toISOString().slice(0,10);
+  if (!days.has(todayKey) && !days.has(yesterdayKey)) return 0;
+  let cursor = days.has(todayKey) ? today : yesterday;
+  let streak = 0;
+  while (days.has(cursor.toISOString().slice(0,10))) {
+    streak++;
+    cursor = new Date(cursor);
+    cursor.setUTCDate(cursor.getUTCDate()-1);
+  }
+  return streak;
+}
+
+
 export const listPublishedQuizzes = onCall(async (request) => {
   learner(request);
   const db = getFirestore();
@@ -147,7 +169,7 @@ export const getLearnerStats = onCall(async (request) => {
   return {
     stats: {
       xp, coins, level: Math.max(1, Math.floor(xp / 100) + 1),
-      streak: 0, attempts: attempts.length, correct, answered,
+      streak: calculateStreak(attempts), attempts: attempts.length, correct, answered,
       accuracy: answered ? Math.round((correct / answered) * 10000) / 100 : 0,
       marks: earnedMarks, totalMarks,
     },
@@ -212,7 +234,7 @@ export const getLearnerHome = onCall(async (request) => {
     },
     stats: {
       xp, coins, level: Math.max(1, Math.floor(xp / 100) + 1),
-      streak: 0, accuracy: answered ? Math.round((correct / answered) * 10000) / 100 : 0,
+      streak: calculateStreak(attemptSnap.docs.map(d => d.data())), accuracy: answered ? Math.round((correct / answered) * 10000) / 100 : 0,
     },
     dailyQuiz: daily,
     weeklyQuiz: weekly,
