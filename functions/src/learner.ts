@@ -545,3 +545,45 @@ export const getCompetitionLeaderboard = onCall(async (request) => {
   items.sort((a,b)=>b.marks-a.marks||b.correct-a.correct||b.percentage-a.percentage);
   return {items:items.slice(0,100).map((x,i)=>({...x,rank:i+1}))};
 });
+
+
+export const getLearnerRewards = onCall(async (request) => {
+  const uid = learner(request);
+  const db = getFirestore();
+  const [rewardSnap, attemptSnap, redemptionSnap] = await Promise.all([
+    db.collection("rewards").where("active","==",true).limit(100).get(),
+    db.collection("quizAttempts").where("learnerId","==",uid).limit(500).get(),
+    db.collection("rewardRedemptions").where("learnerId","==",uid).limit(500).get(),
+  ]);
+  const earned = attemptSnap.docs.reduce((n,d)=>n+(Number(d.data().coinsEarned)||0),0);
+  const spent = redemptionSnap.docs.reduce((n,d)=>n+(Number(d.data().coinCost)||0),0);
+  const balance = Math.max(0,earned-spent);
+  const rewards = rewardSnap.docs.map(d=>{const x=d.data();return{id:d.id,name:text(x.name),type:text(x.type),description:text(x.description),coinCost:Number(x.coinCost)||0};})
+    .sort((a,b)=>a.coinCost-b.coinCost||a.name.localeCompare(b.name));
+  const redemptions = redemptionSnap.docs.map(d=>{const x=d.data();return{id:d.id,rewardId:text(x.rewardId),rewardName:text(x.rewardName),coinCost:Number(x.coinCost)||0,status:text(x.status)||"pending",createdAt:x.createdAt??null};})
+    .sort((a,b)=>String(b.createdAt?.toMillis?.()??"").localeCompare(String(a.createdAt?.toMillis?.()??"")));
+  return {wallet:{balance,earned,spent},rewards,redemptions};
+});
+
+export const redeemReward = onCall(async (request) => {
+  const uid=learner(request), rewardId=text((request.data as any)?.rewardId);
+  if(!rewardId) throw new HttpsError("invalid-argument","rewardId is required.");
+  const db=getFirestore(), rewardRef=db.collection("rewards").doc(rewardId), rewardSnap=await rewardRef.get();
+  if(!rewardSnap.exists||rewardSnap.data()?.active!==true) throw new HttpsError("not-found","Reward is not available.");
+  const reward=rewardSnap.data()!, cost=Number(reward.coinCost)||0;
+  const [attemptSnap,redemptionSnap]=await Promise.all([
+    db.collection("quizAttempts").where("learnerId","==",uid).limit(500).get(),
+    db.collection("rewardRedemptions").where("learnerId","==",uid).limit(500).get(),
+  ]);
+  const earned=attemptSnap.docs.reduce((n,d)=>n+(Number(d.data().coinsEarned)||0),0);
+  const spent=redemptionSnap.docs.reduce((n,d)=>n+(Number(d.data().coinCost)||0),0);
+  const available=earned-spent;
+  if(cost>available) throw new HttpsError("failed-precondition",`You need ${cost-available} more coins.`);
+  const ref=db.collection("rewardRedemptions").doc();
+  await db.runTransaction(async tx=>{
+    const existing=await tx.get(ref);
+    if(existing.exists) throw new HttpsError("aborted","Please try again.");
+    tx.set(ref,{learnerId:uid,rewardId,rewardName:text(reward.name),coinCost:cost,status:"pending",createdAt:FieldValue.serverTimestamp()});
+  });
+  return {success:true,redemptionId:ref.id,balance:available-cost};
+});
