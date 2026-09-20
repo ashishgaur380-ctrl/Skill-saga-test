@@ -7,13 +7,13 @@ import {learnerFunction} from "../../lib/learner-api";
 import LearnerNav from "../components/LearnerNav";
 
 type Item={id:string;name:string;boardIds?:string[];classIds?:string[];subjectId?:string;chapterId?:string;sortOrder?:number;active?:boolean};
-type Material={id:string;title:string;description?:string;type:string;language?:string;fileUrl?:string;boardId?:string;classId?:string;subjectId?:string};
+type Material={id:string;title:string;description?:string;type:string;language?:string;fileUrl?:string;boardId?:string;classId?:string;subjectId?:string;skillId?:string;otherCategory?:string;otherTopic?:string};
 
 export default function Learn(){
  const [boards,setBoards]=useState<Item[]>([]),[classes,setClasses]=useState<Item[]>([]),[subjects,setSubjects]=useState<Item[]>([]);
- const [chapters,setChapters]=useState<Item[]>([]),[topics,setTopics]=useState<Item[]>([]);
+ const [chapters,setChapters]=useState<Item[]>([]),[topics,setTopics]=useState<Item[]>([]),[skillCategories,setSkillCategories]=useState<Item[]>([]),[skills,setSkills]=useState<Item[]>([]),[skillId,setSkillId]=useState("");
  const [boardId,setBoardId]=useState(""),[classId,setClassId]=useState(""),[subjectId,setSubjectId]=useState(""),[chapterId,setChapterId]=useState("");
- const [materials,setMaterials]=useState<Material[]>([]),[loading,setLoading]=useState(true),[error,setError]=useState("");
+ const [materials,setMaterials]=useState<Material[]>([]),[skillMaterials,setSkillMaterials]=useState<Material[]>([]),[otherMaterials,setOtherMaterials]=useState<Material[]>([]),[loading,setLoading]=useState(true),[error,setError]=useState("");
  const [busy,setBusy]=useState(false);
 
  useEffect(()=>onAuthStateChanged(learnerAuth,async u=>{
@@ -31,6 +31,8 @@ export default function Learn(){
      const selectedClass=filteredClasses[0]?.id||"";
      setBoardId(selectedBoard); setClassId(selectedClass);
      await loadSubjectLevel(token,selectedBoard,selectedClass,"","");
+     const [sc,sm,om]=await Promise.all([learnerFunction("getLearnerAcademic",{collection:"skillCategories"},token),learnerFunction("listPublishedLearningMaterials",{},token),learnerFunction("listPublishedLearningMaterials",{otherOnly:true},token)]);
+     setSkillCategories(sc?.items||[]); setSkillMaterials(sm?.items||[]); setOtherMaterials(om?.items||[]);
    }catch(e){setError(e instanceof Error?e.message:"Unable to load learning library.");}
    finally{setLoading(false);}
  }),[]);
@@ -66,6 +68,7 @@ export default function Learn(){
    setSubjectId(id);setChapterId("");setTopics([]);
    const u=learnerAuth.currentUser;if(u) await loadSubjectLevel(await u.getIdToken(),boardId,classId,id,"");
  }
+ async function changeSkill(id:string){ setSkillId(id); const u=learnerAuth.currentUser; if(!u)return; setBusy(true); try{ const t=await learnerFunction("listPublishedLearningMaterials",{skillId:id},await u.getIdToken()); setSkillMaterials(t?.items||[]); }catch(e){setError(e instanceof Error?e.message:"Unable to load skill content.");}finally{setBusy(false);} }
  async function changeChapter(id:string){
    setChapterId(id);setTopics([]);
    const u=learnerAuth.currentUser;if(!u)return;
@@ -101,6 +104,8 @@ export default function Learn(){
       {topics.length===0?<div className="ss-empty">No topics are available in this chapter yet.</div>:<div className="ss-topic-list">{topics.map(x=><article key={x.id}><div><b>{x.name}</b><small>Learn this topic and practice</small></div><Link className="ss-primary" href={"/play?topicId="+encodeURIComponent(x.id)}>Practice →</Link></article>)}</div>}
     </>}
     <section className="ss-library"><div className="ss-heading"><b>Learning Library</b><span>{materials.length} available</span></div>{materials.length===0?<p>{subjectId?"No published material is available for this subject yet.":"Select a subject to see published learning material."}</p>:materials.slice(0,10).map(m=><a href={m.fileUrl||"#"} target="_blank" rel="noreferrer" key={m.id}><div><b>{m.title}</b><small>{m.type} · {m.language||"English"}{m.description?" · "+m.description:""}</small></div><span>Open {m.type.toUpperCase()} →</span></a>)}</section>
+    <section className="ss-library"><div className="ss-heading"><b>🧠 Skills</b><span>Learn beyond the syllabus</span></div><div className="ss-subjects">{skillCategories.map((x,i)=><button className="selected" key={x.id} onClick={()=>void (async()=>{const u=learnerAuth.currentUser;if(u){setSkills((await learnerFunction("getLearnerAcademic",{collection:"skills",parentId:x.id},await u.getIdToken())).items||[]);}})()}><span>{["💡","💻","💰","⚽","🎯"][i%5]}</span><div><b>{x.name}</b><small>Explore skills</small></div><strong>›</strong></button>)}</div>{skills.length>0&&<div className="ss-topic-list">{skills.map(x=><article key={x.id}><div><b>{x.name}</b><small>Practice and learning material</small></div><button className="ss-primary" onClick={()=>void changeSkill(x.id)}>Explore →</button></article>)}</div>}{skillId&&skillMaterials.length>0&&<div className="ss-topic-list">{skillMaterials.slice(0,10).map(m=><a key={m.id} href={m.fileUrl||"#"} target="_blank" rel="noreferrer"><div><b>{m.title}</b><small>{m.type} · {m.language||"English"}</small></div><span>Open →</span></a>)}</div>}</section>
+    <section className="ss-library"><div className="ss-heading"><b>🌟 Other Learning</b><span>Explore more</span></div>{otherMaterials.length===0?<p>More learning categories will appear here as content is published.</p>:otherMaterials.slice(0,10).map(m=><a key={m.id} href={m.fileUrl||"#"} target="_blank" rel="noreferrer"><div><b>{m.title}</b><small>{m.otherCategory||"Other"} · {m.otherTopic||m.type}</small></div><span>Open →</span></a>)}</section>
    </>}
   </main><LearnerNav active="Learn"/>
  </div>;
