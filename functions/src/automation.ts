@@ -46,8 +46,20 @@ async function claimRun(db:FirebaseFirestore.Firestore, ruleId:string, key:strin
 async function runQuizAutomation(db:any, rule:any){
   const type=text(rule.type).toLowerCase();
   const pattern=type==="daily_quiz"?/daily/i:/weekly/i;
+  const targetId=text(rule.targetQuizId);
+  if(targetId){
+    const target=await db.collection("quizzes").doc(targetId).get();
+    if(target.exists && target.data()?.active===true && target.data()?.status==="published"){
+      await db.collection("systemSettings").doc("platform").set({[type==="daily_quiz"?"dailyQuizId":"weeklyQuizId"]:target.id},{merge:true});
+      return {success:true,quizId:target.id};
+    }
+  }
   const snap=await db.collection("quizzes").where("active","==",true).where("status","==","published").limit(100).get();
-  const quiz=snap.docs.map(d=>({id:d.id,...d.data()})).find((x:any)=>pattern.test(text(x.title)));
+  const now=Date.now();
+  const quiz=snap.docs.map(d=>({id:d.id,...d.data()})).find((x:any)=>{
+    const publish=Number(x.publishAtMs), expire=Number(x.expireAtMs);
+    return pattern.test(text(x.title)) && (!Number.isFinite(publish)||publish<=now) && (!Number.isFinite(expire)||expire>now);
+  });
   if(!quiz) return {success:false,message:"No matching published quiz found."};
   const key=type==="daily_quiz"?"dailyQuizId":"weeklyQuizId";
   await db.collection("systemSettings").doc("platform").set({[key]:quiz.id}, {merge:true});
@@ -71,10 +83,14 @@ export const runAutomationEngine=onSchedule({schedule:"0 * * * *",timeZone:"Asia
     if(!(await claimRun(db,doc.id,key))) continue;
     const type=text(rule.type).toLowerCase();
     let result:any;
-    if(type==="daily_quiz"||type==="weekly_quiz") result=await runQuizAutomation(db,{id:doc.id,...rule});
-    else if(type==="notification") result=await runNotificationAutomation(db,{id:doc.id,...rule});
-    else continue;
-    await db.collection("automationRuns").doc().set({ruleId:doc.id,type,success:result.success,message:result.message??null,targetId:result.quizId??result.jobId??null,ranAt:FieldValue.serverTimestamp()});
+    try {
+      if(type==="daily_quiz"||type==="weekly_quiz") result=await runQuizAutomation(db,{id:doc.id,...rule});
+      else if(type==="notification") result=await runNotificationAutomation(db,{id:doc.id,...rule});
+      else continue;
+    } catch(error:any) {
+      result={success:false,message:error?.message??"Automation action failed."};
+    }
+    await db.collection("automationRuns").doc().set({ruleId:doc.id,type,success:result.success,message:result.message??null,targetId:result.quizId??result.jobId??null,ranAt:FieldValue.serverTimestamp(),runKey:key});
   }
 });
 
