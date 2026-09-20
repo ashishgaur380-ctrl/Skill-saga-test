@@ -81,6 +81,11 @@ export {
   getTopicPractice,
   submitTopicPractice,
   getLearnerProgress,
+  listPublishedCompetitions,
+  joinCompetition,
+  getCompetitionQuiz,
+  submitCompetitionAttempt,
+  getCompetitionLeaderboard,
 } from "./learner";
 export { getLearnerRewards, redeemReward } from "./learner";
 
