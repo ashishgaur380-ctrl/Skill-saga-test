@@ -13,6 +13,21 @@ const defaults={
   communityEnabled:true,
   competitionsEnabled:true,
   premiumEnabled:true,
+  academicEnabled:true,
+  contentEnabled:true,
+  assessmentEnabled:true,
+  progressEnabled:true,
+  rewardsEnabled:true,
+  notificationsEnabled:true,
+  analyticsEnabled:true,
+  automationEnabled:true,
+  learnerEnabled:true,
+  guardianEnabled:true,
+  coachingEnabled:false,
+  schoolEnabled:false,
+  liveClassesEnabled:false,
+  marketplaceEnabled:false,
+  careerEnabled:false,
 };
 
 function auth(request:CallableRequest<unknown>){
@@ -45,6 +60,14 @@ export const updateSystemSettings=onCall(async request=>{
     communityEnabled:Boolean(raw.communityEnabled),
     competitionsEnabled:Boolean(raw.competitionsEnabled),
     premiumEnabled:Boolean(raw.premiumEnabled),
+    academicEnabled:Boolean(raw.academicEnabled), contentEnabled:Boolean(raw.contentEnabled),
+    assessmentEnabled:Boolean(raw.assessmentEnabled), progressEnabled:Boolean(raw.progressEnabled),
+    rewardsEnabled:Boolean(raw.rewardsEnabled), notificationsEnabled:Boolean(raw.notificationsEnabled),
+    analyticsEnabled:Boolean(raw.analyticsEnabled), automationEnabled:Boolean(raw.automationEnabled),
+    learnerEnabled:Boolean(raw.learnerEnabled), guardianEnabled:Boolean(raw.guardianEnabled),
+    coachingEnabled:Boolean(raw.coachingEnabled), schoolEnabled:Boolean(raw.schoolEnabled),
+    liveClassesEnabled:Boolean(raw.liveClassesEnabled), marketplaceEnabled:Boolean(raw.marketplaceEnabled),
+    careerEnabled:Boolean(raw.careerEnabled),
   };
   const db=getFirestore();
   await db.collection("systemSettings").doc(ID).set({
