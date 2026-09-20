@@ -19,7 +19,15 @@ function quizIsLive(data: any, now = Date.now()) {
   return true;
 }
 
-function competitionIsLive(data: any, now = Date.now()) {\n  if (data?.active !== true || data?.status !== "published") return false;\n  const start = Number(data?.startAtMs);\n  const end = Number(data?.endAtMs);\n  if (Number.isFinite(start) && start > now) return false;\n  if (Number.isFinite(end) && end <= now) return false;\n  return true;\n}\nfunction calculateStreak(attempts:any[]) {
+function competitionIsLive(data: any, now = Date.now()) {
+  if (data?.active !== true || data?.status !== "published") return false;
+  const start = Number(data?.startAtMs);
+  const end = Number(data?.endAtMs);
+  if (Number.isFinite(start) && start > now) return false;
+  if (Number.isFinite(end) && end <= now) return false;
+  return true;
+}
+function calculateStreak(attempts:any[]) {
   const days = new Set<string>();
   for (const a of attempts) {
     const ts = a.createdAt?.toDate?.() ?? (a.createdAt instanceof Date ? a.createdAt : null);
