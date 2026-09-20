@@ -4,6 +4,7 @@ import { useEffect,useState } from "react";
 import { onAuthStateChanged } from "firebase/auth";
 import { learnerAuth } from "../../lib/firebase";
 import { learnerFunction } from "../../lib/learner-api";
+import LearnerNav from "../components/LearnerNav";
 
 type Item={id:string;name:string;code?:string;numericLevel?:number};
 type Material={id:string;title:string;description:string;type:string;boardId:string;classId:string;subjectId:string;chapterId:string;topicId:string;language:string;accessType:string;fileUrl:string};
@@ -13,7 +14,7 @@ function Nav(){return <nav className="ss-nav"><div className="ss-nav-inner">{[["
 
 export default function Learn(){
  const [token,setToken]=useState(""),[materials,setMaterials]=useState<Material[]>([]),[boards,setBoards]=useState<Item[]>([]),[classes,setClasses]=useState<Item[]>([]),[subjects,setSubjects]=useState<Item[]>([]),[chapters,setChapters]=useState<Item[]>([]),[selectedBoard,setSelectedBoard]=useState<Item|null>(null),[selectedClass,setSelectedClass]=useState<Item|null>(null),[selectedSubject,setSelectedSubject]=useState<Item|null>(null),[selectedChapter,setSelectedChapter]=useState<Item|null>(null),[topics,setTopics]=useState<Item[]>([]),[error,setError]=useState("");
- useEffect(()=>onAuthStateChanged(learnerAuth,async user=>{if(!user){setError("Please sign in to browse your academic content.");return;}try{const t=await user.getIdToken();setToken(t);setBoards(await load("boards",t));const mr=await learnerFunction("listPublishedLearningMaterials", {}, token);const mp=await mr.json();if(mr.ok)setMaterials(mp?.data?.items||[]);}catch(e:any){setError(e.message);}}),[]);
+ useEffect(()=>onAuthStateChanged(learnerAuth,async user=>{if(!user){setError("Please sign in to browse your academic content.");return;}try{const t=await user.getIdToken();setToken(t);setBoards(await load("boards",t));setMaterials((await learnerFunction("listPublishedLearningMaterials", {}, t))?.items||[]);}catch(e:any){setError(e.message);}}),[]);
  async function chooseBoard(b:Item){setSelectedBoard(b);setSelectedClass(null);setSelectedSubject(null);setSelectedChapter(null);setSubjects([]);setChapters([]);setTopics([]);try{setClasses(await load("classes",token,{parentId:b.id}));}catch(e:any){setError(e.message);}}
  async function chooseClass(c:Item){setSelectedClass(c);setSelectedSubject(null);setSelectedChapter(null);setChapters([]);setTopics([]);try{setSubjects(await load("subjects",token,{boardId:selectedBoard?.id,classId:c.id}));}catch(e:any){setError(e.message);}}
  async function chooseSubject(s:Item){setSelectedSubject(s);setSelectedChapter(null);setTopics([]);try{setChapters(await load("chapters",token,{parentId:s.id}));}catch(e:any){setError(e.message);}}
@@ -27,5 +28,5 @@ function practiceUrl(topicId:string){return `/play?topicId=${topicId}`;}
  {selectedClass&&<section className="ss-card" style={{marginTop:14}}><span className="ss-eyebrow">📚 3 · Pick a subject</span><div className="ss-grid" style={{marginTop:12}}>{subjects.map(s=><button key={s.id} className="ss-card" style={{textAlign:"left",cursor:"pointer"}} onClick={()=>chooseSubject(s)}><h3>{s.name}</h3><p>{s.code||"Subject"}</p></button>)}</div></section>}
  {selectedSubject&&<section className="ss-card" style={{marginTop:14}}><span className="ss-eyebrow">🧩 4 · Pick a chapter</span><div className="ss-grid" style={{marginTop:12}}>{chapters.map(c=><button key={c.id} className="ss-card" style={{textAlign:"left",cursor:"pointer"}} onClick={()=>chooseChapter(c)}><h3>{c.name}</h3></button>)}</div></section>}
  {selectedChapter&&<section className="ss-card" style={{marginTop:14}}><span className="ss-eyebrow">🎯 5 · Choose a topic</span>{topics.length?<div className="ss-grid" style={{marginTop:12}}>{topics.map(t=><div key={t.id} className="ss-card"><h3>{t.name}</h3><p>Practice questions linked to this topic.</p><div className="ss-actions"><Link href={practiceUrl(t.id)} className="ss-btn primary">Practice Topic</Link></div></div>)}</div>:<p style={{marginTop:12}}>No topics have been published for this chapter yet.</p>}<div className="ss-actions"><Link href="/play" className="ss-btn primary">Practice with Quiz</Link></div></section>}
- </main><Nav/></div>;
+ </main><LearnerNav active="Learn"/></div>;
 }
