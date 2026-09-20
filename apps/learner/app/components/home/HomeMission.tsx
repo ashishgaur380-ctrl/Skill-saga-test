@@ -1,0 +1,2 @@
+import Link from "next/link";
+export default function HomeMission({title,description,quizId}:{title:string;description:string;quizId:string}){return <section className="ss-mission"><div className="ss-target">🎯</div><div><small>TODAY&apos;S MISSION</small><h2>{title}</h2><p>{description}</p><Link href={quizId?"/play?quizId="+quizId:"/play"} className="ss-primary">Start Now →</Link></div><span>✨</span></section>;}
