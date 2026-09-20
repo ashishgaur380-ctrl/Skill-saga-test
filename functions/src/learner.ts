@@ -530,7 +530,7 @@ export const listPublishedLearningMaterials = onCall(async (request) => {
   const boardId = text(payload.boardId);
   const classId = text(payload.classId);
   const subjectId = text(payload.subjectId);
-  const snap = await db.collection("learningMaterials").where("status","==","published").limit(500).get();
+  const [snap,userSnap] = await Promise.all([db.collection("learningMaterials").where("status","==","published").limit(500).get(),db.collection("users").doc(uid).get()]);\n  const userData=userSnap.data()||{};\n  const premiumUntil=Number(userData.premiumUntilMs);\n  const premiumActive=Number.isFinite(premiumUntil)&&premiumUntil>Date.now();\n  const assignedIds=new Set(Array.isArray(userData.assignedMaterialIds)?userData.assignedMaterialIds.map(text):[]);
   const now = Date.now();
   const items = snap.docs.map(doc => {
     const d = doc.data();
