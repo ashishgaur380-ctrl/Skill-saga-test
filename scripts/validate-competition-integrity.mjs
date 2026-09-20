@@ -17,7 +17,7 @@ must("submission requires entry", learner.includes("Join the competition before 
 must("duplicate submission rejected", learner.includes('already-exists","You have already submitted this competition.'));
 must("server answer key scoring", learner.includes("selected === Number(d.correctOption)"));
 must("server-side leaderboard source", learner.includes('collection("competitionAttempts")'));
-must("deterministic leaderboard ordering", learner.includes("b.marks - a.marks || b.correct - a.correct || b.percentage - a.percentage"));
+must("deterministic leaderboard ordering", learner.includes("b.marks-a.marks||b.correct-a.correct||b.percentage-a.percentage"));
 must("competition attempts default-deny", !rules.includes("match /competitionAttempts/{"));
 must("admin role boundary", competition.includes("ROLES=new Set"));
 must("published competition requires active quiz", learner.includes("Competition quiz is unavailable.") && competition.includes("published&&q.data()?.active!==true"));
