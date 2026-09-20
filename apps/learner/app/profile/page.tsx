@@ -6,6 +6,7 @@ import { onAuthStateChanged, signOut } from "firebase/auth";
 import { learnerFunction } from "../../lib/learner-api";
 import { learnerAuth } from "../../lib/firebase";
 import LearnerNav from "../components/LearnerNav";
+import ProfileMenu from "../components/profile/ProfileMenu";
 
 export default function Profile() {
   const [name, setName] = useState("Learner");
@@ -72,22 +73,7 @@ export default function Profile() {
 
         {message && <div className="ss-message">{message}</div>}
 
-        <div className="ss-menu">
-          <Link href="/progress">❓ <b>Quiz History & Progress</b> <span>›</span></Link>
-          <Link href="/progress">⌁ <b>My Progress</b> <span>›</span></Link>
-          <button className="ss-menu-button" onClick={() => void createLinkCode()}>
-            👨‍👩‍👧 <b>Parent / Teacher Link</b> <span>›</span>
-          </button>
-          {linkCode && <div className="ss-link-code"><small>Share this 15-minute code</small><strong>{linkCode}</strong></div>}
-          <Link href="/rewards">🎁 <b>Rewards & Coins</b> <span>›</span></Link>
-          <Link href="/community">💬 <b>Community</b> <span>›</span></Link>
-          <Link href="/profile">⚙️ <b>Settings</b> <span>›</span></Link><Link href="/login/">🔐 <b>Change / Reset Password</b> <span>›</span></Link>
-          <Link href="/privacy">🔒 <b>Privacy Policy</b> <span>›</span></Link>
-          <Link href="/terms">📄 <b>Terms of Use</b> <span>›</span></Link>
-          <button className="ss-menu-button" onClick={() => void deleteAccount()}>🗑️ <b>Request Account Deletion</b> <span>›</span></button>
-          <Link href="/profile">❔ <b>Help & Support</b> <span>›</span></Link>
-          <button className="ss-logout" onClick={() => void signOut(learnerAuth)}>↪ Log Out</button>
-        </div>
+        <ProfileMenu onLinkCode={()=>void createLinkCode()} onDelete={()=>void deleteAccount}/>
       </main>
 
       <LearnerNav active="Profile" />
