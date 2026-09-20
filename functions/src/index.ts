@@ -15,6 +15,7 @@ export {
   createQuestion,
   updateQuestion,
   archiveQuestion,
+  bulkImportQuestions,
 } from "./question";
 
 export {
