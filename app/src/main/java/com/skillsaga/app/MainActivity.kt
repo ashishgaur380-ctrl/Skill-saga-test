@@ -62,7 +62,7 @@ class MainActivity : AppCompatActivity() {
 
         setContentView(webView)
 
-        webView.loadUrl("file:///android_asset/index.html")
+        webView.loadUrl("https://ashishgaur380-ctrl.github.io/Skill-saga-test/")
     }
 
     private fun injectAccessConfiguration() {
