@@ -7,6 +7,7 @@ import { learnerFunction } from "../../lib/learner-api";
 import { learnerAuth } from "../../lib/firebase";
 import LearnerNav from "../components/LearnerNav";
 import ProfileMenu from "../components/profile/ProfileMenu";
+const APP_BASE = process.env.NEXT_PUBLIC_GITHUB_PAGES === "true" ? "/Skill-saga-test" : "";
 
 export default function Profile() {
   const [name, setName] = useState("Learner");
@@ -34,7 +35,7 @@ export default function Profile() {
       await learnerFunction("requestAccountDeletion", {}, await user.getIdToken());
       setMessage("Account deletion requested. Your account has been disabled.");
       await signOut(learnerAuth);
-      window.location.href = "/login/";
+      window.location.href = APP_BASE+"/login/";
     } catch (e) { setMessage(e instanceof Error ? e.message : "Unable to request account deletion."); }
   }
 
