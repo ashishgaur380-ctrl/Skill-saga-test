@@ -1,0 +1,1 @@
+export default function HomeStats({streak,coins,quizzes,badges}:{streak:number;coins:number;quizzes:number;badges:number}){return <section className="ss-stats"><div>🔥<b>{streak}</b><small>Day Streak</small></div><div>🪙<b>{coins}</b><small>Coins</small></div><div>🎓<b>{quizzes}</b><small>Quizzes</small></div><div>🏅<b>{badges}</b><small>Badges</small></div></section>;}
