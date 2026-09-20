@@ -169,3 +169,53 @@ export const listLearnerAttempts = onCall(async (request) => {
   items.sort((a,b) => String(b.createdAt?.toMillis?.() ?? "").localeCompare(String(a.createdAt?.toMillis?.() ?? "")));
   return { items };
 });
+
+
+export const getLearnerHome = onCall(async (request) => {
+  const uid = learner(request);
+  const db = getFirestore();
+
+  const [attemptSnap, quizSnap, settingsSnap] = await Promise.all([
+    db.collection("quizAttempts").where("learnerId", "==", uid).limit(500).get(),
+    db.collection("quizzes").where("active", "==", true).where("status", "==", "published").limit(100).get(),
+    db.collection("systemSettings").doc("platform").get(),
+  ]);
+
+  let xp = 0, coins = 0, correct = 0, answered = 0;
+  for (const doc of attemptSnap.docs) {
+    const d = doc.data();
+    xp += Number(d.xpEarned) || 0;
+    coins += Number(d.coinsEarned) || 0;
+    correct += Number(d.correct) || 0;
+    answered += Array.isArray(d.answers) ? d.answers.length : Number(d.total) || 0;
+  }
+
+  const quizzes = quizSnap.docs.map(doc => {
+    const d = doc.data();
+    return {
+      id: doc.id, title: text(d.title), description: text(d.description),
+      questionCount: Array.isArray(d.questionIds) ? d.questionIds.length : 0,
+      active: d.active === true, status: text(d.status),
+    };
+  }).sort((a,b) => a.title.localeCompare(b.title));
+
+  const daily = quizzes.find(q => /daily/i.test(q.title)) ?? null;
+  const weekly = quizzes.find(q => /weekly/i.test(q.title)) ?? null;
+
+  const platform = settingsSnap.exists ? settingsSnap.data()! : {};
+  return {
+    settings: {
+      appName: text(platform.appName) || "Skill Saga",
+      tagline: text(platform.tagline) || "A smarter way to learn",
+      competitions: platform.competitions !== false,
+      community: platform.community !== false,
+    },
+    stats: {
+      xp, coins, level: Math.max(1, Math.floor(xp / 100) + 1),
+      streak: 0, accuracy: answered ? Math.round((correct / answered) * 10000) / 100 : 0,
+    },
+    dailyQuiz: daily,
+    weeklyQuiz: weekly,
+    featuredQuizzes: quizzes.filter(q => q.id !== daily?.id && q.id !== weekly?.id).slice(0, 4),
+  };
+});
