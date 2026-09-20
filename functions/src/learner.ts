@@ -669,3 +669,246 @@ export const redeemReward = onCall(async (request) => {
   });
   return {success:true,redemptionId:ref.id,balance:available-cost};
 });
+
+export const listPublishedCompetitions = onCall(async (request) => {
+  const uid = learner(request);
+  const db = getFirestore();
+  const snap = await db.collection("competitions")
+    .where("active", "==", true)
+    .where("status", "==", "published")
+    .limit(100)
+    .get();
+
+  const now = Date.now();
+  const items = await Promise.all(snap.docs.map(async doc => {
+    const d = doc.data();
+    const joined = await db.collection("competitionEntries").doc(`${doc.id}_${uid}`).get();
+    const entryCount = (await db.collection("competitionEntries")
+      .where("competitionId", "==", doc.id)
+      .limit(1000)
+      .get()).size;
+    const startAtMs = Number(d.startAtMs);
+    const endAtMs = Number(d.endAtMs);
+    const live = competitionIsLive(d, now);
+    const upcoming = d.active === true && d.status === "published" &&
+      Number.isFinite(startAtMs) && startAtMs > now;
+    return {
+      id: doc.id,
+      name: text(d.name),
+      description: text(d.description),
+      quizId: text(d.quizId),
+      maxParticipants: Number(d.maxParticipants) || 0,
+      entryType: text(d.entryType) || "free",
+      entryFee: Number(d.entryFee) || 0,
+      participants: entryCount,
+      joined: joined.exists,
+      startAtMs: Number.isFinite(startAtMs) ? startAtMs : null,
+      endAtMs: Number.isFinite(endAtMs) ? endAtMs : null,
+      state: live ? "live" : upcoming ? "upcoming" : "ended",
+    };
+  }));
+
+  items.sort((a, b) => {
+    const aTime = a.startAtMs ?? 0;
+    const bTime = b.startAtMs ?? 0;
+    return aTime - bTime || a.name.localeCompare(b.name);
+  });
+  return { items };
+});
+
+export const joinCompetition = onCall(async (request) => {
+  const uid = learner(request);
+  const competitionId = text((request.data as any)?.competitionId);
+  if (!competitionId) throw new HttpsError("invalid-argument", "competitionId is required.");
+
+  const db = getFirestore();
+  const ref = db.collection("competitions").doc(competitionId);
+  const snap = await ref.get();
+  if (!snap.exists || !competitionIsLive(snap.data())) {
+    throw new HttpsError("not-found", "Published competition is not currently live.");
+  }
+
+  const d = snap.data()!;
+  if (text(d.entryType) === "paid") {
+    throw new HttpsError("failed-precondition", "Paid competition entry is not available yet.");
+  }
+
+  const entryRef = db.collection("competitionEntries").doc(`${competitionId}_${uid}`);
+  if ((await entryRef.get()).exists) return { joined: true };
+
+  const count = (await db.collection("competitionEntries")
+    .where("competitionId", "==", competitionId)
+    .limit(1000)
+    .get()).size;
+
+  if (count >= (Number(d.maxParticipants) || 0)) {
+    throw new HttpsError("failed-precondition", "This competition is full.");
+  }
+
+  await entryRef.create({
+    competitionId,
+    learnerId: uid,
+    createdAt: FieldValue.serverTimestamp(),
+  });
+  return { joined: true };
+});
+
+export const getCompetitionQuiz = onCall(async (request) => {
+  const uid = learner(request);
+  const competitionId = text((request.data as any)?.competitionId);
+  if (!competitionId) throw new HttpsError("invalid-argument", "competitionId is required.");
+
+  const db = getFirestore();
+  const c = await db.collection("competitions").doc(competitionId).get();
+  if (!c.exists || !competitionIsLive(c.data())) {
+    throw new HttpsError("not-found", "Competition is not currently live.");
+  }
+
+  if (!(await db.collection("competitionEntries").doc(`${competitionId}_${uid}`).get()).exists) {
+    throw new HttpsError("permission-denied", "Join the competition before starting it.");
+  }
+
+  const quizId = text(c.data()?.quizId);
+  const q = await db.collection("quizzes").doc(quizId).get();
+  if (!q.exists || !quizIsLive(q.data())) {
+    throw new HttpsError("failed-precondition", "Competition quiz is unavailable.");
+  }
+
+  const ids = Array.isArray(q.data()?.questionIds)
+    ? q.data()!.questionIds.map(text).filter(Boolean)
+    : [];
+  if (!ids.length) throw new HttpsError("failed-precondition", "Competition quiz has no questions.");
+
+  const docs = await db.getAll(...ids.map((id: string) => db.collection("questions").doc(id)));
+  if (docs.some(x => !x.exists || x.data()?.active !== true || x.data()?.status !== "published")) {
+    throw new HttpsError("failed-precondition", "Competition contains unavailable questions.");
+  }
+
+  const questions = docs.map((doc, index) => {
+    const d = doc.data()!;
+    return {
+      id: doc.id,
+      order: index,
+      questionText: text(d.questionText),
+      options: Array.isArray(d.options) ? d.options.map(text) : [],
+      marks: Number(d.marks) || 1,
+    };
+  });
+
+  return {
+    competition: {
+      id: c.id,
+      name: text(c.data()?.name),
+      description: text(c.data()?.description),
+      questionCount: questions.length,
+    },
+    questions,
+  };
+});
+
+export const submitCompetitionAttempt = onCall(async (request) => {
+  const uid = learner(request);
+  const p = request.data as any;
+  const competitionId = text(p?.competitionId);
+  const answers = p?.answers;
+
+  if (!competitionId || !Array.isArray(answers)) {
+    throw new HttpsError("invalid-argument", "competitionId and answers are required.");
+  }
+
+  const db = getFirestore();
+  const c = await db.collection("competitions").doc(competitionId).get();
+  if (!c.exists || !competitionIsLive(c.data())) {
+    throw new HttpsError("not-found", "Competition is not currently live.");
+  }
+
+  if (!(await db.collection("competitionEntries").doc(`${competitionId}_${uid}`).get()).exists) {
+    throw new HttpsError("permission-denied", "Join the competition before submitting.");
+  }
+
+  const q = await db.collection("quizzes").doc(text(c.data()?.quizId)).get();
+  if (!q.exists || !quizIsLive(q.data())) {
+    throw new HttpsError("failed-precondition", "Competition quiz is unavailable.");
+  }
+
+  const ids = Array.isArray(q.data()?.questionIds)
+    ? q.data()!.questionIds.map(text).filter(Boolean)
+    : [];
+
+  if (answers.length !== ids.length) {
+    throw new HttpsError("invalid-argument", "Every competition question must have an answer.");
+  }
+
+  const docs = await db.getAll(...ids.map((id: string) => db.collection("questions").doc(id)));
+  if (docs.some(x => !x.exists || x.data()?.active !== true || x.data()?.status !== "published")) {
+    throw new HttpsError("failed-precondition", "Competition contains unavailable questions.");
+  }
+
+  const attemptRef = db.collection("competitionAttempts").doc(`${competitionId}_${uid}`);
+  if ((await attemptRef.get()).exists) {
+    throw new HttpsError("already-exists", "You have already submitted this competition.");
+  }
+
+  let correct = 0;
+  let marks = 0;
+  let totalMarks = 0;
+  const answerResults = docs.map((doc, index) => {
+    const d = doc.data()!;
+    const maxMarks = Number(d.marks) || 1;
+    const selected = Number(answers[index]);
+    const isCorrect = Number.isInteger(selected) && selected === Number(d.correctOption);
+    if (isCorrect) {
+      correct++;
+      marks += maxMarks;
+    }
+    totalMarks += maxMarks;
+    return {
+      questionId: doc.id,
+      selectedOption: selected,
+      correct: isCorrect,
+      marks: isCorrect ? maxMarks : 0,
+      maxMarks,
+    };
+  });
+
+  const percentage = totalMarks ? Math.round((marks / totalMarks) * 10000) / 100 : 0;
+  await attemptRef.create({
+    competitionId,
+    learnerId: uid,
+    correct,
+    total: ids.length,
+    marks,
+    totalMarks,
+    percentage,
+    answers: answerResults,
+    submittedAt: FieldValue.serverTimestamp(),
+  });
+
+  return { result: { correct, total: ids.length, marks, totalMarks, percentage } };
+});
+
+export const getCompetitionLeaderboard = onCall(async (request) => {
+  learner(request);
+  const competitionId = text((request.data as any)?.competitionId);
+  if (!competitionId) throw new HttpsError("invalid-argument", "competitionId is required.");
+
+  const snap = await getFirestore()
+    .collection("competitionAttempts")
+    .where("competitionId", "==", competitionId)
+    .limit(1000)
+    .get();
+
+  const items = snap.docs.map(d => {
+    const x = d.data();
+    return {
+      learnerId: text(x.learnerId),
+      correct: Number(x.correct) || 0,
+      marks: Number(x.marks) || 0,
+      totalMarks: Number(x.totalMarks) || 0,
+      percentage: Number(x.percentage) || 0,
+    };
+  });
+
+  items.sort((a, b) => b.marks - a.marks || b.correct - a.correct || b.percentage - a.percentage);
+  return { items: items.slice(0, 100).map((x, i) => ({ ...x, rank: i + 1 })) };
+});
