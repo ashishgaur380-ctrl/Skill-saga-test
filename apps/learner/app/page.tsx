@@ -1,10 +1,5 @@
-export default function LearnerHome() {
-  return (
-    <main style={{ fontFamily: "system-ui", minHeight: "100vh", padding: 32 }}>
-      <p style={{ fontWeight: 800, letterSpacing: ".08em" }}>SKILL SAGA</p>
-      <h1>A smarter way to learn.</h1>
-      <p>Learner application foundation. Backend-driven learner experience will be implemented after the platform services are connected.</p>
-      <nav>Home · Learn · Play · Compete · Profile</nav>
-    </main>
-  );
-}
+import Link from "next/link";
+
+function Nav({active="home"}:{active?:string}){return <nav className="ss-nav"><div className="ss-nav-inner">{[["⌂","Home","/"],["📚","Learn","/learn"],["▶","Play","/play"],["🏆","Compete","/compete"],["👤","Profile","/profile"]].map(([i,l,h])=><Link key={l} className={active===l.toLowerCase()?"active":""} href={h}><span className="ss-icon">{i}</span>{l}</Link>)}</div></nav>}
+
+export default function LearnerHome(){return <div className="ss-shell"><header className="ss-top"><div className="ss-wrap"><div className="ss-brand">SKILL SAGA</div><h1>Good morning, Learner 👋</h1><p>A smarter way to learn — one quiz at a time.</p></div></header><main className="ss-main"><section className="ss-card ss-wide" style={{marginBottom:14}}><span className="ss-eyebrow">Today&apos;s learning</span><h2>Keep your streak going</h2><p>Complete today&apos;s quiz and build your XP, coins and knowledge.</p><div className="ss-actions"><Link className="ss-btn primary" href="/play?mode=daily">Start Daily Quiz</Link><Link className="ss-btn" href="/play?mode=weekly">Weekly Quiz</Link></div></section><section className="ss-grid"><div className="ss-card"><span className="ss-eyebrow">XP</span><div className="ss-stat">0</div><p>Total experience</p></div><div className="ss-card"><span className="ss-eyebrow">Streak</span><div className="ss-stat">0 🔥</div><p>Days in a row</p></div><div className="ss-card"><span className="ss-eyebrow">Coins</span><div className="ss-stat">0 🪙</div><p>Available balance</p></div><div className="ss-card"><span className="ss-eyebrow">Level</span><div className="ss-stat">1</div><p>Current level</p></div></section><section style={{marginTop:18}}><h2 style={{marginBottom:12}}>Explore Skill Saga</h2><div className="ss-grid"><Link href="/learn" className="ss-card"><h3>📚 Learn</h3><p>Study subjects, topics and skills.</p></Link><Link href="/play" className="ss-card"><h3>▶ Play</h3><p>Take quizzes and test your knowledge.</p></Link><Link href="/compete" className="ss-card"><h3>🏆 Compete</h3><p>Join competitions and track your rank.</p></Link><Link href="/profile" className="ss-card"><h3>👤 Profile</h3><p>View progress, badges and account settings.</p></Link></div></section></main><Nav active="home"/></div>}
