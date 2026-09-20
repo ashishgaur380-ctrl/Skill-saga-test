@@ -19,3 +19,5 @@ export { createAssignment, listAssignments, updateAssignment, archiveAssignment 
 export { getTeacherDashboard, listTeacherAssignments, listTeacherResults, listTeacherMaterials, createTeacherMaterial, updateTeacherMaterial } from "./teacher";
 export { getSchoolDashboard, listSchoolMembers, updateSchoolMember, listSchoolAssignments } from "./school";
 export { sendNotification, listRecipientNotifications, markRecipientNotificationRead } from "./notification-delivery";
+
+export { requestAccountDeletion } from "./account";
