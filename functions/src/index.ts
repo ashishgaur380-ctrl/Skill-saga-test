@@ -50,6 +50,8 @@ export {
   createReward,
   updateReward,
   archiveReward,
+  listRewardRedemptions,
+  updateRewardRedemptionStatus,
 } from "./rewards";
 
 export {
