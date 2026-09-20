@@ -649,6 +649,9 @@ export const getCompetitionLeaderboard = onCall(async (request) => {
   return {items:items.slice(0,100).map((x,i)=>({...x,rank:i+1}))};
 });
 
+export const listLearnerNotifications=onCall(async r=>{const uid=learner(r);const db=getFirestore();const s=await db.collection("notifications").where("learnerId","==",uid).orderBy("createdAt","desc").limit(50).get();return{items:s.docs.map(d=>({id:d.id,...d.data()}))};});
+export const markNotificationRead=onCall(async r=>{const uid=learner(r),id=text((r.data as any)?.id);if(!id)throw new HttpsError("invalid-argument","Notification id is required.");const ref=getFirestore().collection("notifications").doc(id),snap=await ref.get();if(!snap.exists||snap.data()?.learnerId!==uid)throw new HttpsError("not-found","Notification was not found.");await ref.update({readAt:FieldValue.serverTimestamp()});return{success:true};});
+
 export const getLearnerRewards = onCall(async (request) => {
   const uid = learner(request);
   const db = getFirestore();
