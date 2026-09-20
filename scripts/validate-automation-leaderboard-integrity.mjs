@@ -1,1 +1,14 @@
-import fs from "node:fs";\nconst a=fs.readFileSync("functions/src/automation.ts","utf8");\nconst must=(label,ok)=>{if(!ok)throw new Error("AUTOMATION/LEADERBOARD INTEGRITY FAIL: "+label);};\nmust("automation has per-period run key",a.includes("runKey(schedule")&&a.includes("daily:${day}")&&a.includes("weekly:${d.toISOString().slice(0,10)}"));\nmust("automation claims an idempotency lock transactionally",a.includes("claimRun")&&a.includes("db.runTransaction")&&a.includes("tx.create(ref"));\nmust("automation skips already-claimed periods",a.includes("if(!(await claimRun(db,doc.id,key))) continue"));\nmust("automation writes run audit records",a.includes('collection("automationRuns")')&&a.includes("runKey:key"));\nmust("manual automation uses same lock",a.includes("runAutomationEngineNow")&&a.includes("Already run for this schedule period."));\nmust("daily and weekly target quizzes are explicit when supplied",a.includes("targetQuizId")&&a.includes("systemSettings"));\nconst l=fs.readFileSync("functions/src/learner.ts","utf8");\nmust("leaderboard reads immutable server attempts",l.includes('collection("competitionAttempts")'));\nmust("leaderboard calculates rank server-side",l.includes("items.slice(0,100).map((x,i)=>({...x,rank:i+1})"));\nmust("leaderboard never trusts client rank",!l.includes("rank:Number(x.rank)"));\nconsole.log("Automation and leaderboard integrity contract: PASS");
+import fs from "node:fs";
+const a=fs.readFileSync("functions/src/automation.ts","utf8");
+const must=(label,ok)=>{if(!ok)throw new Error("AUTOMATION/LEADERBOARD INTEGRITY FAIL: "+label);};
+must("automation has per-period run key",a.includes("runKey(schedule")&&a.includes("daily:${day}")&&a.includes("weekly:${d.toISOString().slice(0,10)}"));
+must("automation claims an idempotency lock transactionally",a.includes("claimRun")&&a.includes("db.runTransaction")&&a.includes("tx.create(ref"));
+must("automation skips already-claimed periods",a.includes("if(!(await claimRun(db,doc.id,key))) continue"));
+must("automation writes run audit records",a.includes('collection("automationRuns")')&&a.includes("runKey:key"));
+must("manual automation uses same lock",a.includes("runAutomationEngineNow")&&a.includes("Already run for this schedule period."));
+must("daily and weekly target quizzes are explicit when supplied",a.includes("targetQuizId")&&a.includes("systemSettings"));
+const l=fs.readFileSync("functions/src/learner.ts","utf8");
+must("leaderboard reads immutable server attempts",l.includes('collection("competitionAttempts")'));
+must("leaderboard calculates rank server-side",l.includes("items.slice(0,100).map((x,i)=>({...x,rank:i+1})"));
+must("leaderboard never trusts client rank",!l.includes("rank:Number(x.rank)"));
+console.log("Automation and leaderboard integrity contract: PASS");
