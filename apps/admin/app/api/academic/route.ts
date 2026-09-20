@@ -83,7 +83,7 @@ export async function POST(request: NextRequest) {
         "data" in value &&
         Object.keys(value).length === 1
       ) {
-        value = (value as { data: unknown }).data;
+        value = JSON.parse(JSON.stringify((value as { data: unknown }).data));
       }
 
       return NextResponse.json({ data: value }, { status: response.status });
