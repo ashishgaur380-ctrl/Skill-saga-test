@@ -3,6 +3,7 @@ import Link from "next/link";
 import {useEffect,useState} from "react";
 import {onAuthStateChanged} from "firebase/auth";
 import {learnerAuth} from "../../lib/firebase";
+import { learnerFunction } from "../../lib/learner-api";
 type Competition={id:string;name:string;description:string;maxParticipants:number;entryType:string;entryFee:number;participants:number;joined:boolean};
 type Row={rank:number;learnerId:string;correct:number;marks:number;totalMarks:number;percentage:number};
 async function call(action:string,data:any,token:string){const r=await fetch("/api/learner-quiz",{method:"POST",headers:{Authorization:`Bearer ${token}`,"Content-Type":"application/json"},body:JSON.stringify({action,data})});const p=await r.json();if(!r.ok)throw new Error(p?.error?.message||"Request failed.");return p?.data??p;}
