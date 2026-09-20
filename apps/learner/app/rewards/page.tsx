@@ -28,8 +28,8 @@ export default function Rewards() {
   const rewards = useMemo(() => {
     const all = data?.rewards || [];
     if (filter === "All" || filter === "More") return all;
-    const target = filter.toLowerCase();
-    return all.filter((r: any) => String(r.type || "").toLowerCase().includes(target.slice(0, -1)));
+    const target = filter === "Merchandise" ? "merchandise" : filter === "Vouchers" ? "voucher" : "";
+    return target ? all.filter((r: any) => String(r.type || "").toLowerCase().includes(target)) : all;
   }, [data, filter]);
 
   async function redeem(rewardId: string) {
