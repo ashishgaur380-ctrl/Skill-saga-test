@@ -129,7 +129,10 @@ export const submitQuizAttempt = onCall(async (request) => {
     throw new HttpsError("not-found", "Published quiz is not currently available.");
   }
 
-  const quizData=quizSnap.data()!;\n  const access=await getQuizAccess(uid,{id:quizSnap.id,...quizData});\n  if(!access.allowed) throw new HttpsError("failed-precondition","This quiz is not unlocked for your account.");\n  const ids = Array.isArray(quizData.questionIds) ? quizData.questionIds.map(text).filter(Boolean) : [];
+  const quizData=quizSnap.data()!;
+  const access=await getQuizAccess(uid,{id:quizSnap.id,...quizData});
+  if(!access.allowed) throw new HttpsError("failed-precondition","This quiz is not unlocked for your account.");
+  const ids = Array.isArray(quizData.questionIds) ? quizData.questionIds.map(text).filter(Boolean) : [];
   if (answers.length !== ids.length) {
     throw new HttpsError("invalid-argument", "Every quiz question must have an answer.");
   }
@@ -549,7 +552,11 @@ export const listPublishedLearningMaterials = onCall(async (request) => {
   const boardId = text(payload.boardId);
   const classId = text(payload.classId);
   const subjectId = text(payload.subjectId);
-  const [snap,userSnap] = await Promise.all([db.collection("learningMaterials").where("status","==","published").limit(500).get(),db.collection("users").doc(uid).get()]);\n  const userData=userSnap.data()||{};\n  const premiumUntil=Number(userData.premiumUntilMs);\n  const premiumActive=Number.isFinite(premiumUntil)&&premiumUntil>Date.now();\n  const assignedIds=new Set(Array.isArray(userData.assignedMaterialIds)?userData.assignedMaterialIds.map(text):[]);
+  const [snap,userSnap] = await Promise.all([db.collection("learningMaterials").where("status","==","published").limit(500).get(),db.collection("users").doc(uid).get()]);
+  const userData=userSnap.data()||{};
+  const premiumUntil=Number(userData.premiumUntilMs);
+  const premiumActive=Number.isFinite(premiumUntil)&&premiumUntil>Date.now();
+  const assignedIds=new Set(Array.isArray(userData.assignedMaterialIds)?userData.assignedMaterialIds.map(text):[]);
   const now = Date.now();
   const items = snap.docs.map(doc => {
     const d = doc.data();
