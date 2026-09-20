@@ -21,7 +21,7 @@ function validate(d:any){
   if(!allowedStatus.has(status))throw new HttpsError("invalid-argument","Invalid content status.");
   const p=num(d.publishAtMs??d.scheduledAtMs),e=num(d.expireAtMs);
   if(p!==null&&e!==null&&e<=p)throw new HttpsError("invalid-argument","Expiry must be after publish time.");
-  const tags=Array.isArray(d.tags)?d.tags.map(text).filter(Boolean).slice(0,50):[];
+  const tags=Array.isArray(d.tags)?d.tags.map((tag:unknown)=>text(tag)).filter(Boolean).slice(0,50):[];
   if(tags.some(t=>t.length>100))throw new HttpsError("invalid-argument","Tags are limited to 100 characters.");
   return {
     title:title.slice(0,300),description:text(d.description).slice(0,5000),type,
