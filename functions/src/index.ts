@@ -64,3 +64,16 @@ export { getAnalyticsSummary } from "./analytics";
 export { getSystemSettings, updateSystemSettings } from "./system";
 
 export { listUsers, updateUser } from "./users";
+
+export {
+  listPublishedQuizzes,
+  getQuizForAttempt,
+  submitQuizAttempt,
+  getLearnerStats,
+  listLearnerAttempts,
+  getLearnerHome,
+  getLearnerAcademic,
+  getTopicPractice,
+  submitTopicPractice,
+  getLearnerProgress,
+} from "./learner";
