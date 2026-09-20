@@ -42,7 +42,7 @@ export default function Learn(){
      const ss=subjectRes?.items||[]; setSubjects(ss);
      const nextSubject=s||"";
      setSubjectId(nextSubject); setChapterId(ch||""); setChapters([]); setTopics([]);
-     const m=await learnerFunction("listPublishedLearningMaterials",{boardId:b,classId:c,subjectId:nextSubject},token);
+     const m=await learnerFunction("listLearnerLearningMaterials",{boardId:b,classId:c,subjectId:nextSubject},token);
      setMaterials(m?.items||[]);
      if(nextSubject){
        const cr=await learnerFunction("getLearnerAcademic",{collection:"chapters",parentId:nextSubject},token);
