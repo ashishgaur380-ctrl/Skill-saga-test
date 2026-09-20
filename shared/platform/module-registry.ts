@@ -1,3 +1,5 @@
+import type { FeatureFlags } from "./contracts";
+
 /**
  * Stable registry of Skill Saga platform modules.
  *
@@ -8,7 +10,7 @@ export type PlatformModule = {
   id: string;
   label: string;
   area: "core" | "learner" | "guardian" | "admin" | "extension" | "integration";
-  featureKey: string;
+  featureKey: keyof FeatureFlags;
 };
 
 export const PLATFORM_MODULES: PlatformModule[] = [
@@ -30,3 +32,16 @@ export const PLATFORM_MODULES: PlatformModule[] = [
 ];
 
 export const CORE_MODULE_IDS = PLATFORM_MODULES.filter((m) => m.area === "core").map((m) => m.id);
+
+export function getModule(moduleId: string): PlatformModule | undefined {
+  return PLATFORM_MODULES.find((module) => module.id === moduleId);
+}
+
+export function isModuleEnabled(moduleId: string, features: FeatureFlags): boolean {
+  const module = getModule(moduleId);
+  return module ? features[module.featureKey] : false;
+}
+
+export function getEnabledModules(features: FeatureFlags): PlatformModule[] {
+  return PLATFORM_MODULES.filter((module) => features[module.featureKey]);
+}
