@@ -256,3 +256,36 @@ export const getLearnerAcademic = onCall(async (request) => {
   filtered.sort((a:any,b:any) => (Number(a.sortOrder)||0)-(Number(b.sortOrder)||0) || String(a.name||"").localeCompare(String(b.name||"")));
   return { items: filtered };
 });
+
+
+export const getTopicPractice = onCall(async (request) => {
+  learner(request);
+  const topicId = text((request.data as any)?.topicId);
+  if (!topicId) throw new HttpsError("invalid-argument", "topicId is required.");
+  const db = getFirestore();
+  const topicSnap = await db.collection("topics").doc(topicId).get();
+  if (!topicSnap.exists || topicSnap.data()?.active !== true) throw new HttpsError("not-found", "Topic was not found.");
+
+  const chapterId = text(topicSnap.data()?.chapterId);
+  if (!chapterId) throw new HttpsError("failed-precondition", "Topic is not linked to a chapter.");
+
+  const questionSnap = await db.collection("questions")
+    .where("active", "==", true)
+    .where("status", "==", "published")
+    .where("chapterId", "==", chapterId)
+    .limit(100)
+    .get();
+
+  const questions = questionSnap.docs.map(doc => {
+    const d = doc.data();
+    return {
+      id: doc.id,
+      questionText: text(d.questionText),
+      options: Array.isArray(d.options) ? d.options.map(text) : [],
+      marks: Number(d.marks) || 1,
+      topicId: text(d.topicId),
+    };
+  }).filter(q => !q.topicId || q.topicId === topicId);
+
+  return { topic: { id: topicId, name: text(topicSnap.data()?.name), chapterId }, questions };
+});
