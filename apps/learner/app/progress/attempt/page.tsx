@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { Suspense } from "react";
 import { useSearchParams } from "next/navigation";
 import { useEffect, useState } from "react";
 import { onAuthStateChanged } from "firebase/auth";
@@ -8,7 +9,7 @@ import { learnerAuth } from "../../../lib/firebase";
 import { learnerFunction } from "../../../lib/learner-api";
 import LearnerNav from "../../components/LearnerNav";
 
-export default function AttemptDetails() {
+function AttemptDetailsContent() {
   const params = useSearchParams();
   const attemptId = params.get("attemptId") || "";
   const [data, setData] = useState<any>(null);
@@ -59,4 +60,8 @@ export default function AttemptDetails() {
       <LearnerNav active="Profile" />
     </div>
   );
+}
+
+export default function AttemptDetails() {
+  return <Suspense fallback={<div className="ss-shell"><main className="ss-main"><section className="ss-card"><p>Loading quiz review…</p></section></main></div>}><AttemptDetailsContent /></Suspense>;
 }
