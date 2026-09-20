@@ -2,6 +2,16 @@ name: Skill Saga Firebase Deploy
 
 on:
   workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - 'functions/**'
+      - 'security/**'
+      - 'firebase.json'
+      - 'firebase.*'
+      - 'package.json'
+      - 'pnpm-lock.yaml'
+      - '.github/workflows/firebase-deploy.yml'
 
 permissions:
   contents: read
