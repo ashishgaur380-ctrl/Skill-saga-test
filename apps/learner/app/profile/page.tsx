@@ -1,12 +1,11 @@
 "use client";
 import Link from "next/link";
-import { useEffect,useState } from "react";
-import { onAuthStateChanged } from "firebase/auth";
-import { learnerAuth } from "../../lib/firebase";
-import { learnerFunction } from "../../lib/learner-api";
-
-type Stats={xp:number;coins:number;level:number;streak:number;attempts:number;correct:number;answered:number;accuracy:number};
-type Attempt={id:string;quizId:string;correct:number;total:number;percentage:number;xpEarned:number;coinsEarned:number};
-
-async function call(action:string,token:string){return learnerFunction(action,{},token);}
-function Nav(){return <nav className="ss-nav"><div className="ss-nav-inner">{[["⌂","Home","/"],["📚","Learn","/learn"],["▶","Play","/play"],["🏆","Compete","/compete"],["👤","Profile","/profile"]].map(([i,l,h])=><Link key={l} className={l==="Profile"?"active":""} href={h}><span className="ss-icon">{i}</span>{l}</Link>)}</div></nav>}
+import {useEffect,useState} from "react";
+import {onAuthStateChanged} from "firebase/auth";
+import {learnerAuth} from "../../lib/firebase";
+import {learnerFunction} from "../../lib/learner-api";
+import LearnerNav from "../components/LearnerNav";
+type Stats={xp:number;coins:number;level:number;streak:number;attempts:number;correct:number;answered:number;accuracy:number};type Attempt={id:string;quizId:string;correct:number;total:number;percentage:number;xpEarned:number;coinsEarned:number};
+export default function Profile(){const [stats,setStats]=useState<Stats|null>(null),[attempts,setAttempts]=useState<Attempt[]>([]),[error,setError]=useState(""),[name,setName]=useState("Learner");
+useEffect(()=>onAuthStateChanged(learnerAuth,async u=>{if(!u)return;setName(u.displayName||"Learner");try{const t=await u.getIdToken();const [s,a]=await Promise.all([learnerFunction("getLearnerStats",{},t),learnerFunction("listLearnerAttempts",{},t)]);setStats(s?.stats||s);setAttempts(a?.items||[]);}catch(e:any){setError(e.message);}}),[]);
+return <div className="ss-shell"><header className="ss-top ss-profile-top"><div className="ss-wrap"><div className="ss-profile-head"><div className="ss-avatar">👦</div><div><div className="ss-brand">SKILL SAGA</div><h1>{name} ✎</h1><p>Keep learning, keep growing!</p></div><span>⚙️</span></div></div></header><main className="ss-main">{error&&<div className="error-box">{error}</div>}<section className="ss-profile-stats"><div><span>⭐</span><b>Level {stats?.level??1}</b></div><div><span>🔥</span><b>{stats?.streak??0} Day Streak</b></div><div><span>🪙</span><b>{stats?.coins??0} Coins</b></div></section><section className="ss-card ss-menu"><Link href="/progress"><span>❓</span><b>My Progress</b><i>›</i></Link><Link href="/play"><span>📝</span><b>Quiz History</b><i>›</i></Link><Link href="/rewards"><span>🎁</span><b>Rewards & Coins</b><i>›</i></Link><Link href="/profile"><span>👨‍👩‍👧</span><b>Parent / Teacher Link</b><i>›</i></Link><Link href="/profile"><span>⚙️</span><b>Settings</b><i>›</i></Link><Link href="/profile"><span>❔</span><b>Help & Support</b><i>›</i></Link></section><section className="ss-card"><span className="ss-eyebrow">RECENT QUIZZES</span>{attempts.slice(0,5).map(a=><div className="ss-rank-row" key={a.id}><span>Quiz · {a.quizId.slice(0,10)}</span><b>{a.percentage}%</b><small>+{a.xpEarned} XP</small></div>)}{!attempts.length&&<p>No quiz attempts yet. Start your first challenge!</p>}</section></main><LearnerNav active="Profile"/></div>}
