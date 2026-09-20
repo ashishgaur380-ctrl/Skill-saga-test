@@ -3,12 +3,13 @@ import Link from "next/link";
 import { useEffect,useState } from "react";
 import { onAuthStateChanged } from "firebase/auth";
 import { learnerAuth } from "../../lib/firebase";
+import { learnerFunction } from "../../lib/learner-api";
 
 type Topic={id:string;name:string;chapterId:string;chapterName:string;subjectId:string;questions:number;correct:number;accuracy:number;marks:number;totalMarks:number;marksPercentage:number;attempts:number};
 type Subject={id:string;name:string;questions:number;correct:number;accuracy:number;marks:number;totalMarks:number;marksPercentage:number};
 type Data={summary:{attempts:number;questions:number;correct:number;accuracy:number;marks:number;totalMarks:number;marksPercentage:number};subjects:Subject[];topics:Topic[]};
 
-async function call(token:string){const r=await fetch("/api/learner-quiz",{method:"POST",headers:{Authorization:`Bearer ${token}`,"Content-Type":"application/json"},body:JSON.stringify({action:"getLearnerProgress",data:{}})});const p=await r.json();if(!r.ok)throw new Error(p?.error?.message||"Request failed.");return p?.data??p;}
+async function call(token:string){const r=await learnerFunction("getLearnerProgress", {}, token);const p=await r.json();if(!r.ok)throw new Error(p?.error?.message||"Request failed.");return p?.data??p;}
 
 export default function Progress(){
  const [data,setData]=useState<Data|null>(null),[error,setError]=useState(""),[loading,setLoading]=useState(true);
