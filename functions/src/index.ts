@@ -103,8 +103,8 @@ export {
 
 export { createAssignment, listAssignments, updateAssignment, archiveAssignment } from "./assignment";
 
-export { getTeacherDashboard } from "./teacher";
+export { getTeacherDashboard, listTeacherAssignments, listTeacherMaterials, createTeacherMaterial, updateTeacherMaterial } from "./teacher";
 
-export { getSchoolDashboard } from "./school";
+export { getSchoolDashboard, listSchoolMembers, updateSchoolMember, listSchoolAssignments } from "./school";
 
 export { sendNotification } from "./notification-delivery";
