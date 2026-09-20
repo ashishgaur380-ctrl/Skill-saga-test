@@ -10,12 +10,9 @@
     "build:admin": "pnpm --dir apps/admin build",
     "build": "pnpm build:functions && pnpm build:learner && pnpm build:admin",
     "typecheck": "pnpm build:functions",
-    "test": "node scripts/validate-foundation.mjs && node scripts/validate-scheduling.mjs && node scripts/validate-security.mjs && node scripts/validate-admin-learner-regression.mjs && node scripts/validate-competition-integrity.mjs && node scripts/validate-automation-leaderboard-integrity.mjs && node scripts/validate-guardian-security.mjs && node scripts/validate-learning-content.mjs",
+    "test": "node scripts/validate-foundation.mjs && node scripts/validate-scheduling.mjs && node scripts/validate-security.mjs && node scripts/validate-production-hardening.mjs && node scripts/validate-admin-learner-regression.mjs && node scripts/validate-competition-integrity.mjs && node scripts/validate-automation-leaderboard-integrity.mjs && node scripts/validate-guardian-security.mjs && node scripts/validate-learning-content.mjs",
     "lint": "echo 'lint configured per app in CI'",
     "emulators:start:persistent": "mkdir -p emulator-data && npx firebase emulators:start --import=./emulator-data --export-on-exit=./emulator-data"
   },
-  "workspaces": [
-    "apps/*",
-    "functions"
-  ]
+  "workspaces": ["apps/*","functions"]
 }
