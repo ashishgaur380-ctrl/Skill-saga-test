@@ -81,7 +81,7 @@ export default function Profile() {
           {linkCode && <div className="ss-link-code"><small>Share this 15-minute code</small><strong>{linkCode}</strong></div>}
           <Link href="/rewards">🎁 <b>Rewards & Coins</b> <span>›</span></Link>
           <Link href="/community">💬 <b>Community</b> <span>›</span></Link>
-          <Link href="/profile">⚙️ <b>Settings</b> <span>›</span></Link>
+          <Link href="/profile">⚙️ <b>Settings</b> <span>›</span></Link><button className="ss-menu-button" onClick={()=>window.location.href="/login/"}>🔐 <b>Change / Reset Password</b> <span>›</span></button>
           <Link href="/privacy">🔒 <b>Privacy Policy</b> <span>›</span></Link>
           <Link href="/terms">📄 <b>Terms of Use</b> <span>›</span></Link>
           <button className="ss-menu-button" onClick={() => void deleteAccount()}>🗑️ <b>Request Account Deletion</b> <span>›</span></button>
