@@ -11,7 +11,7 @@ must("learner community post moderation",cp.includes('status:"pending"'));
 must("community comments require approved post",cp.includes('status()!=="approved"')||cp.includes("status")&&cp.includes('"approved"'));
 must("community reports",cp.includes("communityReports"));
 must("parent link security",g.includes("active")&&g.includes("linkLearner"));
-must("teacher authorization",t.includes('role !== "teacher"')||t.includes("role!=='teacher'"));
+must("teacher authorization",t.includes('role !== "teacher"')||t.includes('role!=="teacher"')||t.includes("role!=='teacher'"));
 must("school authorization",s.includes("school_admin"));
 must("assignment authorization",a.includes("teacher")&&a.includes("school_admin"));
 console.log("Ecosystem integration contract: PASS");
