@@ -100,7 +100,7 @@ export default function Learn(){
     {chapterId&&<><div className="ss-step-label"><span>3</span><b>Choose a topic</b><em>{topics.length} topics</em></div>
       {topics.length===0?<div className="ss-empty">No topics are available in this chapter yet.</div>:<div className="ss-topic-list">{topics.map(x=><article key={x.id}><div><b>{x.name}</b><small>Learn this topic and practice</small></div><Link className="ss-primary" href={"/play?topicId="+encodeURIComponent(x.id)}>Practice →</Link></article>)}</div>}
     </>}
-    <section className="ss-library"><div className="ss-heading"><b>Learning Library</b><span>{materials.length} available</span></div>{materials.length===0?<p>{subjectId?"No published material is available for this subject yet.":"Select a subject to see published learning material."}</p>:materials.slice(0,10).map(m=><a href={m.fileUrl||"#"} target="_blank" rel="noreferrer" key={m.id}><div><b>{m.title}</b><small>{m.type} · {m.language||"English"}{m.description?" · "+m.description:""}</small></div><span>Open →</span></a>)}</section>
+    <section className="ss-library"><div className="ss-heading"><b>Learning Library</b><span>{materials.length} available</span></div>{materials.length===0?<p>{subjectId?"No published material is available for this subject yet.":"Select a subject to see published learning material."}</p>:materials.slice(0,10).map(m=><a href={m.fileUrl||"#"} target="_blank" rel="noreferrer" key={m.id}><div><b>{m.title}</b><small>{m.type} · {m.language||"English"}{m.description?" · "+m.description:""}</small></div><span>Open {m.type.toUpperCase()} →</span></a>)}</section>
    </>}
   </main><LearnerNav active="Learn"/>
  </div>;
