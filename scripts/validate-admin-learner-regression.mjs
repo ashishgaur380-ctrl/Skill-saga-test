@@ -43,4 +43,24 @@ must("Admin Competition Manager calls backend API", competition.includes('/api/c
 must("Quiz Manager uses central Question Bank", quiz.includes('/api/question-bank'));
 must("Competition Manager uses Quiz Manager data", competition.includes('/api/quiz-manager'));
 
+const adminApiFiles = [
+  "apps/admin/app/api/academic/route.ts",
+  "apps/admin/app/api/analytics/route.ts",
+  "apps/admin/app/api/automation/route.ts",
+  "apps/admin/app/api/community/route.ts",
+  "apps/admin/app/api/competition-manager/route.ts",
+  "apps/admin/app/api/content/route.ts",
+  "apps/admin/app/api/notifications/route.ts",
+  "apps/admin/app/api/question-bank/route.ts",
+  "apps/admin/app/api/quiz-manager/route.ts",
+  "apps/admin/app/api/rewards/route.ts",
+  "apps/admin/app/api/system-settings/route.ts",
+  "apps/admin/app/api/users/route.ts",
+];
+for (const file of adminApiFiles) {
+  const src = read(file);
+  must(file + " uses configurable Functions base", src.includes("FIREBASE_FUNCTIONS_BASE_URL") || src.includes("NEXT_PUBLIC_USE_FIREBASE_EMULATORS"));
+  must(file + " does not hardcode emulator endpoint", !src.includes("http://127.0.0.1:5001/"));
+}
+
 console.log("Admin ↔ Learner regression contract: PASS");
