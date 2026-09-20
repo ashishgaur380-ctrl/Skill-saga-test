@@ -19,10 +19,15 @@ function validate(raw:any) {
   if(!questionIds.length) throw new HttpsError("invalid-argument","At least one question is required.");
   const status=text(raw.status).toLowerCase()||"draft";
   if(!["draft","published"].includes(status)) throw new HttpsError("invalid-argument","Status must be Draft or Published.");
+  const publishAtMs = raw.publishAtMs == null || raw.publishAtMs === "" ? null : Number(raw.publishAtMs);
+  const expireAtMs = raw.expireAtMs == null || raw.expireAtMs === "" ? null : Number(raw.expireAtMs);
+  if (publishAtMs !== null && !Number.isFinite(publishAtMs)) throw new HttpsError("invalid-argument","publishAtMs must be a valid timestamp.");
+  if (expireAtMs !== null && !Number.isFinite(expireAtMs)) throw new HttpsError("invalid-argument","expireAtMs must be a valid timestamp.");
+  if (publishAtMs !== null && expireAtMs !== null && expireAtMs <= publishAtMs) throw new HttpsError("invalid-argument","expireAtMs must be later than publishAtMs.");
   return {
     title, description:text(raw.description), questionIds:[...new Set(questionIds.map(text))] as string[],
     boardId:text(raw.boardId), classId:text(raw.classId), subjectId:text(raw.subjectId),
-    status, active:raw.active===undefined?true:Boolean(raw.active)
+    publishAtMs, expireAtMs, status, active:raw.active===undefined?true:Boolean(raw.active)
   };
 }
 async function ensureQuestions(ids:string[], published:boolean) {
