@@ -37,6 +37,7 @@ export {
   createAutomationRule,
   updateAutomationRule,
   setAutomationEnabled,
+  runAutomationEngine,
 } from "./automation";
 
 export {
