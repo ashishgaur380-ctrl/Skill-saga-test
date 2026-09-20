@@ -1,0 +1,2 @@
+"use client";
+export default function CompeteTabs({tab,onTab}:{tab:"live"|"upcoming"|"mine"|"ended";onTab:(v:"live"|"upcoming"|"mine"|"ended")=>void}){return <div className="ss-tabs">{[["live","Live"],["upcoming","Upcoming"],["mine","My Competitions"],["ended","Results"]].map(([value,label])=><button key={value} className={tab===value?"active":""} onClick={()=>onTab(value as typeof tab)}>{label}</button>)}</div>;}
