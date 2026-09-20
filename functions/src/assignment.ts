@@ -5,7 +5,36 @@ const ADMIN_ROLES=new Set(["super_admin","admin","teacher","school_admin"]);
 const text=(v:unknown)=>typeof v==="string"?v.trim():"";
 function auth(request:CallableRequest<unknown>){const uid=request.auth?.uid;const role=request.auth?.token.role;if(!uid)throw new HttpsError("unauthenticated","Authentication required.");if(typeof role!=="string"||!ADMIN_ROLES.has(role))throw new HttpsError("permission-denied","You are not authorized to manage assignments.");return{uid,role};}
 function validate(raw:any){const resourceType=text(raw.resourceType).toLowerCase();const targetType=text(raw.targetType).toLowerCase();const resourceId=text(raw.resourceId);const targetId=text(raw.targetId);const title=text(raw.title);const dueAtMs=raw.dueAtMs==null||raw.dueAtMs===""?null:Number(raw.dueAtMs);if(!["quiz","content"].includes(resourceType))throw new HttpsError("invalid-argument","resourceType must be quiz or content.");if(!["learner","class","school"].includes(targetType))throw new HttpsError("invalid-argument","targetType must be learner, class, or school.");if(!resourceId||!targetId||!title)throw new HttpsError("invalid-argument","title, resourceId and targetId are required.");if(dueAtMs!==null&&!Number.isFinite(dueAtMs))throw new HttpsError("invalid-argument","dueAtMs must be a valid timestamp.");return{title,description:text(raw.description),resourceType,targetType,resourceId,targetId,dueAtMs,active:raw.active===undefined?true:Boolean(raw.active)};}
-export const createAssignment=onCall(async request=>{const{uid,role}=auth(request);const data=validate((request.data as any)?.data??{});const db=getFirestore();const ref=db.collection("assignments").doc();await ref.set({...data,createdBy:uid,createdByRole:role,createdAt:FieldValue.serverTimestamp(),updatedAt:FieldValue.serverTimestamp()});return{id:ref.id};});
+export const createAssignment=onCall(async request=>{const{uid,role}=auth(request);const data=validate((request.data as any)?.data??{});const db=getFirestore();const ref=db.collection("assignments").doc();
+await ref.set({...data,createdBy:uid,createdByRole:role,createdAt:FieldValue.serverTimestamp(),updatedAt:FieldValue.serverTimestamp()});
+if(data.active && data.resourceType==="quiz"){
+  let recipients:any[]=[];
+  if(data.targetType==="learner"){
+    const snap=await db.collection("users").doc(data.targetId).get();
+    if(snap.exists && snap.data()?.role==="learner") recipients=[{id:snap.id}];
+  }else if(data.targetType==="class"){
+    const snap=await db.collection("users").where("role","==","learner").where("classId","==",data.targetId).limit(500).get();
+    recipients=snap.docs.map(d=>({id:d.id}));
+  }else if(data.targetType==="school"){
+    const snap=await db.collection("users").where("role","==","learner").where("schoolId","==",data.targetId).limit(500).get();
+    recipients=snap.docs.map(d=>({id:d.id}));
+  }
+  if(recipients.length){
+    const batch=db.batch();
+    for(const recipient of recipients){
+      batch.set(db.collection("notifications").doc(),{
+        recipientId:recipient.id,recipientRole:"learner",learnerId:recipient.id,
+        title:"New quiz assigned",
+        message:data.dueAtMs ? data.title+" is assigned to you. Complete it by "+new Date(data.dueAtMs).toLocaleString()+"." : data.title+" is assigned to you.",
+        type:"assignment",actionLabel:"Start Quiz",actionUrl:"/play?quizId="+encodeURIComponent(data.resourceId),
+        assignmentId:ref.id,quizId:data.resourceId,
+        createdAt:FieldValue.serverTimestamp(),createdBy:uid,createdByRole:role,readAt:null
+      });
+    }
+    await batch.commit();
+  }
+}
+return{id:ref.id};});
 export const listAssignments=onCall(async request=>{auth(request);const snap=await getFirestore().collection("assignments").limit(500).get();const items=snap.docs.map(d=>({id:d.id,...d.data()}));items.sort((a:any,b:any)=>String(b.createdAt?.toMillis?.()??0).toString().localeCompare(String(a.createdAt?.toMillis?.()??0).toString()));return{items};});
 export const updateAssignment=onCall(async request=>{const{uid}=auth(request);const id=text((request.data as any)?.id);if(!id)throw new HttpsError("invalid-argument","id is required.");const data=validate((request.data as any)?.data??{});const ref=getFirestore().collection("assignments").doc(id);if(!(await ref.get()).exists)throw new HttpsError("not-found","Assignment not found.");await ref.update({...data,updatedBy:uid,updatedAt:FieldValue.serverTimestamp()});return{success:true};});
 export const archiveAssignment=onCall(async request=>{const{uid}=auth(request);const id=text((request.data as any)?.id);if(!id)throw new HttpsError("invalid-argument","id is required.");const ref=getFirestore().collection("assignments").doc(id);if(!(await ref.get()).exists)throw new HttpsError("not-found","Assignment not found.");await ref.update({active:false,updatedBy:uid,updatedAt:FieldValue.serverTimestamp()});return{success:true};});
