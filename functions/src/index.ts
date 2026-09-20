@@ -100,3 +100,5 @@ export {
   archiveLearningMaterial,
   bulkCreateLearningMaterials,
 } from "./content";
+
+export { createAssignment, listAssignments, updateAssignment, archiveAssignment } from "./assignment";
