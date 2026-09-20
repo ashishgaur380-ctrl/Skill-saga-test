@@ -3,10 +3,11 @@ import Link from "next/link";
 import { useEffect,useState } from "react";
 import { onAuthStateChanged } from "firebase/auth";
 import { learnerAuth } from "../lib/firebase";
+import { learnerFunction } from "../lib/learner-api";
 
 type Quiz={id:string;title:string;description:string;questionCount:number};
 type Home={stats:{xp:number;coins:number;level:number;streak:number;accuracy:number};dailyQuiz:Quiz|null;weeklyQuiz:Quiz|null;featuredQuizzes:Quiz[]};
-async function load(token:string){const r=await fetch("/api/learner-quiz",{method:"POST",headers:{Authorization:`Bearer ${token}`,"Content-Type":"application/json"},body:JSON.stringify({action:"getLearnerHome",data:{}})});const p=await r.json();if(!r.ok)throw new Error(p?.error?.message||"Unable to load home.");return p?.data??p;}
+async function load(token:string){const r=await learnerFunction("getLearnerHome", {}, token);const p=await r.json();if(!r.ok)throw new Error(p?.error?.message||"Unable to load home.");return p?.data??p;}
 
 function Nav(){return <nav className="ss-nav"><div className="ss-nav-inner">{[["⌂","Home","/"],["📚","Learn","/learn"],["▶","Play","/play"],["🏆","Compete","/compete"],["👤","Profile","/profile"]].map(([i,l,h])=><Link key={l} className={l==="Home"?"active":""} href={h}><span className="ss-icon">{i}</span>{l}</Link>)}</div></nav>}
 
