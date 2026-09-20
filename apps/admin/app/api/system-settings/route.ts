@@ -1,5 +1,7 @@
 import{NextRequest,NextResponse}from"next/server";
 const projectId=process.env.GCLOUD_PROJECT??"skill-saga-2";
+const region=process.env.FIREBASE_FUNCTIONS_REGION??"us-central1";
+const base=process.env.NEXT_PUBLIC_USE_FIREBASE_EMULATORS==="true"?`http://127.0.0.1:5001/${projectId}/${region}`:(process.env.FIREBASE_FUNCTIONS_BASE_URL??`https://${region}-${projectId}.cloudfunctions.net`);
 const allowed=new Set(["getSystemSettings","updateSystemSettings"]);
 export async function POST(req:NextRequest){
  const authorization=req.headers.get("authorization");
@@ -8,7 +10,7 @@ export async function POST(req:NextRequest){
  const action=typeof body.action==="string"?body.action:"";
  if(!allowed.has(action))return NextResponse.json({error:{message:"Unsupported system settings action."}},{status:400});
  try{
-  const r=await fetch(`http://127.0.0.1:5001/${projectId}/us-central1/${action}`,{
+  const r=await fetch(`${base}/${action}`,{
    method:"POST",headers:{"Content-Type":"application/json",Authorization:authorization},
    body:JSON.stringify({data:body.data??{}}),cache:"no-store"
   });
