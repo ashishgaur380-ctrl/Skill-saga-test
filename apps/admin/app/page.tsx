@@ -4,83 +4,51 @@ import Link from "next/link";
 import { useAuth } from "../components/auth-provider";
 
 const modules = [
-  { label: "Users", href: "/users" },
-  { label: "Academic Structure", href: "/academic" },
-  { label: "Content", href: "/content" },
-  { label: "Question Bank", href: "/question-bank" },
-  { label: "Quiz Manager", href: "/quiz-manager" },
-  { label: "Competition Manager", href: "/competition-manager" },
-  { label: "Automation", href: "/automation" },
-  { label: "Community", href: "/community" },
-  { label: "Rewards", href: "/rewards" },
-  { label: "Notifications", href: "/notifications" },
-  { label: "Analytics", href: "/analytics" },
-  { label: "System Settings", href: "/system-settings" },
-];
+  ["👥","Users","/users"],["🗺️","Academic Structure","/academic"],["📝","Content","/content"],
+  ["❓","Question Bank","/question-bank"],["🎯","Quiz Manager","/quiz-manager"],["🏆","Competition Manager","/competition-manager"],
+  ["⚙️","Automation","/automation"],["💬","Community","/community"],["🎁","Rewards","/rewards"],
+  ["🔔","Notifications","/notifications"],["📊","Analytics","/analytics"],["🛠️","System Settings","/system-settings"],
+] as const;
 
 export default function AdminHome() {
   const { user, role, signOut } = useAuth();
-
-  return (
-    <main className="shell">
-      <aside className="sidebar">
-        <div className="brand">Skill Saga</div>
-        <div className="brand-subtitle">Admin Console</div>
-        <nav>
-          {modules.map((module) => {
-            const className = "nav-item";
-
-            if (module.href) {
-              return (
-                <Link className={className} href={module.href} key={module.label}>
-                  {module.label}
-                </Link>
-              );
-            }
-
-            return (
-              <button className={className} key={module.label} type="button" disabled>
-                {module.label}
-              </button>
-            );
-          })}
-        </nav>
-      </aside>
-
-      <section className="content">
-        <header className="topbar">
-          <div>
-            <p className="eyebrow">SKILL SAGA 2.0</p>
-            <h1>Administration Console</h1>
-            <p className="muted">Central control for learning, assessment, competition and platform operations.</p>
-          </div>
-          <div className="admin-session">
-            <div>
-              <strong>{user?.email}</strong>
-              <span>{role}</span>
-            </div>
-            <button className="signout" onClick={() => signOut()}>Sign out</button>
-          </div>
-        </header>
-
-        <section className="cards">
-          <article><span>Users</span><strong>—</strong><small>Firebase connected after configuration</small></article>
-          <article><span>Published Content</span><strong>—</strong><small>Central content engine</small></article>
-          <article><span>Quiz Activity</span><strong>—</strong><small>Quiz engine</small></article>
-          <article><span>Automation Health</span><strong>—</strong><small>Automation engine</small></article>
-        </section>
-
-        <section className="panel">
-          <h2>Foundation status</h2>
-          <ul>
-            <li>Repository foundation: ready</li>
-            <li>Database contracts: defined</li>
-            <li>Security baseline: deny by default</li>
-            <li>Firebase client authentication: implemented</li>
-            <li>Administrator role verification: implemented</li>
-          </ul>
-        </section>
+  return <main className="shell">
+    <aside className="sidebar">
+      <div className="brand">Skill Saga</div>
+      <div className="brand-subtitle">2.0 · Admin Console</div>
+      <nav aria-label="Admin navigation">
+        {modules.map(([icon,label,href])=><Link className="nav-item" href={href} key={href}><span>{icon}</span>{label}</Link>)}
+      </nav>
+    </aside>
+    <section className="content">
+      <header className="topbar">
+        <div>
+          <p className="eyebrow">SKILL SAGA 2.0</p>
+          <h1>Administration Console</h1>
+          <p className="muted">One control center for learning, assessment, competition and platform operations.</p>
+        </div>
+        <div className="admin-session">
+          <div><strong>{user?.email}</strong><span>{role}</span></div>
+          <button className="signout" onClick={() => signOut()}>Sign out</button>
+        </div>
+      </header>
+      <section className="cards">
+        <article><span>👥 Users</span><strong>—</strong><small>User management is connected to Firebase Auth.</small></article>
+        <article><span>📚 Published Content</span><strong>—</strong><small>Academic and content management is ready.</small></article>
+        <article><span>🎯 Quiz Activity</span><strong>—</strong><small>Question, quiz and competition engines are connected.</small></article>
+        <article><span>⚡ Automation Health</span><strong>—</strong><small>Automation controls are available from the console.</small></article>
       </section>
-    </main>
-  );
+      <section className="panel">
+        <p className="eyebrow">PLATFORM FOUNDATION</p>
+        <h2>Skill Saga control center</h2>
+        <ul>
+          <li>Centralized administration with role-based access.</li>
+          <li>Academic structure, question bank and quiz management.</li>
+          <li>Competitions, rewards, community and notifications.</li>
+          <li>Automation, analytics and system-level feature controls.</li>
+          <li>Server-side Firebase functions remain the trusted business-logic boundary.</li>
+        </ul>
+      </section>
+    </section>
+  </main>;
 }
