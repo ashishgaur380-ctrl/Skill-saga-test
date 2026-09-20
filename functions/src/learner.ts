@@ -109,7 +109,7 @@ export const getQuizForAttempt = onCall(async (request) => {
     throw new HttpsError("failed-precondition", "This quiz contains unavailable questions.");
   }
 
-  return { quiz: { id: quizSnap.id, title: text(quiz.title), description: text(quiz.description), questionCount: questions.length }, questions };
+  return { quiz: { id: quizSnap.id, title: text(quiz.title), description: text(quiz.description), questionCount: questions.length, accessMode:text(quiz.accessMode)||"FREE" }, questions };
 });
 
 export const submitQuizAttempt = onCall(async (request) => {
@@ -129,7 +129,7 @@ export const submitQuizAttempt = onCall(async (request) => {
     throw new HttpsError("not-found", "Published quiz is not currently available.");
   }
 
-  const ids = Array.isArray(quizSnap.data()?.questionIds) ? quizSnap.data()!.questionIds.map(text).filter(Boolean) : [];
+  const quizData=quizSnap.data()!;\n  const access=await getQuizAccess(uid,{id:quizSnap.id,...quizData});\n  if(!access.allowed) throw new HttpsError("failed-precondition","This quiz is not unlocked for your account.");\n  const ids = Array.isArray(quizData.questionIds) ? quizData.questionIds.map(text).filter(Boolean) : [];
   if (answers.length !== ids.length) {
     throw new HttpsError("invalid-argument", "Every quiz question must have an answer.");
   }
