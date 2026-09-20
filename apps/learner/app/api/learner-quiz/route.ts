@@ -4,7 +4,7 @@ const projectId = process.env.GCLOUD_PROJECT ?? process.env.NEXT_PUBLIC_FIREBASE
 const region = process.env.FIREBASE_FUNCTIONS_REGION ?? "us-central1";
 const emulatorBase = `http://127.0.0.1:5001/${projectId}/${region}`;
 const productionBase = process.env.FIREBASE_FUNCTIONS_BASE_URL ?? `https://${region}-${projectId}.cloudfunctions.net`;
-const allowedActions = new Set(["listPublishedQuizzes", "getQuizForAttempt", "submitQuizAttempt", "getLearnerStats", "listLearnerAttempts", "getLearnerHome", "getLearnerAcademic", "getTopicPractice", "submitTopicPractice", "getLearnerProgress", "listPublishedCompetitions", "joinCompetition", "getCompetitionQuiz", "submitCompetitionAttempt", "getCompetitionLeaderboard", "getLearnerRewards", "redeemReward","createLearnerLinkCode"]);
+const allowedActions = new Set(["listPublishedQuizzes", "getQuizForAttempt", "submitQuizAttempt", "getLearnerStats", "listLearnerAttempts", "getLearnerHome", "getLearnerAcademic", "getTopicPractice", "submitTopicPractice", "getLearnerProgress", "listPublishedCompetitions", "joinCompetition", "getCompetitionQuiz", "submitCompetitionAttempt", "getCompetitionLeaderboard", "getLearnerRewards", "redeemReward", "listPublishedLearningMaterials","createLearnerLinkCode"]);
 
 export async function POST(request: NextRequest) {
   const authorization = request.headers.get("authorization");
