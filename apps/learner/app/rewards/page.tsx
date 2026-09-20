@@ -3,6 +3,7 @@ import Link from "next/link";
 import {useEffect,useState} from "react";
 import {onAuthStateChanged} from "firebase/auth";
 import {learnerAuth} from "../../lib/firebase";
+import { learnerFunction } from "../../lib/learner-api";
 type Reward={id:string;name:string;type:string;description:string;coinCost:number};
 type Redemption={id:string;rewardId:string;rewardName:string;coinCost:number;status:string};
 type Data={wallet:{balance:number;earned:number;spent:number};rewards:Reward[];redemptions:Redemption[]};
