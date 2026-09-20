@@ -640,6 +640,8 @@ export const listPublishedLearningMaterials = onCall(async (request) => {
   const boardId = text(payload.boardId);
   const classId = text(payload.classId);
   const subjectId = text(payload.subjectId);
+  const skillId = text(payload.skillId);
+  const otherOnly = payload.otherOnly === true;
   const [snap,userSnap] = await Promise.all([db.collection("learningMaterials").where("status","==","published").limit(500).get(),db.collection("users").doc(uid).get()]);
   const userData=userSnap.data()||{};
   const premiumUntil=Number(userData.premiumUntilMs);
@@ -657,11 +659,13 @@ export const listPublishedLearningMaterials = onCall(async (request) => {
     (!boardId || !x.boardId || x.boardId === boardId) &&
     (!classId || !x.classId || x.classId === classId) &&
     (!subjectId || !x.subjectId || x.subjectId === subjectId) &&
+    (!skillId || x.skillId === skillId) &&
+    (!otherOnly || (!x.boardId && !x.classId && !x.subjectId && !x.skillId && (x.otherCategory || x.otherTopic))) &&
     (x.accessType==="free" || (x.accessType==="premium" && premiumActive) || (x.accessType==="assigned" && assignedIds.has(x.id)))
   ).map((x:any) => ({
     id:x.id,title:text(x.title),description:text(x.description),type:text(x.type)||"pdf",
     boardId:text(x.boardId),classId:text(x.classId),subjectId:text(x.subjectId),
-    chapterId:text(x.chapterId),topicId:text(x.topicId),language:text(x.language),
+    chapterId:text(x.chapterId),topicId:text(x.topicId),skillId:text(x.skillId),otherCategory:text(x.otherCategory),otherTopic:text(x.otherTopic),language:text(x.language),
     accessType:text(x.accessType)||"free",fileUrl:text(x.fileUrl),thumbnailUrl:text(x.thumbnailUrl)
   }));
   items.sort((a:any,b:any)=>a.title.localeCompare(b.title));
