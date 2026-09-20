@@ -21,7 +21,7 @@ for (const route of ["/users","/academic","/content","/question-bank","/quiz-man
   must("admin module "+route+" is linked", admin.includes('"'+route+'"'));
 }
 
-for (const [name,src] of [["home",home],["learn",learn],["play",play],["compete",compete],["profile",profile]] as const) {
+for (const [name,src] of [["home",home],["learn",learn],["play",play],["compete",compete],["profile",profile]]) {
   for (const route of ["/learn","/play","/compete","/profile"]) {
     if (name !== "learn" || route !== "/learn") {
       // Every learner surface except Learn itself should retain access to the primary nav.
