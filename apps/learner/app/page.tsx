@@ -1,3 +1,4 @@
+// Skill Saga UI 2.0 deployment marker: 2026-09-20
 "use client";
 // Skill Saga UI 2.0 is the single frozen learner frontend entry point.
 import Link from "next/link";
