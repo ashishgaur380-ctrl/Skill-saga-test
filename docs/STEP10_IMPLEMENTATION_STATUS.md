@@ -31,3 +31,20 @@ The remaining work is verification rather than architecture:
 9. Complete Play Store metadata, privacy/data-safety, signing, and release testing.
 
 Production readiness must not be declared until the authenticated verification steps above pass.
+
+
+## Build/Release infrastructure added
+
+- Root workspace now exposes repeatable Functions, learner and admin builds.
+- Foundation integrity validation runs in CI.
+- GitHub Actions CI runs on pushes/PRs to `main`.
+- A controlled production Firebase deployment workflow is available via manual dispatch.
+- Learner server API no longer assumes localhost Functions in production.
+- Competition start/end windows are enforced server-side.
+- Learner quiz UI generates an idempotent submission ID.
+
+## Verification status
+
+The CI pipeline has been triggered for the current `main` revision. The repository tooling can now report build failures automatically. Local execution from this assistant environment is unavailable because the container cannot reach GitHub's network endpoint, so authenticated Firebase/Browser tests must run through the repository's CI/emulator environment.
+
+Do not claim production readiness until the CI build and authenticated Firebase smoke tests are green.
