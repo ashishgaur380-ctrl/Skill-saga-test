@@ -77,3 +77,4 @@ export {
   submitTopicPractice,
   getLearnerProgress,
 } from "./learner";
+export { getLearnerRewards, redeemReward } from "./learner";
