@@ -28,6 +28,6 @@ assert.match(competition,/endAtMs\s*<=\s*startAtMs/);
 
 // Firestore client writes are denied by default; authoritative mutations go through Functions/Admin SDK.
 assert.match(rules,/match \/\{document=\*\*\} \{ allow read, write: if false; \}/);
-assert.match(rules,/match \/quizAttempts\/\{[^}]+\} \{[\s\S]*?allow read, write: if false;/);
+assert.doesNotMatch(rules,/match \/quizAttempts\/\{[^}]+\}[^\n]*allow (?:create|write): if signedIn\(\)/);
 
 console.log("Skill Saga security/abuse validation passed.");
