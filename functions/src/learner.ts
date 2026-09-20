@@ -470,3 +470,78 @@ export const getLearnerProgress = onCall(async (request) => {
     topics,
   };
 });
+
+export const listPublishedCompetitions = onCall(async (request) => {
+  const uid = learner(request);
+  const db = getFirestore();
+  const snap = await db.collection("competitions").where("active","==",true).where("status","==","published").limit(100).get();
+  const items = await Promise.all(snap.docs.map(async doc => {
+    const d = doc.data();
+    const joined = await db.collection("competitionEntries").doc(`${doc.id}_${uid}`).get();
+    const entryCount = (await db.collection("competitionEntries").where("competitionId","==",doc.id).limit(1000).get()).size;
+    return {id:doc.id,name:text(d.name),description:text(d.description),quizId:text(d.quizId),maxParticipants:Number(d.maxParticipants)||0,entryType:text(d.entryType)||"free",entryFee:Number(d.entryFee)||0,participants:entryCount,joined:joined.exists};
+  }));
+  items.sort((a,b)=>a.name.localeCompare(b.name));
+  return {items};
+});
+
+export const joinCompetition = onCall(async (request) => {
+  const uid=learner(request), competitionId=text((request.data as any)?.competitionId);
+  if(!competitionId) throw new HttpsError("invalid-argument","competitionId is required.");
+  const db=getFirestore(), ref=db.collection("competitions").doc(competitionId), snap=await ref.get();
+  if(!snap.exists||snap.data()?.active!==true||snap.data()?.status!=="published") throw new HttpsError("not-found","Published competition was not found.");
+  const d=snap.data()!;
+  if(text(d.entryType)==="paid") throw new HttpsError("failed-precondition","Paid competition entry is not available yet.");
+  const entryRef=db.collection("competitionEntries").doc(`${competitionId}_${uid}`);
+  if((await entryRef.get()).exists) return {joined:true};
+  const count=(await db.collection("competitionEntries").where("competitionId","==",competitionId).limit(1000).get()).size;
+  if(count >= (Number(d.maxParticipants)||0)) throw new HttpsError("failed-precondition","This competition is full.");
+  await entryRef.set({competitionId,learnerId:uid,createdAt:FieldValue.serverTimestamp()});
+  return {joined:true};
+});
+
+export const getCompetitionQuiz = onCall(async (request) => {
+  const uid=learner(request), competitionId=text((request.data as any)?.competitionId);
+  if(!competitionId) throw new HttpsError("invalid-argument","competitionId is required.");
+  const db=getFirestore(), c=await db.collection("competitions").doc(competitionId).get();
+  if(!c.exists||c.data()?.active!==true||c.data()?.status!=="published") throw new HttpsError("not-found","Competition was not found.");
+  if(!(await db.collection("competitionEntries").doc(`${competitionId}_${uid}`).get()).exists) throw new HttpsError("permission-denied","Join the competition before starting it.");
+  const quizId=text(c.data()?.quizId), q=await db.collection("quizzes").doc(quizId).get();
+  if(!q.exists||q.data()?.active!==true||q.data()?.status!=="published") throw new HttpsError("failed-precondition","Competition quiz is unavailable.");
+  const ids=Array.isArray(q.data()?.questionIds)?q.data()!.questionIds.map(text).filter(Boolean):[];
+  const docs=await db.getAll(...ids.map((id:string)=>db.collection("questions").doc(id)));
+  if(docs.some(x=>!x.exists||x.data()?.active!==true||x.data()?.status!=="published")) throw new HttpsError("failed-precondition","Competition contains unavailable questions.");
+  const questions=docs.map((doc,index)=>{const d=doc.data()!;return{id:doc.id,order:index,questionText:text(d.questionText),options:Array.isArray(d.options)?d.options.map(text):[],marks:Number(d.marks)||1};});
+  return {competition:{id:c.id,name:text(c.data()?.name),description:text(c.data()?.description),questionCount:questions.length},questions};
+});
+
+export const submitCompetitionAttempt = onCall(async (request) => {
+  const uid=learner(request),p=request.data as any,competitionId=text(p?.competitionId),answers=p?.answers;
+  if(!competitionId||!Array.isArray(answers)) throw new HttpsError("invalid-argument","competitionId and answers are required.");
+  const db=getFirestore(),c=await db.collection("competitions").doc(competitionId).get();
+  if(!c.exists||c.data()?.active!==true||c.data()?.status!=="published") throw new HttpsError("not-found","Competition was not found.");
+  if(!(await db.collection("competitionEntries").doc(`${competitionId}_${uid}`).get()).exists) throw new HttpsError("permission-denied","Join the competition before submitting.");
+  const q=await db.collection("quizzes").doc(text(c.data()?.quizId)).get();
+  if(!q.exists||q.data()?.active!==true||q.data()?.status!=="published") throw new HttpsError("failed-precondition","Competition quiz is unavailable.");
+  const ids=Array.isArray(q.data()?.questionIds)?q.data()!.questionIds.map(text).filter(Boolean):[];
+  if(answers.length!==ids.length) throw new HttpsError("invalid-argument","Every competition question must have an answer.");
+  const docs=await db.getAll(...ids.map((id:string)=>db.collection("questions").doc(id)));
+  if(docs.some(x=>!x.exists||x.data()?.active!==true||x.data()?.status!=="published")) throw new HttpsError("failed-precondition","Competition contains unavailable questions.");
+  const attemptRef=db.collection("competitionAttempts").doc(`${competitionId}_${uid}`);
+  if((await attemptRef.get()).exists) throw new HttpsError("already-exists","You have already submitted this competition.");
+  let correct=0,marks=0,totalMarks=0;
+  const answerResults=docs.map((doc,index)=>{const d=doc.data()!,maxMarks=Number(d.marks)||1,selected=Number(answers[index]),isCorrect=Number.isInteger(selected)&&selected===Number(d.correctOption);if(isCorrect){correct++;marks+=maxMarks;}totalMarks+=maxMarks;return{questionId:doc.id,selectedOption:selected,correct:isCorrect,marks:isCorrect?maxMarks:0,maxMarks};});
+  const percentage=totalMarks?Math.round(marks/totalMarks*10000)/100:0;
+  await attemptRef.set({competitionId,learnerId:uid,correct,total:ids.length,marks,totalMarks,percentage,answers:answerResults,submittedAt:FieldValue.serverTimestamp()});
+  return {result:{correct,total:ids.length,marks,totalMarks,percentage}};
+});
+
+export const getCompetitionLeaderboard = onCall(async (request) => {
+  learner(request);
+  const competitionId=text((request.data as any)?.competitionId);
+  if(!competitionId) throw new HttpsError("invalid-argument","competitionId is required.");
+  const snap=await getFirestore().collection("competitionAttempts").where("competitionId","==",competitionId).limit(1000).get();
+  const items=snap.docs.map(d=>{const x=d.data();return{learnerId:text(x.learnerId),correct:Number(x.correct)||0,marks:Number(x.marks)||0,totalMarks:Number(x.totalMarks)||0,percentage:Number(x.percentage)||0};});
+  items.sort((a,b)=>b.marks-a.marks||b.correct-a.correct||b.percentage-a.percentage);
+  return {items:items.slice(0,100).map((x,i)=>({...x,rank:i+1}))};
+});
