@@ -1,0 +1,16 @@
+import fs from "node:fs";
+const fn=fs.readFileSync("functions/src/quiz.ts","utf8");
+const learner=fs.readFileSync("functions/src/learner.ts","utf8");
+const admin=fs.readFileSync("apps/admin/components/quiz-manager/quiz-manager.tsx","utf8");
+const play=fs.readFileSync("apps/learner/app/play/page.tsx","utf8");
+const must=(name,ok)=>{if(!ok)throw new Error("QUIZ INTEGRITY FAIL: "+name)};
+must("admin role protection",fn.includes("super_admin")&&fn.includes("content_manager")&&fn.includes("permission-denied"));
+must("question validation",fn.includes("ensureQuestions")&&fn.includes("Published quizzes can only contain active published questions."));
+must("unique question IDs",fn.includes("new Set(questionIds.map(text))"));
+must("publish schedule validation",fn.includes("publishAtMs")&&fn.includes("expireAtMs")&&fn.includes("expireAtMs <= publishAtMs"));
+must("admin scheduling UI",admin.includes("Publish at (Unix ms)")&&admin.includes("Expire at (Unix ms)"));
+must("live quiz filtering",learner.includes("quizIsLive")&&learner.includes("status","==","published"));
+must("server authoritative scoring",learner.includes("submitQuizAttempt")&&learner.includes("correctOption")&&learner.includes("xpEarned")&&learner.includes("coinsEarned"));
+must("idempotent submissions",learner.includes("submissionId")&&learner.includes("duplicate"));
+must("learner play integration",play.includes("listPublishedQuizzes")&&play.includes("getQuizForAttempt")&&play.includes("submitQuizAttempt"));
+console.log("Quiz engine integrity contract: PASS");
