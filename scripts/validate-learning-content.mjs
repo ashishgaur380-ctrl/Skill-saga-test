@@ -7,10 +7,14 @@ const learn=fs.readFileSync("apps/learner/app/learn/page.tsx","utf8");
 const must=(l,o)=>{if(!o)throw new Error("CONTENT INTEGRITY FAIL: "+l);};
 must("admin content UI exists",admin.includes("Learning Content Manager"));
 must("admin uses Firebase auth",admin.includes("firebaseAuth.currentUser")&&admin.includes("getIdToken"));
-must("content API actions",api.includes("listLearningMaterials")&&api.includes("createLearningMaterial")&&api.includes("updateLearningMaterial"));
+must("content API actions",api.includes("listLearningMaterials")&&api.includes("createLearningMaterial")&&api.includes("updateLearningMaterial")&&api.includes("bulkCreateLearningMaterials"));
+
 must("content admin role enforcement",fn.includes("content_manager")&&fn.includes("permission-denied"));
 must("publish scheduling validation",fn.includes("publishAtMs")&&fn.includes("expireAtMs")&&fn.includes("Expiry must be after publish time."));
 must("published learner delivery",learner.includes("listPublishedLearningMaterials")&&learner.includes('status","==","published"'));
 must("future and expired content filtered",learner.includes("publishAtMs")&&learner.includes("expireAtMs")&&learner.includes("x.expireAtMs > now"));
+must("Firebase Storage upload",admin.includes("firebaseStorage")&&admin.includes("uploadBytes")&&admin.includes("getDownloadURL"));
+must("bulk CSV/XLSX import UI",admin.includes("bulkImport")&&admin.includes(".xlsx")&&admin.includes("parseCsv"));
+must("bulk content backend",fn.includes("bulkCreateLearningMaterials")&&fn.includes("between 1 and 500"));
 must("learner Learn displays materials",learn.includes("Learning Library")&&learn.includes("Open {m.type.toUpperCase()}"));
 console.log("Learning content integrity contract: PASS");
