@@ -3,16 +3,17 @@ import Link from "next/link";
 import { useEffect,useState } from "react";
 import { onAuthStateChanged } from "firebase/auth";
 import { learnerAuth } from "../../lib/firebase";
+import { learnerFunction } from "../../lib/learner-api";
 
 type Item={id:string;name:string;code?:string;numericLevel?:number};
 type Material={id:string;title:string;description:string;type:string;boardId:string;classId:string;subjectId:string;chapterId:string;topicId:string;language:string;accessType:string;fileUrl:string};
-async function load(collection:string,token:string,data:any={}){const r=await fetch("/api/learner-quiz",{method:"POST",headers:{Authorization:`Bearer ${token}`,"Content-Type":"application/json"},body:JSON.stringify({action:"getLearnerAcademic",data:{collection,...data}})});const p=await r.json();if(!r.ok)throw new Error(p?.error?.message||"Unable to load academic data.");return p?.data?.items||[];}
+async function load(collection:string,token:string,data:any={}){const r=await learnerFunction("getLearnerAcademic", {collection,...data}, token);const p=await r.json();if(!r.ok)throw new Error(p?.error?.message||"Unable to load academic data.");return p?.data?.items||[];}
 
 function Nav(){return <nav className="ss-nav"><div className="ss-nav-inner">{[["⌂","Home","/"],["📚","Learn","/learn"],["▶","Play","/play"],["🏆","Compete","/compete"],["👤","Profile","/profile"]].map(([i,l,h])=><Link key={l} className={l==="Learn"?"active":""} href={h}><span className="ss-icon">{i}</span>{l}</Link>)}</div></nav>}
 
 export default function Learn(){
  const [token,setToken]=useState(""),[materials,setMaterials]=useState<Material[]>([]),[boards,setBoards]=useState<Item[]>([]),[classes,setClasses]=useState<Item[]>([]),[subjects,setSubjects]=useState<Item[]>([]),[chapters,setChapters]=useState<Item[]>([]),[selectedBoard,setSelectedBoard]=useState<Item|null>(null),[selectedClass,setSelectedClass]=useState<Item|null>(null),[selectedSubject,setSelectedSubject]=useState<Item|null>(null),[selectedChapter,setSelectedChapter]=useState<Item|null>(null),[topics,setTopics]=useState<Item[]>([]),[error,setError]=useState("");
- useEffect(()=>onAuthStateChanged(learnerAuth,async user=>{if(!user){setError("Please sign in to browse your academic content.");return;}try{const t=await user.getIdToken();setToken(t);setBoards(await load("boards",t));const mr=await fetch("/api/learner-quiz",{method:"POST",headers:{Authorization:`Bearer ${t}`,"Content-Type":"application/json"},body:JSON.stringify({action:"listPublishedLearningMaterials",data:{}})});const mp=await mr.json();if(mr.ok)setMaterials(mp?.data?.items||[]);}catch(e:any){setError(e.message);}}),[]);
+ useEffect(()=>onAuthStateChanged(learnerAuth,async user=>{if(!user){setError("Please sign in to browse your academic content.");return;}try{const t=await user.getIdToken();setToken(t);setBoards(await load("boards",t));const mr=await learnerFunction("listPublishedLearningMaterials", {}, token);const mp=await mr.json();if(mr.ok)setMaterials(mp?.data?.items||[]);}catch(e:any){setError(e.message);}}),[]);
  async function chooseBoard(b:Item){setSelectedBoard(b);setSelectedClass(null);setSelectedSubject(null);setSelectedChapter(null);setSubjects([]);setChapters([]);setTopics([]);try{setClasses(await load("classes",token,{parentId:b.id}));}catch(e:any){setError(e.message);}}
  async function chooseClass(c:Item){setSelectedClass(c);setSelectedSubject(null);setSelectedChapter(null);setChapters([]);setTopics([]);try{setSubjects(await load("subjects",token,{boardId:selectedBoard?.id,classId:c.id}));}catch(e:any){setError(e.message);}}
  async function chooseSubject(s:Item){setSelectedSubject(s);setSelectedChapter(null);setTopics([]);try{setChapters(await load("chapters",token,{parentId:s.id}));}catch(e:any){setError(e.message);}}
