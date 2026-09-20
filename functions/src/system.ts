@@ -28,6 +28,11 @@ const defaults={
   liveClassesEnabled:false,
   marketplaceEnabled:false,
   careerEnabled:false,
+  dailyQuizId:"",
+  weeklyQuizId:"",
+  homeMissionTitle:"Complete a quiz today",
+  homeMissionDescription:"5 questions · Easy",
+  homeQuote:"Small steps make big achievers!",
 };
 
 function auth(request:CallableRequest<unknown>){
@@ -68,6 +73,11 @@ export const updateSystemSettings=onCall(async request=>{
     coachingEnabled:Boolean(raw.coachingEnabled), schoolEnabled:Boolean(raw.schoolEnabled),
     liveClassesEnabled:Boolean(raw.liveClassesEnabled), marketplaceEnabled:Boolean(raw.marketplaceEnabled),
     careerEnabled:Boolean(raw.careerEnabled),
+    dailyQuizId:text(raw.dailyQuizId),
+    weeklyQuizId:text(raw.weeklyQuizId),
+    homeMissionTitle:text(raw.homeMissionTitle)||defaults.homeMissionTitle,
+    homeMissionDescription:text(raw.homeMissionDescription)||defaults.homeMissionDescription,
+    homeQuote:text(raw.homeQuote)||defaults.homeQuote,
   };
   const db=getFirestore();
   await db.collection("systemSettings").doc(ID).set({
