@@ -560,9 +560,21 @@ export const listLearnerAssignments = onCall(async (request) => {
   const snap=await db.collection("assignments").where("active","==",true).limit(500).get(); const now=Date.now();
   const quizAttempts=await db.collection("quizAttempts").where("learnerId","==",uid).limit(500).get();
   const attempted=new Set(quizAttempts.docs.map(d=>text(d.data().quizId)));
-  const items=snap.docs.map(d=>({id:d.id,...d.data()})).filter((a:any)=>
-    a.targetType==="learner"&&a.targetId===uid || a.targetType==="class"&&classId&&a.targetId===classId || a.targetType==="school"&&schoolId&&a.targetId===schoolId
-  ).map((a:any)=>({id:a.id,title:text(a.title),description:text(a.description),resourceType:text(a.resourceType),resourceId:text(a.resourceId),targetType:text(a.targetType),dueAtMs:Number.isFinite(Number(a.dueAtMs))?Number(a.dueAtMs):null,status:a.resourceType==="quiz"&&attempted.has(text(a.resourceId))?"completed":(Number(a.dueAtMs)&&Number(a.dueAtMs)<now?"expired":"pending")})).sort((a:any,b:any)=>(a.status==="pending"?0:1)-(b.status==="pending"?0:1)||(a.dueAtMs??Number.MAX_SAFE_INTEGER)-(b.dueAtMs??Number.MAX_SAFE_INTEGER));
+  const raw=snap.docs.map(d=>({id:d.id,...d.data()})).filter((a:any)=>
+    (a.targetType==="learner"&&a.targetId===uid) || (a.targetType==="class"&&classId&&a.targetId===classId) || (a.targetType==="school"&&schoolId&&a.targetId===schoolId)
+  );
+  const contentIds=raw.filter((a:any)=>a.resourceType==="content").map((a:any)=>text(a.resourceId)).filter(Boolean);
+  const contentDocs=contentIds.length?await db.getAll(...contentIds.map((id:string)=>db.collection("learningMaterials").doc(id))):[];
+  const contentMap=new Map(contentDocs.filter(d=>d.exists).map(d=>[d.id,d.data()]));
+  const items=raw.map((a:any)=>{
+    const content=a.resourceType==="content"?contentMap.get(text(a.resourceId)):null;
+    const dueAtMs=Number.isFinite(Number(a.dueAtMs))?Number(a.dueAtMs):null;
+    const expired=!!(dueAtMs&&dueAtMs<now);
+    const status=a.resourceType==="quiz"&&attempted.has(text(a.resourceId))?"completed":expired?"expired":"pending";
+    return {id:a.id,title:text(a.title),description:text(a.description),resourceType:text(a.resourceType),resourceId:text(a.resourceId),targetType:text(a.targetType),dueAtMs,status,
+      content:content?{title:text(content.title),type:text(content.type)||"pdf",fileUrl:text(content.fileUrl),thumbnailUrl:text(content.thumbnailUrl),accessType:text(content.accessType)||"free"}:null};
+  }).filter((a:any)=>a.resourceType!=="content"||a.content);
+  items.sort((a:any,b:any)=>(a.status==="pending"?0:1)-(b.status==="pending"?0:1)||(a.dueAtMs??Number.MAX_SAFE_INTEGER)-(b.dueAtMs??Number.MAX_SAFE_INTEGER));
   return {items};
 });
 
