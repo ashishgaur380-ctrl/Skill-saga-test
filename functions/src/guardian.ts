@@ -1,26 +1,29 @@
-import {getFirestore,FieldValue} from "firebase-admin/firestore";
+import {getFirestore,FieldValue,Timestamp} from "firebase-admin/firestore";
 import {onCall,HttpsError,type CallableRequest} from "firebase-functions/v2/https";
 const text=(v:unknown)=>typeof v==="string"?v.trim():"";
 function who(r:CallableRequest<unknown>,roles:string[]){const uid=r.auth?.uid,role=r.auth?.token.role;if(!uid)throw new HttpsError("unauthenticated","Authentication is required.");if(typeof role!=="string"||!roles.includes(role))throw new HttpsError("permission-denied","This account is not authorized.");return{uid,role};}
 function code(){return Math.random().toString(36).slice(2,8).toUpperCase();}
 export const createLearnerLinkCode=onCall(async r=>{
  const {uid}=who(r,["learner"]); const db=getFirestore();
- const existing=await db.collection("learnerLinkCodes").where("learnerId","==",uid).where("active","==",true).limit(1).get();
- if(!existing.empty)return {code:existing.docs[0].id};
+ const existing=await db.collection("learnerLinkCodes").where("learnerId","==",uid).where("active","==",true).limit(5).get();
+ const now=Date.now();
+ const reusable=existing.docs.find(d=>{const expires=d.data().expiresAt;return expires?.toMillis?.() > now;});
+ if(reusable)return {code:reusable.id};
  let value=code(); for(let i=0;i<5;i++){const s=await db.collection("learnerLinkCodes").doc(value).get();if(!s.exists)break;value=code();}
- await db.collection("learnerLinkCodes").doc(value).set({learnerId:uid,active:true,createdAt:FieldValue.serverTimestamp()});
+ await db.collection("learnerLinkCodes").doc(value).set({learnerId:uid,active:true,createdAt:FieldValue.serverTimestamp(),expiresAt:Timestamp.fromMillis(Date.now()+15*60*1000)});
  return {code:value};
 });
 export const linkLearner=onCall(async r=>{
  const {uid,role}=who(r,["parent","teacher"]); const value=text((r.data as any)?.code).toUpperCase();
  if(!value)throw new HttpsError("invalid-argument","Link code is required.");
  const db=getFirestore(), ref=db.collection("learnerLinkCodes").doc(value), snap=await ref.get();
- if(!snap.exists||snap.data()?.active!==true)throw new HttpsError("not-found","The link code is invalid or expired.");
+ if(!snap.exists||snap.data()?.active!==true||Number(snap.data()?.expiresAt?.toMillis?.()||0)<=Date.now())throw new HttpsError("not-found","The link code is invalid or expired.");
  const learnerId=text(snap.data()?.learnerId); if(!learnerId)throw new HttpsError("failed-precondition","Invalid link record.");
  const existing=await db.collection("learnerLinks").where("learnerId","==",learnerId).where("guardianId","==",uid).where("status","==","active").limit(1).get();
  if(!existing.empty)return {success:true,linkId:existing.docs[0].id};
  const linkRef=db.collection("learnerLinks").doc();
  await linkRef.set({learnerId,guardianId:uid,guardianRole:role,status:"active",createdAt:FieldValue.serverTimestamp()});
+ await ref.update({active:false,usedAt:FieldValue.serverTimestamp(),usedBy:uid});
  return {success:true,linkId:linkRef.id};
 });
 async function linked(r:CallableRequest<unknown>){const {uid,role}=who(r,["parent","teacher"]);const learnerId=text((r.data as any)?.learnerId);if(!learnerId)throw new HttpsError("invalid-argument","learnerId is required.");const db=getFirestore();const s=await db.collection("learnerLinks").where("guardianId","==",uid).where("learnerId","==",learnerId).where("status","==","active").limit(1).get();if(s.empty)throw new HttpsError("permission-denied","This learner is not linked to your account.");return{uid,role,learnerId,db};}
