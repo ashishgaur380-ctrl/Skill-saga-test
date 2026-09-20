@@ -255,8 +255,11 @@ export const getLearnerHome = onCall(async (request) => {
     settings: {
       appName: text(platform.appName) || "Skill Saga",
       tagline: text(platform.tagline) || "A smarter way to learn",
-      competitions: platform.competitions !== false,
-      community: platform.community !== false,
+      competitions: platform.competitionsEnabled !== false,
+      community: platform.communityEnabled !== false,
+      homeMissionTitle: text(platform.homeMissionTitle) || "Complete a quiz today",
+      homeMissionDescription: text(platform.homeMissionDescription) || "5 questions · Easy",
+      homeQuote: text(platform.homeQuote) || "Small steps make big achievers!",
     },
     stats: {
       xp, coins, level: Math.max(1, Math.floor(xp / 100) + 1),
