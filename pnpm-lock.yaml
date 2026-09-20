@@ -79,6 +79,8 @@ importers:
         specifier: latest
         version: 7.0.2
 
+  apps/parent: {}
+
   apps/school: {}
 
   apps/teacher: {}
