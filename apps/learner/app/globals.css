@@ -9,3 +9,5 @@
 @media(min-width:700px){.ss-app{margin:25px auto;min-height:calc(100vh - 50px);border-radius:24px}.ss-nav{position:sticky;bottom:0}.ss-page{padding-bottom:25px}}
 
 .ss-review{display:grid;gap:8px;margin:18px 0;text-align:left}.ss-review-correct,.ss-review-wrong{padding:10px 12px;border-radius:12px;background:#eefaf1}.ss-review-wrong{background:#fff1f1}.ss-review-correct b,.ss-review-wrong b{margin-right:6px}
+
+.ss-notification-list{display:grid;gap:10px}.ss-notification{display:flex;gap:12px;width:100%;text-align:left;border:1px solid #e7eaf0;border-radius:16px;padding:14px;background:#fff}.ss-notification.unread{border-color:#bcd3ff;background:#f6f9ff}.ss-notification p{margin:5px 0}.ss-notification small{opacity:.65}
