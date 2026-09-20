@@ -6,8 +6,10 @@ Keep the tested/finalized learner UI stable. Do not replace `app/src/main/assets
 ## P0 — Known functional fixes
 - [ ] Quiz History → Attempt Details: retain and render question-by-question responses for newly completed attempts.
 - [ ] Skill Mastery: remove duplicate skill records and make skill rows open their detail view.
-- [ ] Teacher Dashboard: sync learner XP, accuracy, streak, quiz count and mastery from canonical learner data.
+- [x] Teacher Dashboard: teacher-scoped quiz accuracy is calculated from assigned quizzes.
+- [x] Teacher Results: teachers can view server-calculated learner quiz results.
 - [ ] Notifications: surface pending teacher/admin assignments with an actionable `Start Quiz` action.
+- [x] Parent result notifications: linked parents receive an in-app result notification after a learner completes a quiz.
 - [ ] Change/Reset Password: implement and test the intended account flow.
 - [ ] Mobile OTP Login: implement and test India +91 OTP flow.
 
@@ -85,3 +87,11 @@ Keep the tested/finalized learner UI stable. Do not replace `app/src/main/assets
 ## Release gate
 
 Do not call the release final until the P0 items are fixed/tested and the P1 flows are verified end-to-end. Premium payments and advertising remain disabled until separately approved for launch.
+
+### Additional Play Store blockers
+- [ ] Publish a production Privacy Policy URL and link it from the app/store listing.
+- [ ] Define and implement the account/data deletion flow before launch.
+- [ ] Complete Google Play Data Safety declarations from the final production data inventory.
+- [ ] Complete production signing/AAB configuration and test the release build on physical Android devices.
+- [ ] Confirm a successful GitHub Actions CI run for the release commit before production deployment.
+
