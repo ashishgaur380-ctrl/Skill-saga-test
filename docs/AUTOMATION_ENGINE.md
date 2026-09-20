@@ -2,59 +2,35 @@
 
 ## Status
 
-The Automation module now has both rule management and a scheduled execution engine.
+The Automation Engine is implemented as a server-side scheduled service.
 
 ### Supported rule types
+- Daily Quiz
+- Weekly Quiz
+- Notification
 
-- `daily_quiz`
-- `weekly_quiz`
-- `notification`
+### Execution model
 
-### Execution
+Automation Rule → Scheduler → Idempotency Lock → Action → Automation Run Log
 
-The scheduler runs hourly in UTC and evaluates enabled, active rules.
+The scheduler runs hourly using the Asia/Kolkata timezone. Daily rules are eligible each day. Weekly rules are eligible on Monday. An idempotency lock ensures a rule executes at most once for its schedule period even though the scheduler wakes hourly.
 
-Daily rules are eligible every scheduler run.
+### Daily / weekly quiz
 
-Weekly rules are eligible on Monday UTC.
+The engine searches for an active, published quiz matching the rule type. The selected quiz ID is written to platform settings as dailyQuizId or weeklyQuizId.
 
-### Daily and weekly quiz automation
+### Notifications
 
-The engine looks for an active, published quiz whose title matches the rule type:
+Notification automation creates a server-side notificationJobs record with rule ID, action, queued status and timestamp. Actual delivery providers remain separate from the automation engine so email, push, SMS and other providers can be added later without rewriting the scheduler.
 
-- Daily Quiz → title containing “daily”
-- Weekly Quiz → title containing “weekly”
+### Execution records
 
-When found, its ID is stored in platform system settings as:
+Every attempted action creates an automationRuns record containing rule ID, type, success, message, target ID/job ID, run key and timestamp.
 
-- `dailyQuizId`
-- `weeklyQuizId`
+### Manual test execution
 
-This keeps the learner experience data-driven rather than requiring UI code changes.
-
-### Notification automation
-
-Notification rules create a server-side `notificationJobs` queue record with status `queued`.
-
-Actual delivery providers are intentionally separated from rule execution. This allows email, push, SMS or other adapters to be added later without changing the automation rule contract.
-
-### Audit / execution history
-
-Each execution creates an `automationRuns` record containing:
-
-- rule ID
-- type
-- success/failure
-- message
-- target ID where applicable
-- execution timestamp
+An admin-only callable runAutomationEngineNow is available for controlled testing and uses the same idempotency mechanism as the scheduled engine.
 
 ### Safety
 
-Only enabled and active rules execute.
-
-Automation remains server-side; learners cannot trigger administrator automation rules directly.
-
-### Next integration
-
-The notification delivery worker and provider adapters remain separate work for Step 10. The scheduler now provides the correct queue boundary for that work.
+Automation rules remain disabled by default unless explicitly enabled. Actions run server-side.
