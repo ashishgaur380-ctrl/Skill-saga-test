@@ -42,10 +42,15 @@ jobs:
           cache: pnpm
       - run: pnpm install --frozen-lockfile
       - run: pnpm --dir apps/learner build
+      - name: Prepare Pages artifact without symlinks
+        run: |
+          rm -rf apps/learner/pages-artifact
+          mkdir -p apps/learner/pages-artifact
+          cp -rL apps/learner/out/. apps/learner/pages-artifact/
       - uses: actions/upload-artifact@v4
         with:
           name: github-pages
-          path: apps/learner/out
+          path: apps/learner/pages-artifact
 
   deploy:
     environment:
