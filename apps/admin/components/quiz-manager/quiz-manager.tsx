@@ -76,7 +76,10 @@ export default function QuizManager(){
  <label>Skill Category<select value={form.skillCategoryId} onChange={e=>setForm({...form,skillCategoryId:e.target.value,skillId:""})}><option value="">Select</option>{(academic.skillCategories??[]).map(x=><option key={x.id} value={x.id}>{x.name}</option>)}</select></label>
  <label>Skill<select value={form.skillId} onChange={e=>setForm({...form,skillId:e.target.value})}><option value="">Select</option>{(academic.skills??[]).filter(x=>!form.skillCategoryId||x.categoryId===form.skillCategoryId).map(x=><option key={x.id} value={x.id}>{x.name}</option>)}</select></label>
  </>}
- {form.quizType==="OTHER"&&<><label>Category<input value={form.otherCategory} onChange={e=>setForm({...form,otherCategory:e.target.value})}/></label><label>Topic<input value={form.otherTopic} onChange={e=>setForm({...form,otherTopic:e.target.value})}/></label>}
+  {form.quizType==="OTHER"&&<>
+ <label>Category<input value={form.otherCategory} onChange={e=>setForm({...form,otherCategory:e.target.value})}/></label>
+ <label>Topic<input value={form.otherTopic} onChange={e=>setForm({...form,otherTopic:e.target.value})}/></label>
+ </>}
  <label className="full-width">Description<textarea rows={2} value={form.description} onChange={e=>setForm({...form,description:e.target.value})}/></label>
  {form.quizType==="ACADEMIC"&&<>
  <label>Board<select value={form.boardId} onChange={e=>setForm({...form,boardId:e.target.value})}><option value="">Optional</option>{(academic.boards??[]).map(x=><option key={x.id} value={x.id}>{x.name}</option>)}</select></label>
