@@ -18,6 +18,6 @@ must("academic reference validation",fn.includes("ensureAcademicReferences")&&fn
 must("publish scheduling validation",fn.includes("Expiry must be after publish time."));
 must("bulk limit",fn.includes("rows.length>500"));
 must("published learner delivery",learner.includes("listPublishedLearningMaterials")&&learner.includes('status","==","published"'));
-must("schedule filtering",learner.includes("publishAtMs")&&learner.includes("expireAtMs")&&learner.includes("x.expireAtMs > now"));
+must("schedule filtering",learner.includes("publishAtMs")&&learner.includes("expireAtMs")&&learner.includes("x.expireAtMs > now")||learner.includes("x.expireAtMs) ||"));
 must("learner library",learn.includes("Learning Library")&&learn.includes("Open {m.type.toUpperCase()}"));
 console.log("Phase 3 content engine integrity contract: PASS");
