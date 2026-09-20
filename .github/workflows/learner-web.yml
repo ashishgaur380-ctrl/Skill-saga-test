@@ -46,7 +46,8 @@ jobs:
         run: |
           rm -rf apps/learner/pages-artifact
           mkdir -p apps/learner/pages-artifact
-          cp -rL apps/learner/out/. apps/learner/pages-artifact/
+          rsync -aL apps/learner/out/ apps/learner/pages-artifact/
+          find apps/learner/pages-artifact -type l -delete
       - uses: actions/upload-artifact@v4
         with:
           name: github-pages
