@@ -20,5 +20,5 @@ must("server-side leaderboard source", learner.includes('collection("competition
 must("deterministic leaderboard ordering", learner.includes("b.marks-a.marks||b.correct-a.correct||b.percentage-a.percentage"));
 must("competition attempts default-deny", !rules.includes("match /competitionAttempts/{"));
 must("admin role boundary", competition.includes("ROLES=new Set"));
-must("published competition requires active quiz", learner.includes("Competition quiz is unavailable.") && competition.includes("published&&q.data()?.active!==true"));
+must("published competition requires active quiz", learner.includes("Competition quiz is unavailable.") && competition.includes("published&&(q.data()?.active!==true||q.data()?.status!==\"published\")"));
 console.log("Competition integrity contract: PASS");
