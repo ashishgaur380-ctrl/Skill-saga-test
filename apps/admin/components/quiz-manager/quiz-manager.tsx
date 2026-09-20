@@ -68,9 +68,10 @@ export default function QuizManager(){
  <label>Required XP<input type="number" min="0" value={form.requiredXp} onChange={e=>setForm({...form,requiredXp:Number(e.target.value)||0})}/></label>
  <label>Required Coins<input type="number" min="0" value={form.requiredCoins} onChange={e=>setForm({...form,requiredCoins:Number(e.target.value)||0})}/></label>
  <label>Status<select value={form.status} onChange={e=>setForm({...form,status:e.target.value})}><option value="draft">Draft</option><option value="published">Published</option></select></label>
+ {form.quizType==="ACADEMIC"&&<>
  <label>Chapter<select value={form.chapterId} onChange={e=>setForm({...form,chapterId:e.target.value,topicId:""})}><option value="">Select</option>{(academic.chapters??[]).filter(x=>!form.subjectId||x.subjectId===form.subjectId).map(x=><option key={x.id} value={x.id}>{x.name}</option>)}</select></label>
  <label>Topic<select value={form.topicId} onChange={e=>setForm({...form,topicId:e.target.value})}><option value="">Select</option>{(academic.topics??[]).filter(x=>!form.chapterId||x.chapterId===form.chapterId).map(x=><option key={x.id} value={x.id}>{x.name}</option>)}</select></label>
- }
+ </>}
  {form.quizType==="SKILL"&&<>
  <label>Skill Category<select value={form.skillCategoryId} onChange={e=>setForm({...form,skillCategoryId:e.target.value,skillId:""})}><option value="">Select</option>{(academic.skillCategories??[]).map(x=><option key={x.id} value={x.id}>{x.name}</option>)}</select></label>
  <label>Skill<select value={form.skillId} onChange={e=>setForm({...form,skillId:e.target.value})}><option value="">Select</option>{(academic.skills??[]).filter(x=>!form.skillCategoryId||x.categoryId===form.skillCategoryId).map(x=><option key={x.id} value={x.id}>{x.name}</option>)}</select></label>
