@@ -82,7 +82,7 @@ export {
   getLearnerAcademic,
   getTopicPractice,
   submitTopicPractice,
-  getLearnerProgress,
+  getLearnerProgress,\n  listLearnerAssignments,
   listPublishedCompetitions,
   joinCompetition,
   getCompetitionQuiz,
