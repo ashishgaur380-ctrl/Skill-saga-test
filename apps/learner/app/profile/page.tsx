@@ -70,6 +70,7 @@ export default function Profile() {
           <div>🔥<b>{stats.streak ?? 0}</b><small>Day Streak</small></div>
           <div>🪙<b>{stats.coins ?? 0}</b><small>Coins</small></div>
         </section>
+        <section className="ss-profile-performance"><div><span>🎯</span><b>{stats.accuracy ?? 0}%</b><small>Accuracy</small></div><div><span>📝</span><b>{stats.attempts ?? 0}</b><small>Quizzes Attempted</small></div><div><span>🏅</span><b>{stats.marks ?? 0}</b><small>Marks Earned</small></div></section>
 
         {message && <div className="ss-message">{message}</div>}
 
