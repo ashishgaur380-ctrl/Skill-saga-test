@@ -2,6 +2,7 @@
 import Link from "next/link";
 import {useEffect,useState} from "react";
 import {onAuthStateChanged} from "firebase/auth";
+import {learnerFunction} from "../../lib/learner-api";
 import {learnerAuth} from "../../lib/firebase";
-export default function Profile(){const [name,setName]=useState("Aarav Sharma");useEffect(()=>onAuthStateChanged(learnerAuth,u=>{if(u?.displayName)setName(u.displayName)}),[]);
+export default function Profile(){const [name,setName]=useState("Aarav Sharma");useEffect(()=>onAuthStateChanged(learnerAuth,async u=>{if(!u)return;if(u.displayName)setName(u.displayName);try{await learnerFunction("getLearnerStats",{},await u.getIdToken());}catch{}}),[]);
 return <div className="ss-app"><header className="ss-inner-header"><Link href="/">‹</Link><div><b>Profile</b><small>Skill Saga learner</small></div><span>⚙️</span></header><main className="ss-page"><section className="ss-profile-card"><div className="ss-avatar">👦</div><div><h1>{name}</h1><p>Class 6 · CBSE</p><small>Keep learning, keep growing!</small></div><span>✎</span></section><section className="ss-profile-stats"><div>⭐<b>5</b><small>Level</small></div><div>🔥<b>7</b><small>Day Streak</small></div><div>🪙<b>850</b><small>Coins</small></div></section><div className="ss-menu"><Link href="/play">❓ <b>Quiz History</b> <span>›</span></Link><Link href="/progress">⌁ <b>My Progress</b> <span>›</span></Link><Link href="/profile">👨‍👩‍👧 <b>Parent / Teacher Link</b> <span>›</span></Link><Link href="/rewards">🎁 <b>Rewards & Coins</b> <span>›</span></Link><Link href="/profile">⚙️ <b>Settings</b> <span>›</span></Link><Link href="/profile">❔ <b>Help & Support</b> <span>›</span></Link><button className="ss-logout">↪ Log Out</button></div></main><LearnerNav active="Profile"/></div>}
