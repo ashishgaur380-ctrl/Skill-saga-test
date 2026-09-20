@@ -524,7 +524,7 @@ export const getLearnerProgress = onCall(async (request) => {
 
 
 export const listPublishedLearningMaterials = onCall(async (request) => {
-  learner(request);
+  const uid = learner(request);
   const db = getFirestore();
   const payload:any = request.data || {};
   const boardId = text(payload.boardId);
@@ -542,7 +542,8 @@ export const listPublishedLearningMaterials = onCall(async (request) => {
     (!Number.isFinite(x.expireAtMs) || x.expireAtMs > now) &&
     (!boardId || !x.boardId || x.boardId === boardId) &&
     (!classId || !x.classId || x.classId === classId) &&
-    (!subjectId || !x.subjectId || x.subjectId === subjectId)
+    (!subjectId || !x.subjectId || x.subjectId === subjectId) &&
+    (x.accessType==="free" || (x.accessType==="premium" && premiumActive) || (x.accessType==="assigned" && assignedIds.has(x.id)))
   ).map((x:any) => ({
     id:x.id,title:text(x.title),description:text(x.description),type:text(x.type)||"pdf",
     boardId:text(x.boardId),classId:text(x.classId),subjectId:text(x.subjectId),
