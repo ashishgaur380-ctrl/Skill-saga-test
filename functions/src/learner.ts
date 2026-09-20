@@ -289,3 +289,58 @@ export const getTopicPractice = onCall(async (request) => {
 
   return { topic: { id: topicId, name: text(topicSnap.data()?.name), chapterId }, questions };
 });
+
+
+export const submitTopicPractice = onCall(async (request) => {
+  const uid = learner(request);
+  const payload = request.data as any;
+  const topicId = text(payload?.topicId);
+  const answers = payload?.answers;
+  if (!topicId || !Array.isArray(answers)) {
+    throw new HttpsError("invalid-argument", "topicId and answers are required.");
+  }
+
+  const db = getFirestore();
+  const topicSnap = await db.collection("topics").doc(topicId).get();
+  if (!topicSnap.exists || topicSnap.data()?.active !== true) {
+    throw new HttpsError("not-found", "Topic was not found.");
+  }
+
+  const chapterId = text(topicSnap.data()?.chapterId);
+  const snap = await db.collection("questions")
+    .where("active", "==", true)
+    .where("status", "==", "published")
+    .where("chapterId", "==", chapterId)
+    .limit(100)
+    .get();
+
+  const questions = snap.docs
+    .map(doc => ({ doc, topicId: text(doc.data().topicId) }))
+    .filter(x => !x.topicId || x.topicId === topicId);
+
+  if (!questions.length) throw new HttpsError("failed-precondition", "No published questions are available for this topic.");
+  if (answers.length !== questions.length) throw new HttpsError("invalid-argument", "Every practice question must have an answer.");
+
+  let correct = 0, marks = 0, totalMarks = 0;
+  const answerResults = questions.map((x, index) => {
+    const d = x.doc.data();
+    const maxMarks = Number(d.marks) || 1;
+    const selected = Number(answers[index]);
+    const isCorrect = Number.isInteger(selected) && selected === Number(d.correctOption);
+    if (isCorrect) { correct++; marks += maxMarks; }
+    totalMarks += maxMarks;
+    return { questionId: x.doc.id, selectedOption: selected, correct: isCorrect, marks: isCorrect ? maxMarks : 0, maxMarks };
+  });
+
+  const percentage = totalMarks ? Math.round((marks / totalMarks) * 10000) / 100 : 0;
+  const xpEarned = correct * 10;
+  const coinsEarned = correct * 2;
+  const attemptRef = db.collection("quizAttempts").doc();
+  await attemptRef.set({
+    learnerId: uid, practiceType: "topic", topicId, correct, total: questions.length,
+    marks, totalMarks, percentage, xpEarned, coinsEarned, answers: answerResults,
+    createdAt: FieldValue.serverTimestamp(),
+  });
+
+  return { attemptId: attemptRef.id, result: { correct, total: questions.length, marks, totalMarks, percentage, xpEarned, coinsEarned } };
+});
