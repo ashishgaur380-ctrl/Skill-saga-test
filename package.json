@@ -10,7 +10,7 @@
     "build:admin": "pnpm --dir apps/admin build",
     "build": "pnpm build:functions && pnpm build:learner && pnpm build:admin",
     "typecheck": "pnpm build:functions",
-    "test": "node scripts/validate-foundation.mjs",
+    "test": "node scripts/validate-foundation.mjs && node scripts/validate-scheduling.mjs",
     "lint": "echo 'lint configured per app in CI'",
     "emulators:start:persistent": "mkdir -p emulator-data && npx firebase emulators:start --import=./emulator-data --export-on-exit=./emulator-data"
   },
