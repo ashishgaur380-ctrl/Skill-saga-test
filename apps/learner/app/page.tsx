@@ -1,4 +1,5 @@
 "use client";
+// Skill Saga UI 2.0 is the single frozen learner frontend entry point.
 import Link from "next/link";
 import {useEffect,useState} from "react";
 import {onAuthStateChanged} from "firebase/auth";
