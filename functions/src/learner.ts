@@ -219,3 +219,40 @@ export const getLearnerHome = onCall(async (request) => {
     featuredQuizzes: quizzes.filter(q => q.id !== daily?.id && q.id !== weekly?.id).slice(0, 4),
   };
 });
+
+
+async function learnerAcademicCollection(db: FirebaseFirestore.Firestore, collection: string) {
+  const allowed = new Set(["boards","classes","subjects","chapters","topics","skillCategories","skills"]);
+  if (!allowed.has(collection)) throw new HttpsError("invalid-argument", "Invalid academic collection.");
+  const snap = await db.collection(collection).where("active","==",true).limit(1000).get();
+  return snap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+}
+
+export const getLearnerAcademic = onCall(async (request) => {
+  learner(request);
+  const db = getFirestore();
+  const collection = text((request.data as any)?.collection) || "boards";
+  const parentId = text((request.data as any)?.parentId);
+  const items = await learnerAcademicCollection(db, collection);
+  let filtered = items;
+
+  if (collection === "classes" && parentId) {
+    filtered = items.filter((x:any) => Array.isArray(x.boardIds) && x.boardIds.includes(parentId));
+  } else if (collection === "subjects") {
+    const boardId = text((request.data as any)?.boardId);
+    const classId = text((request.data as any)?.classId);
+    filtered = items.filter((x:any) =>
+      (!boardId || (Array.isArray(x.boardIds) && x.boardIds.includes(boardId))) &&
+      (!classId || (Array.isArray(x.classIds) && x.classIds.includes(classId)))
+    );
+  } else if (collection === "chapters" && parentId) {
+    filtered = items.filter((x:any) => x.subjectId === parentId);
+  } else if (collection === "topics" && parentId) {
+    filtered = items.filter((x:any) => x.chapterId === parentId);
+  } else if (collection === "skills" && parentId) {
+    filtered = items.filter((x:any) => x.categoryId === parentId);
+  }
+
+  filtered.sort((a:any,b:any) => (Number(a.sortOrder)||0)-(Number(b.sortOrder)||0) || String(a.name||"").localeCompare(String(b.name||"")));
+  return { items: filtered };
+});
