@@ -1,5 +1,5 @@
 "use client";
-import{useEffect,useState}from"react";import{onAuthStateChanged,signInWithEmailAndPassword,signOut}from"firebase/auth";import{auth}from"../lib/firebase";
+import{useEffect,useState}from"react";import{onAuthStateChanged,signInWithEmailAndPassword,signOut}from"firebase/auth";import{auth}from"./lib/firebase";
 
 async function call(action:string,token:string,data:any={}){const r=await fetch("/api/guardian",{method:"POST",headers:{Authorization:`Bearer ${token}`,"Content-Type":"application/json"},body:JSON.stringify({action,data})});const p=await r.json();if(!r.ok)throw new Error(p?.error?.message||"Request failed");return p?.data??p;}
 
