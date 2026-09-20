@@ -104,3 +104,5 @@ export {
 export { createAssignment, listAssignments, updateAssignment, archiveAssignment } from "./assignment";
 
 export { getTeacherDashboard } from "./teacher";
+
+export { getSchoolDashboard } from "./school";
