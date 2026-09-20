@@ -1,0 +1,15 @@
+import fs from "node:fs";
+const g=fs.readFileSync("functions/src/guardian.ts","utf8");
+const rules=fs.readFileSync("security/firestore.rules","utf8");
+const must=(label,ok)=>{if(!ok)throw new Error("GUARDIAN SECURITY FAIL: "+label);};
+must("link creation is learner-only",g.includes('who(r,["learner"])'));
+must("link consumption is parent/teacher-only",g.includes('who(r,["parent","teacher"])'));
+must("codes expire",g.includes("15*60*1000"));
+must("expired/inactive codes rejected",g.includes("active!==true")&&g.includes("expiresAt"));
+must("code is single-use",g.includes("ref.update({active:false"));
+must("existing link is reused",g.includes('status","==","active')&&g.includes("return {success:true,linkId:existing.docs[0].id}"));
+must("linked progress checks guardian ownership",g.includes('where("guardianId","==",uid)')&&g.includes('where("learnerId","==",learnerId)'));
+must("linked progress rejects unlinked learner",g.includes("This learner is not linked to your account."));
+must("Firestore denies direct learner-link writes",!rules.includes("match /learnerLinks/{"));
+must("Firestore denies direct attempt writes",!rules.includes("match /quizAttempts/{"));
+console.log("Guardian relationship security contract: PASS");
