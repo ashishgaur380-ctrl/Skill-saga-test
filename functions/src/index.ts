@@ -90,3 +90,11 @@ export {
 export { getLearnerRewards, redeemReward } from "./learner";
 
 export { createLearnerLinkCode, linkLearner, listLinkedLearners, getLinkedLearnerProgress } from "./guardian";
+
+export {
+  listLearningMaterials,
+  createLearningMaterial,
+  updateLearningMaterial,
+  archiveLearningMaterial,
+  bulkCreateLearningMaterials,
+} from "./content";
