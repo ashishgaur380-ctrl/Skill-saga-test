@@ -519,6 +519,23 @@ export const getLearnerProgress = onCall(async (request) => {
   };
 });
 
+
+export const listPublishedLearningMaterials = onCall(async (request) => {
+  learner(request);
+  const db = getFirestore();
+  const snap = await db.collection("learningMaterials").where("status","==","published").limit(200).get();
+  const now = Date.now();
+  const items = snap.docs.map(doc => {
+    const d = doc.data();
+    const publishAt = Number(d.publishAtMs ?? d.scheduledAtMs);
+    const expireAt = Number(d.expireAtMs);
+    return { id: doc.id, ...d, publishAtMs: Number.isFinite(publishAt) ? publishAt : null, expireAtMs: Number.isFinite(expireAt) ? expireAt : null };
+  }).filter((x:any) => (!Number.isFinite(x.publishAtMs) || x.publishAtMs <= now) && (!Number.isFinite(x.expireAtMs) || x.expireAtMs > now))
+    .map((x:any) => ({id:x.id,title:text(x.title),description:text(x.description),type:text(x.type)||"pdf",boardId:text(x.boardId),classId:text(x.classId),subjectId:text(x.subjectId),chapterId:text(x.chapterId),topicId:text(x.topicId),language:text(x.language),accessType:text(x.accessType)||"free",fileUrl:text(x.fileUrl),thumbnailUrl:text(x.thumbnailUrl)}));
+  items.sort((a:any,b:any)=>a.title.localeCompare(b.title));
+  return {items};
+});
+
 export const listPublishedCompetitions = onCall(async (request) => {
   const uid = learner(request);
   const db = getFirestore();
