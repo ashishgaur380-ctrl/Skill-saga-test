@@ -34,3 +34,5 @@
 .ss-review-option.selected{border-width:2px}
 .ss-review-option.correct,.ss-review-option.answer{border-width:2px}
 .ss-review-option small{margin-left:8px;font-weight:700}
+
+.ss-skill-row{border:1px solid #e7eaf3;border-radius:16px;margin:10px 0;overflow:hidden;background:#fff}.ss-skill-main{width:100%;border:0;background:transparent;padding:15px 16px;display:flex;align-items:center;justify-content:space-between;text-align:left;cursor:pointer}.ss-skill-main div{display:flex;flex-direction:column;gap:4px}.ss-skill-main small{color:#6b7280}.ss-skill-main strong{font-size:15px}.ss-skill-detail{padding:0 14px 14px;border-top:1px solid #eef0f6;background:#fafbff}.ss-skill-detail>p{font-size:13px;color:#667085;margin:12px 4px}.ss-skill-detail .ss-history-row{margin:7px 0}.ss-skill-row.open{box-shadow:0 4px 16px rgba(30,41,59,.06)}
