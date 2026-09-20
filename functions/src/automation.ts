@@ -1,6 +1,7 @@
 import {getFirestore,FieldValue} from "firebase-admin/firestore";
 import {onCall,HttpsError,type CallableRequest} from "firebase-functions/v2/https";
 import {onSchedule} from "firebase-functions/v2/scheduler";
+import type {Firestore} from "firebase-admin/firestore";
 const ROLES=new Set(["super_admin","admin"]);
 function auth(r:CallableRequest<unknown>){const uid=r.auth?.uid,role=r.auth?.token.role;if(!uid)throw new HttpsError("unauthenticated","Administrator authentication is required.");if(typeof role!=="string"||!ROLES.has(role))throw new HttpsError("permission-denied","You are not authorized to manage automation.");return{uid,role};}
 const text=(v:unknown)=>typeof v==="string"?v.trim():"";
@@ -31,7 +32,7 @@ function runKey(schedule:string, now:Date){
   return `${s}:${day}`;
 }
 
-async function claimRun(db:FirebaseFirestore.Firestore, ruleId:string, key:string){
+async function claimRun(db:Firestore, ruleId:string, key:string){
   const ref=db.collection("automationLocks").doc(`${ruleId}__${key}`);
   let claimed=false;
   await db.runTransaction(async tx=>{
@@ -56,7 +57,7 @@ async function runQuizAutomation(db:any, rule:any){
   }
   const snap=await db.collection("quizzes").where("active","==",true).where("status","==","published").limit(100).get();
   const now=Date.now();
-  const quiz=snap.docs.map(d=>({id:d.id,...d.data()})).find((x:any)=>{
+  const quiz=snap.docs.map((d:any)=>({id:d.id,...d.data()})).find((x:any)=>{
     const publish=Number(x.publishAtMs), expire=Number(x.expireAtMs);
     return pattern.test(text(x.title)) && (!Number.isFinite(publish)||publish<=now) && (!Number.isFinite(expire)||expire>now);
   });
