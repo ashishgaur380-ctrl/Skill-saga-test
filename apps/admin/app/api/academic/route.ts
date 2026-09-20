@@ -9,6 +9,8 @@ const allowedActions = new Set([
 ]);
 
 const projectId = process.env.GCLOUD_PROJECT ?? "skill-saga-2";
+const region = process.env.FIREBASE_FUNCTIONS_REGION ?? "us-central1";
+const base = process.env.NEXT_PUBLIC_USE_FIREBASE_EMULATORS === "true" ? `http://127.0.0.1:5001/${projectId}/${region}` : (process.env.FIREBASE_FUNCTIONS_BASE_URL ?? `https://${region}-${projectId}.cloudfunctions.net`);
 
 export async function POST(request: NextRequest) {
   const authorization = request.headers.get("authorization");
@@ -38,11 +40,10 @@ export async function POST(request: NextRequest) {
     );
   }
 
-  const emulatorUrl =
-    `http://127.0.0.1:5001/${projectId}/us-central1/${action}`;
+  const functionUrl = `${base}/${action}`;
 
   try {
-    const response = await fetch(emulatorUrl, {
+    const response = await fetch(functionUrl, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
@@ -92,9 +93,9 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ data: payload }, { status: response.status });
   } catch (error) {
     const message =
-      error instanceof Error ? error.message : "Unable to reach the local Functions emulator.";
+      error instanceof Error ? error.message : "Unable to reach Firebase Functions.";
     return NextResponse.json(
-      { error: { message: `Academic Functions emulator unavailable: ${message}` } },
+      { error: { message: `Academic Functions unavailable: ${message}` } },
       { status: 502 }
     );
   }
