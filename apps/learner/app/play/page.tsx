@@ -16,7 +16,8 @@ export default function Play(){
    try{
      const params=new URLSearchParams(window.location.search);
      const topicId=params.get("topicId")||"", competitionId=params.get("competitionId")||"", quizId=params.get("quizId")||"", assigned=params.get("assigned")||"";
-     if(assigned){setMode("assigned");setContextId(topicId);await startQuiz(assigned,t);} else if(topicId){setMode("topic");
+     if(assigned){setMode("assigned");setContextId(assigned);await startQuiz(assigned,t);}
+     else if(topicId){setMode("topic");setContextId(topicId);await startTopic(topicId,t);}
      else if(competitionId){setMode("competition");setContextId(competitionId);await startCompetition(competitionId,t);}
      else{
        const list=(await learnerFunction("listPublishedQuizzes",{},t))?.items||[];setQuizzes(list);
