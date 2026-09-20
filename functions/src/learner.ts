@@ -19,7 +19,7 @@ function quizIsLive(data: any, now = Date.now()) {
   return true;
 }
 
-function calculateStreak(attempts:any[]) {
+function competitionIsLive(data: any, now = Date.now()) {\n  if (data?.active !== true || data?.status !== "published") return false;\n  const start = Number(data?.startAtMs);\n  const end = Number(data?.endAtMs);\n  if (Number.isFinite(start) && start > now) return false;\n  if (Number.isFinite(end) && end <= now) return false;\n  return true;\n}\nfunction calculateStreak(attempts:any[]) {
   const days = new Set<string>();
   for (const a of attempts) {
     const ts = a.createdAt?.toDate?.() ?? (a.createdAt instanceof Date ? a.createdAt : null);
@@ -515,7 +515,7 @@ export const listPublishedCompetitions = onCall(async (request) => {
   const uid = learner(request);
   const db = getFirestore();
   const snap = await db.collection("competitions").where("active","==",true).where("status","==","published").limit(100).get();
-  const items = await Promise.all(snap.docs.map(async doc => {
+  const items = await Promise.all(snap.docs.filter(doc => competitionIsLive(doc.data())).map(async doc => {
     const d = doc.data();
     const joined = await db.collection("competitionEntries").doc(`${doc.id}_${uid}`).get();
     const entryCount = (await db.collection("competitionEntries").where("competitionId","==",doc.id).limit(1000).get()).size;
@@ -529,7 +529,7 @@ export const joinCompetition = onCall(async (request) => {
   const uid=learner(request), competitionId=text((request.data as any)?.competitionId);
   if(!competitionId) throw new HttpsError("invalid-argument","competitionId is required.");
   const db=getFirestore(), ref=db.collection("competitions").doc(competitionId), snap=await ref.get();
-  if(!snap.exists||snap.data()?.active!==true||snap.data()?.status!=="published") throw new HttpsError("not-found","Published competition was not found.");
+  if(!snap.exists||!competitionIsLive(snap.data())) throw new HttpsError("not-found","Published competition is not currently available.");
   const d=snap.data()!;
   if(text(d.entryType)==="paid") throw new HttpsError("failed-precondition","Paid competition entry is not available yet.");
   const entryRef=db.collection("competitionEntries").doc(`${competitionId}_${uid}`);
@@ -544,7 +544,7 @@ export const getCompetitionQuiz = onCall(async (request) => {
   const uid=learner(request), competitionId=text((request.data as any)?.competitionId);
   if(!competitionId) throw new HttpsError("invalid-argument","competitionId is required.");
   const db=getFirestore(), c=await db.collection("competitions").doc(competitionId).get();
-  if(!c.exists||c.data()?.active!==true||c.data()?.status!=="published") throw new HttpsError("not-found","Competition was not found.");
+  if(!c.exists||!competitionIsLive(c.data())) throw new HttpsError("not-found","Competition is not currently available.");
   if(!(await db.collection("competitionEntries").doc(`${competitionId}_${uid}`).get()).exists) throw new HttpsError("permission-denied","Join the competition before starting it.");
   const quizId=text(c.data()?.quizId), q=await db.collection("quizzes").doc(quizId).get();
   if(!q.exists||!quizIsLive(q.data())) throw new HttpsError("failed-precondition","Competition quiz is unavailable.");
@@ -559,7 +559,7 @@ export const submitCompetitionAttempt = onCall(async (request) => {
   const uid=learner(request),p=request.data as any,competitionId=text(p?.competitionId),answers=p?.answers;
   if(!competitionId||!Array.isArray(answers)) throw new HttpsError("invalid-argument","competitionId and answers are required.");
   const db=getFirestore(),c=await db.collection("competitions").doc(competitionId).get();
-  if(!c.exists||c.data()?.active!==true||c.data()?.status!=="published") throw new HttpsError("not-found","Competition was not found.");
+  if(!c.exists||!competitionIsLive(c.data())) throw new HttpsError("not-found","Competition is not currently available.");
   if(!(await db.collection("competitionEntries").doc(`${competitionId}_${uid}`).get()).exists) throw new HttpsError("permission-denied","Join the competition before submitting.");
   const q=await db.collection("quizzes").doc(text(c.data()?.quizId)).get();
   if(!q.exists||q.data()?.active!==true||q.data()?.status!=="published") throw new HttpsError("failed-precondition","Competition quiz is unavailable.");
