@@ -344,3 +344,129 @@ export const submitTopicPractice = onCall(async (request) => {
 
   return { attemptId: attemptRef.id, result: { correct, total: questions.length, marks, totalMarks, percentage, xpEarned, coinsEarned } };
 });
+
+
+export const getLearnerProgress = onCall(async (request) => {
+  const uid = learner(request);
+  const db = getFirestore();
+
+  const attemptSnap = await db.collection("quizAttempts")
+    .where("learnerId", "==", uid)
+    .limit(500)
+    .get();
+
+  const attempts = attemptSnap.docs.map(doc => doc.data());
+  const questionIds = Array.from(new Set(
+    attempts.flatMap(a => Array.isArray(a.answers) ? a.answers.map((x:any) => text(x?.questionId)).filter(Boolean) : [])
+  ));
+
+  const questionMap = new Map<string, any>();
+  for (let i = 0; i < questionIds.length; i += 100) {
+    const batch = questionIds.slice(i, i + 100);
+    const docs = await db.getAll(...batch.map(id => db.collection("questions").doc(id)));
+    for (const doc of docs) if (doc.exists) questionMap.set(doc.id, doc.data());
+  }
+
+  const chapterIds = Array.from(new Set(
+    Array.from(questionMap.values()).map((q:any) => text(q.chapterId)).filter(Boolean)
+  ));
+  const chapterMap = new Map<string, any>();
+  for (let i = 0; i < chapterIds.length; i += 100) {
+    const batch = chapterIds.slice(i, i + 100);
+    const docs = await db.getAll(...batch.map(id => db.collection("chapters").doc(id)));
+    for (const doc of docs) if (doc.exists) chapterMap.set(doc.id, doc.data());
+  }
+
+  const topicIds = Array.from(new Set(
+    Array.from(questionMap.values()).map((q:any) => text(q.topicId)).filter(Boolean)
+  ));
+  const topicMap = new Map<string, any>();
+  for (let i = 0; i < topicIds.length; i += 100) {
+    const batch = topicIds.slice(i, i + 100);
+    const docs = await db.getAll(...batch.map(id => db.collection("topics").doc(id)));
+    for (const doc of docs) if (doc.exists) topicMap.set(doc.id, doc.data());
+  }
+
+  type Bucket = {
+    id:string; name:string; chapterId:string; chapterName:string; subjectId:string;
+    questions:number; correct:number; marks:number; totalMarks:number; attempts:number;
+  };
+  const topicBuckets = new Map<string, Bucket>();
+  const subjectBuckets = new Map<string, {id:string;name:string;questions:number;correct:number;marks:number;totalMarks:number}>();
+
+  for (const attempt of attempts) {
+    const seenTopics = new Set<string>();
+    if (!Array.isArray(attempt.answers)) continue;
+
+    for (const answer of attempt.answers) {
+      const questionId = text(answer?.questionId);
+      const question = questionMap.get(questionId);
+      if (!questionId || !question) continue;
+
+      const chapterId = text(question.chapterId);
+      const chapter = chapterMap.get(chapterId);
+      const topicId = text(question.topicId) || "__unassigned__";
+      const topic = topicMap.get(topicId);
+      const topicName = topicId === "__unassigned__" ? "Other / Unassigned" : (text(topic?.name) || "Topic");
+      const chapterName = text(chapter?.name) || "Chapter";
+      const subjectId = text(chapter?.subjectId) || "__unassigned__";
+      const subjectName = text(chapter?.subjectName) || "Subject";
+
+      let bucket = topicBuckets.get(topicId);
+      if (!bucket) {
+        bucket = {id:topicId,name:topicName,chapterId,chapterName,subjectId,questions:0,correct:0,marks:0,totalMarks:0,attempts:0};
+        topicBuckets.set(topicId,bucket);
+      }
+      bucket.questions++;
+      if (answer?.correct === true) bucket.correct++;
+      bucket.marks += Number(answer?.marks) || 0;
+      bucket.totalMarks += Number(answer?.maxMarks) || 0;
+      seenTopics.add(topicId);
+
+      let subject = subjectBuckets.get(subjectId);
+      if (!subject) {
+        subject = {id:subjectId,name:subjectName,questions:0,correct:0,marks:0,totalMarks:0};
+        subjectBuckets.set(subjectId,subject);
+      }
+      subject.questions++;
+      if (answer?.correct === true) subject.correct++;
+      subject.marks += Number(answer?.marks) || 0;
+      subject.totalMarks += Number(answer?.maxMarks) || 0;
+    }
+
+    for (const topicId of seenTopics) {
+      const bucket = topicBuckets.get(topicId);
+      if (bucket) bucket.attempts++;
+    }
+  }
+
+  const toAccuracy = (correct:number, questions:number) =>
+    questions ? Math.round((correct / questions) * 10000) / 100 : 0;
+
+  const topics = Array.from(topicBuckets.values())
+    .map(x => ({...x, accuracy:toAccuracy(x.correct,x.questions), marksPercentage:x.totalMarks ? Math.round((x.marks/x.totalMarks)*10000)/100 : 0}))
+    .sort((a,b) => b.questions-a.questions || b.accuracy-a.accuracy);
+
+  const subjects = Array.from(subjectBuckets.values())
+    .map(x => ({...x, accuracy:toAccuracy(x.correct,x.questions), marksPercentage:x.totalMarks ? Math.round((x.marks/x.totalMarks)*10000)/100 : 0}))
+    .sort((a,b) => b.questions-a.questions || b.accuracy-a.accuracy);
+
+  const totalQuestions = topics.reduce((n,x)=>n+x.questions,0);
+  const totalCorrect = topics.reduce((n,x)=>n+x.correct,0);
+  const totalMarks = topics.reduce((n,x)=>n+x.totalMarks,0);
+  const marks = topics.reduce((n,x)=>n+x.marks,0);
+
+  return {
+    summary: {
+      attempts: attempts.length,
+      questions: totalQuestions,
+      correct: totalCorrect,
+      accuracy: toAccuracy(totalCorrect,totalQuestions),
+      marks,
+      totalMarks,
+      marksPercentage: totalMarks ? Math.round((marks/totalMarks)*10000)/100 : 0,
+    },
+    subjects,
+    topics,
+  };
+});
