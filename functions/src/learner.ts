@@ -125,8 +125,8 @@ export const submitQuizAttempt = onCall(async (request) => {
 
   const db = getFirestore();
   const quizSnap = await db.collection("quizzes").doc(quizId).get();
-  if (!quizSnap.exists || quizSnap.data()?.active !== true || quizSnap.data()?.status !== "published") {
-    throw new HttpsError("not-found", "Published quiz was not found.");
+  if (!quizSnap.exists || !quizIsLive(quizSnap.data())) {
+    throw new HttpsError("not-found", "Published quiz is not currently available.");
   }
 
   const ids = Array.isArray(quizSnap.data()?.questionIds) ? quizSnap.data()!.questionIds.map(text).filter(Boolean) : [];
