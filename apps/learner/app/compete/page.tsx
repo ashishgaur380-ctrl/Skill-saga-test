@@ -32,7 +32,7 @@ type LeaderboardRow = {
 
 export default function Compete() {
   const [items, setItems] = useState<Competition[]>([]);
-  const [tab, setTab] = useState<"live" | "upcoming" | "mine">("live");
+  const [tab, setTab] = useState<"live" | "upcoming" | "mine" | "ended">("live");
   const [token, setToken] = useState("");
   const [busyId, setBusyId] = useState("");
   const [error, setError] = useState("");
@@ -97,6 +97,7 @@ export default function Compete() {
             ["live", "Live"],
             ["upcoming", "Upcoming"],
             ["mine", "My Competitions"],
+            ["ended", "Results"],
           ].map(([value, label]) => (
             <button key={value} className={tab === value ? "active" : ""} onClick={() => setTab(value as typeof tab)}>
               {label}
@@ -140,7 +141,7 @@ export default function Compete() {
 
           {!visible.length && (
             <div className="ss-empty">
-              <strong>{tab === "live" ? "No live competitions yet" : tab === "upcoming" ? "No upcoming competitions yet" : "You have not joined a competition yet"}</strong>
+              <strong>{tab === "live" ? "No live competitions yet" : tab === "upcoming" ? "No upcoming competitions yet" : tab === "ended" ? "No completed competitions yet" : "You have not joined a competition yet"}</strong>
               <span>Published competitions from the Admin Console will appear here automatically.</span>
             </div>
           )}
