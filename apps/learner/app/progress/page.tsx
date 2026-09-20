@@ -97,7 +97,7 @@ export default function Progress() {
           <div className="ss-section-heading"><div><h2>📝 Quiz history</h2><p>Open any attempt to review each question and answer.</p></div></div>
           {!attempts.length && <small>No quiz attempts yet. Start a quiz to see your history here.</small>}
           {attempts.map((a:any) => (
-            <Link href={"/progress/attempt/" + encodeURIComponent(a.id)} className="ss-history-row" key={a.id}>
+            <Link href={"/progress/attempt?attemptId=" + encodeURIComponent(a.id)} className="ss-history-row" key={a.id}>
               <div>
                 <b>{a.quizId ? "Quiz attempt" : "Practice attempt"}</b>
                 <small>{a.correct}/{a.total} correct · {a.percentage}%</small>
