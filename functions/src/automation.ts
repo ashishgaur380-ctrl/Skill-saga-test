@@ -18,6 +18,31 @@ function isDue(schedule:string, now:Date){
   return false;
 }
 
+function runKey(schedule:string, now:Date){
+  const s=text(schedule).toLowerCase();
+  const day=now.toISOString().slice(0,10);
+  if(s==="daily") return `daily:${day}`;
+  if(s==="weekly"){
+    const d=new Date(Date.UTC(now.getUTCFullYear(),now.getUTCMonth(),now.getUTCDate()));
+    const dayNum=d.getUTCDay()||7;
+    d.setUTCDate(d.getUTCDate()-dayNum+1);
+    return `weekly:${d.toISOString().slice(0,10)}`;
+  }
+  return `${s}:${day}`;
+}
+
+async function claimRun(db:FirebaseFirestore.Firestore, ruleId:string, key:string){
+  const ref=db.collection("automationLocks").doc(`${ruleId}__${key}`);
+  let claimed=false;
+  await db.runTransaction(async tx=>{
+    const snap=await tx.get(ref);
+    if(snap.exists) return;
+    tx.create(ref,{ruleId,runKey:key,claimedAt:FieldValue.serverTimestamp()});
+    claimed=true;
+  });
+  return claimed;
+}
+
 async function runQuizAutomation(db:any, rule:any){
   const type=text(rule.type).toLowerCase();
   const pattern=type==="daily_quiz"?/daily/i:/weekly/i;
@@ -35,13 +60,15 @@ async function runNotificationAutomation(db:FirebaseFirestore.Firestore, rule:an
   return {success:true,jobId:ref.id};
 }
 
-export const runAutomationEngine=onSchedule({schedule:"0 * * * *",timeZone:"UTC"},async()=>{
+export const runAutomationEngine=onSchedule({schedule:"0 * * * *",timeZone:"Asia/Kolkata"},async()=>{
   const db=getFirestore();
   const snap=await db.collection("automationRules").where("active","==",true).where("enabled","==",true).limit(500).get();
   const now=new Date();
   for(const doc of snap.docs){
     const rule=doc.data();
     if(!isDue(text(rule.schedule),now)) continue;
+    const key=runKey(text(rule.schedule),now);
+    if(!(await claimRun(db,doc.id,key))) continue;
     const type=text(rule.type).toLowerCase();
     let result:any;
     if(type==="daily_quiz"||type==="weekly_quiz") result=await runQuizAutomation(db,{id:doc.id,...rule});
@@ -49,4 +76,30 @@ export const runAutomationEngine=onSchedule({schedule:"0 * * * *",timeZone:"UTC"
     else continue;
     await db.collection("automationRuns").doc().set({ruleId:doc.id,type,success:result.success,message:result.message??null,targetId:result.quizId??result.jobId??null,ranAt:FieldValue.serverTimestamp()});
   }
+});
+
+
+export const runAutomationEngineNow=onCall(async r=>{
+  auth(r);
+  const db=getFirestore();
+  const snap=await db.collection("automationRules").where("active","==",true).where("enabled","==",true).limit(500).get();
+  const now=new Date();
+  const results:any[]=[];
+  for(const doc of snap.docs){
+    const rule=doc.data();
+    if(!isDue(text(rule.schedule),now)) continue;
+    const key=runKey(text(rule.schedule),now);
+    if(!(await claimRun(db,doc.id,key))) {
+      results.push({ruleId:doc.id,skipped:true,reason:"Already run for this schedule period."});
+      continue;
+    }
+    const type=text(rule.type).toLowerCase();
+    let result:any;
+    if(type==="daily_quiz"||type==="weekly_quiz") result=await runQuizAutomation(db,{id:doc.id,...rule});
+    else if(type==="notification") result=await runNotificationAutomation(db,{id:doc.id,...rule});
+    else continue;
+    await db.collection("automationRuns").doc().set({ruleId:doc.id,type,success:result.success,message:result.message??null,targetId:result.quizId??result.jobId??null,ranAt:FieldValue.serverTimestamp(),runKey:key});
+    results.push({ruleId:doc.id,...result});
+  }
+  return {success:true,results};
 });
