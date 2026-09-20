@@ -106,3 +106,5 @@ export { createAssignment, listAssignments, updateAssignment, archiveAssignment 
 export { getTeacherDashboard } from "./teacher";
 
 export { getSchoolDashboard } from "./school";
+
+export { sendNotification } from "./notification-delivery";
