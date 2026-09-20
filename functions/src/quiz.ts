@@ -18,6 +18,11 @@ function validate(raw:any) {
   const questionIds=Array.isArray(raw.questionIds)?raw.questionIds.filter((x:any)=>text(x)):[];
   if(!questionIds.length) throw new HttpsError("invalid-argument","At least one question is required.");
   const status=text(raw.status).toLowerCase()||"draft";
+  const accessMode=text(raw.accessMode).toUpperCase()||"FREE";
+  if(!["FREE","XP_UNLOCK","COIN_UNLOCK","PREMIUM","ASSIGNED"].includes(accessMode)) throw new HttpsError("invalid-argument","Invalid quiz access mode.");
+  const requiredXp=Math.max(0,Number(raw.requiredXp)||0);
+  const requiredCoins=Math.max(0,Number(raw.requiredCoins)||0);
+
   if(!["draft","published"].includes(status)) throw new HttpsError("invalid-argument","Status must be Draft or Published.");
   const publishAtMs = raw.publishAtMs == null || raw.publishAtMs === "" ? null : Number(raw.publishAtMs);
   const expireAtMs = raw.expireAtMs == null || raw.expireAtMs === "" ? null : Number(raw.expireAtMs);
@@ -26,7 +31,7 @@ function validate(raw:any) {
   if (publishAtMs !== null && expireAtMs !== null && expireAtMs <= publishAtMs) throw new HttpsError("invalid-argument","expireAtMs must be later than publishAtMs.");
   return {
     title, description:text(raw.description), questionIds:[...new Set(questionIds.map(text))] as string[],
-    boardId:text(raw.boardId), classId:text(raw.classId), subjectId:text(raw.subjectId),
+    boardId:text(raw.boardId), classId:text(raw.classId), subjectId:text(raw.subjectId),\n    accessMode, requiredXp, requiredCoins, premiumRequired:accessMode==="PREMIUM", assignedOnly:accessMode==="ASSIGNED",
     publishAtMs, expireAtMs, status, active:raw.active===undefined?true:Boolean(raw.active)
   };
 }
