@@ -75,7 +75,7 @@ export default function Profile() {
 
         {message && <div className="ss-message">{message}</div>}
 
-        <ProfileMenu linkCode={linkCode} onLinkCode={()=>void createLinkCode()} onDelete={()=>void deleteAccount()} onLogout={()=>void signOut(learnerAuth)}/>
+        <ProfileMenu linkCode={linkCode} onLinkCode={()=>void createLinkCode()} onDelete={()=>void deleteAccount()} onLogout={()=>void (async()=>{await signOut(learnerAuth);window.location.href=APP_BASE+"/login/";})()}/>
       </main>
 
       <LearnerNav active="Profile" />
