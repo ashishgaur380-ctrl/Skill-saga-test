@@ -1,4 +1,5 @@
 import {getFirestore,FieldValue} from "firebase-admin/firestore";
+import {getStorage} from "firebase-admin/storage";
 import {onCall,HttpsError} from "firebase-functions/v2/https";
 import type {CallableRequest} from "firebase-functions/v2/https";
 
@@ -6,9 +7,28 @@ const roles=new Set(["admin","super_admin","content_manager"]);
 function auth(r:CallableRequest<unknown>){const uid=r.auth?.uid,role=r.auth?.token.role;if(!uid||typeof role!=="string"||!roles.has(role))throw new HttpsError("permission-denied","Content manager access required.");return{uid,role};}
 const text=(v:unknown)=>typeof v==="string"?v.trim():"";
 const num=(v:unknown)=>{const n=Number(v);return Number.isFinite(n)?n:null;};
-const allowedTypes=new Set(["pdf","video","article","link"]);
+const allowedTypes=new Set(["pdf","video","article","link","image","audio","worksheet","presentation"]);
 const allowedAccess=new Set(["free","premium","assigned"]);
 const allowedStatus=new Set(["draft","published","archived"]);
+
+
+function storagePathFromUrl(value:unknown):string|null{
+  if(typeof value!=="string"||!value.trim())return null;
+  const raw=value.trim();
+  if(raw.startsWith("gs://")){const slash=raw.indexOf("/",5);return slash>5?decodeURIComponent(raw.slice(slash+1)):null;}
+  try{const url=new URL(raw);const match=url.pathname.match(/\\/o\\/(.+)$/);return match?decodeURIComponent(match[1]):null;}catch{return null;}
+}
+async function deleteStorageForMaterial(data:any){
+  const paths=new Set<string>();
+  for(const field of ["fileUrl","thumbnailUrl","storagePath","filePath","mediaUrl","thumbnailPath"]){
+    const value=data?.[field];
+    const path=field.endsWith("Url")?storagePathFromUrl(value):(typeof value==="string"&&value.trim()?value.trim():null);
+    if(path)paths.add(path);
+  }
+  let deleted=0;const bucket=getStorage().bucket();
+  for(const path of paths){try{await bucket.file(path).delete();deleted++;}catch(e:any){if(String(e?.code)!=="404")throw e;}}
+  return deleted;
+}
 
 function validate(d:any){
   const title=text(d.title);
@@ -96,4 +116,15 @@ export const bulkCreateLearningMaterials=onCall(async r=>{
     batch.set(ref,{...d,createdBy:uid,createdAt:now,updatedAt:now});
   }
   await batch.commit();return{created:rows.length};
+});
+
+export const deleteLearningMaterial=onCall(async r=>{
+  const {uid}=auth(r);
+  const id=text((r.data as any)?.id);if(!id)throw new HttpsError("invalid-argument","id is required.");
+  const db=getFirestore();const ref=db.collection("learningMaterials").doc(id);const snap=await ref.get();
+  if(!snap.exists)throw new HttpsError("not-found","Learning material was not found.");
+  const storageObjectsDeleted=await deleteStorageForMaterial(snap.data());
+  await ref.delete();
+  await db.collection("auditLogs").doc().set({actorUid:uid,action:"DELETE_LEARNING_MATERIAL",collection:"learningMaterials",documentId:id,storageObjectsDeleted,createdAt:FieldValue.serverTimestamp()});
+  return{id,storageObjectsDeleted};
 });
