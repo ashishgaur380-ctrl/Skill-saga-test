@@ -694,7 +694,7 @@ export const listLearnerAssignments = onCall(async (request) => {
   const contentDocs=contentIds.length?await db.getAll(...contentIds.map((id:string)=>db.collection("learningMaterials").doc(id))):[];
   const contentMap=new Map(contentDocs.filter(d=>d.exists).map(d=>[d.id,d.data()]));
   const items=raw.map((a:any)=>{
-    const content=a.resourceType==="content"?contentMap.get(text(a.resourceId)):null;
+    const content:Record<string,unknown>|null=a.resourceType==="content"?(contentMap.get(text(a.resourceId)) as Record<string,unknown>|undefined)||null:null;
     const dueAtMs=Number.isFinite(Number(a.dueAtMs))?Number(a.dueAtMs):null;
     const expired=!!(dueAtMs&&dueAtMs<now);
     const status=a.resourceType==="quiz"&&attempted.has(text(a.resourceId))?"completed":expired?"expired":"pending";
