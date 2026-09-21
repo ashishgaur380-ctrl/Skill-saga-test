@@ -1,3 +1,25 @@
 "use client";
-import Link from "next/link";
-export default function ProfileMenu({onLinkCode,onDelete,onLogout,linkCode}:{onLinkCode:()=>void;onDelete:()=>void;onLogout:()=>void;linkCode?:string}){return <div className="ss-menu"><Link className="ss-menu-item ss-menu-progress" href="/progress">📊 <b>Performance & Activity</b> <span>›</span></Link><button className="ss-menu-button" onClick={onLinkCode}>👨‍👩‍👧 <b>Parent / Teacher Link</b> <span>›</span></button>{linkCode&&<div className="ss-link-code"><small>Share this 15-minute code</small><strong>{linkCode}</strong></div>}<Link className="ss-menu-item ss-menu-competition" href="/compete">🏆 <b>Competition History</b> <span>›</span></Link><Link className="ss-menu-item ss-menu-rewards" href="/rewards">🎁 <b>Rewards & Coins</b> <span>›</span></Link><Link className="ss-menu-item ss-menu-community" href="/community">💬 <b>Community</b> <span>›</span></Link><Link className="ss-menu-item ss-menu-settings" href="/profile/settings">⚙️ <b>Settings</b> <span>›</span></Link><Link className="ss-menu-item ss-menu-account" href="/profile/settings#password">🔐 <b>Change / Reset Password</b> <span>›</span></Link><Link className="ss-menu-item ss-menu-privacy" href="/privacy">🔒 <b>Privacy Policy</b> <span>›</span></Link><Link className="ss-menu-item ss-menu-terms" href="/terms">📄 <b>Terms of Use</b> <span>›</span></Link><button className="ss-menu-button" onClick={onDelete}>🗑️ <b>Request Account Deletion</b> <span>›</span></button><Link className="ss-menu-item ss-menu-help" href="/profile/settings#help">❔ <b>Help & Support</b> <span>›</span></Link><button className="ss-logout" onClick={onLogout}>↪ Log Out</button></div>;}
+
+export default function ProfileMenu({onLinkCode,onDelete,onLogout,linkCode}:{onLinkCode:()=>void;onDelete:()=>void;onLogout:()=>void;linkCode?:string}) {
+  const go = (path:string) => {
+    window.location.assign(path);
+  };
+
+  return (
+    <div className="ss-menu">
+      <button className="ss-menu-button" onClick={() => go("/progress/")}>📊 <b>Performance & Activity</b> <span>›</span></button>
+      <button className="ss-menu-button" onClick={onLinkCode}>👨‍👩‍👧 <b>Parent / Teacher Link</b> <span>›</span></button>
+      {linkCode && <div className="ss-link-code"><small>Share this 15-minute code</small><strong>{linkCode}</strong></div>}
+      <button className="ss-menu-button" onClick={() => go("/compete/")}>🏆 <b>Competition History</b> <span>›</span></button>
+      <button className="ss-menu-button" onClick={() => go("/rewards/")}>🎁 <b>Rewards & Coins</b> <span>›</span></button>
+      <button className="ss-menu-button" onClick={() => go("/community/")}>💬 <b>Community</b> <span>›</span></button>
+      <button className="ss-menu-button" onClick={() => go("/profile/settings/")}>⚙️ <b>Settings</b> <span>›</span></button>
+      <button className="ss-menu-button" onClick={() => go("/profile/settings/#password")}>🔐 <b>Change / Reset Password</b> <span>›</span></button>
+      <button className="ss-menu-button" onClick={() => go("/privacy/")}>🔒 <b>Privacy Policy</b> <span>›</span></button>
+      <button className="ss-menu-button" onClick={() => go("/terms/")}>📄 <b>Terms of Use</b> <span>›</span></button>
+      <button className="ss-menu-button" onClick={onDelete}>🗑️ <b>Request Account Deletion</b> <span>›</span></button>
+      <button className="ss-menu-button" onClick={() => go("/profile/settings/#help")}>❔ <b>Help & Support</b> <span>›</span></button>
+      <button className="ss-logout" onClick={onLogout}>↪ Log Out</button>
+    </div>
+  );
+}
