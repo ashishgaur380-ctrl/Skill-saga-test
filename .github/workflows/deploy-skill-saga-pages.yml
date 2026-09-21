@@ -19,6 +19,9 @@ concurrency:
   group: pages
   cancel-in-progress: true
 
+# Single source of truth for the learner web build.
+# Codespaces :3100 runs the same apps/learner source in development;
+# this workflow publishes that same source to GitHub Pages.
 jobs:
   build:
     runs-on: ubuntu-latest
@@ -35,7 +38,7 @@ jobs:
       - name: Setup Node
         uses: actions/setup-node@v4
         with:
-          node-version: 22
+          node-version: 20
           cache: pnpm
 
       - name: Install dependencies
@@ -54,16 +57,16 @@ jobs:
           NEXT_PUBLIC_FIREBASE_APP_ID: "1:310093386272:web:792a85c9fa4fc4aca0a245"
         run: pnpm build:learner
 
-      - name: Verify login route
-        run: test -f apps/learner/out/login/index.html
-
       - name: Verify core routes
         run: |
           test -f apps/learner/out/index.html
+          test -f apps/learner/out/login/index.html
           test -f apps/learner/out/learn/index.html
           test -f apps/learner/out/play/index.html
           test -f apps/learner/out/compete/index.html
           test -f apps/learner/out/profile/index.html
+          test -f apps/learner/out/profile/settings/index.html
+          test -f apps/learner/out/notifications/index.html
 
       - name: Setup Pages
         uses: actions/configure-pages@v5
