@@ -772,8 +772,17 @@ export const bulkImportAcademic = onCall(async (request) => {
         continue;
       }
 
-      if (existing.get(collection)?.has(key)) throw new HttpsError("already-exists",`"${name}" already exists.`);
-      if (planned.get(collection)?.has(key)) throw new HttpsError("already-exists",`Duplicate row for "${name}".`);
+      // If the exact record already exists but was not captured by the
+      // reusable dependency branch above, treat it as an idempotent no-op.
+      // This is especially important for global skill categories/skills that
+      // are shared across every class import.
+      if (existing.get(collection)?.has(key)) {
+        planned.get(collection)!.set(key, existing.get(collection)!.get(key)!);
+        continue;
+      }
+      if (planned.get(collection)?.has(key)) {
+        continue;
+      }
 
       const ref=db.collection(collection).doc();
       planned.get(collection)!.set(key,ref.id);
