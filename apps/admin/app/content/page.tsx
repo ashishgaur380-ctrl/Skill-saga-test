@@ -1,7 +1,7 @@
 "use client";
 
 import { firebaseAuth, firebaseStorage } from "../../lib/firebase";
-import { getDownloadURL, ref as storageRef, uploadBytes } from "firebase/storage";
+import { getDownloadURL, ref as storageRef, uploadBytesResumable } from "firebase/storage";
 import { useEffect, useState } from "react";
 
 declare global { interface Window { XLSX?: any } }
@@ -30,15 +30,38 @@ export default function ContentPage(){
  const set=(k:keyof M,v:any)=>setForm(x=>({...x,[k]:v}));
 
  async function uploadFile(){
-   const u=firebaseAuth.currentUser;if(!u||!file)return;
+   const u=firebaseAuth.currentUser;
+   if(!u){setMsg("Your admin session has expired. Sign in again.");return;}
+   if(!file){setMsg("Choose a file first.");return;}
    setBusy(true);setMsg("Uploading file…");
    try{
+     await u.getIdToken(true);
      const safe=file.name.replace(/[^a-zA-Z0-9._-]/g,"_");
-     const objectRef=storageRef(firebaseStorage,`learning-materials/${u.uid}/${Date.now()}_${safe}`);
-     const snap=await uploadBytes(objectRef,file,{contentType:file.type||"application/octet-stream"});
+     const objectRef=storageRef(firebaseStorage,"learning-materials/"+u.uid+"/"+Date.now()+"_"+safe);
+     const metadata={contentType:file.type||"application/octet-stream",cacheControl:"public,max-age=3600"};
+     const task=uploadBytesResumable(objectRef,file,metadata);
+     const snap=await new Promise<any>((resolve,reject)=>{
+       task.on("state_changed",
+         state=>setMsg("Uploading file… "+Math.round((state.bytesTransferred/state.totalBytes)*100)+"%"),
+         err=>reject(err),
+         ()=>resolve(task.snapshot)
+       );
+     });
      const url=await getDownloadURL(snap.ref);
-     set("fileUrl",url);setMsg("File uploaded. Save the content record now.");
-   }catch(e:any){setMsg(e.message||"Upload failed.")}finally{setBusy(false);}
+     set("fileUrl",url);
+     setMsg("File uploaded successfully. Save the content record now.");
+   }catch(e:any){
+     const code=e?.code||"";
+     const detail=e?.message||"Upload failed.";
+     const hints:Record<string,string>={
+       "storage/unauthorized":"Firebase Storage denied this upload. Confirm you are signed in and Storage Rules allow authenticated writes.",
+       "storage/unauthenticated":"Your Firebase login session is not authenticated. Sign in again and retry.",
+       "storage/retry-limit-exceeded":"Firebase Storage timed out. Check your network and retry.",
+       "storage/canceled":"Upload was canceled.",
+       "storage/quota-exceeded":"Firebase Storage quota/billing prevented the upload."
+     };
+     setMsg(hints[code]||("Upload failed ["+(code||"unknown")+"]: "+detail));
+   }finally{setBusy(false);}
  }
 
  async function save(){
