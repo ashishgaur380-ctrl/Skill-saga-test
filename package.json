@@ -14,7 +14,7 @@
     "lint": "echo 'lint configured per app in CI'",
     "emulators:start:persistent": "mkdir -p emulator-data && npx firebase emulators:start --import=./emulator-data --export-on-exit=./emulator-data",
     "dev:codespace-proxy": "node scripts/codespace-proxy.mjs",
-    "dev:functions:codespace": "cross-env FIRESTORE_EMULATOR_HOST=127.0.0.1:8080 FIREBASE_AUTH_EMULATOR_HOST=127.0.0.1:9099 GCLOUD_PROJECT=skill-saga-2 pnpm build:functions && firebase emulators:start --only functions --project skill-saga-2"
+    "dev:functions:codespace": "FIRESTORE_EMULATOR_HOST=127.0.0.1:8080 FIREBASE_AUTH_EMULATOR_HOST=127.0.0.1:9099 GCLOUD_PROJECT=skill-saga-2 pnpm build:functions && firebase emulators:start --only functions --project skill-saga-2"
   },
   "workspaces": [
     "apps/*",
@@ -22,8 +22,5 @@
   ],
   "engines": {
     "node": ">=20 <21"
-  },
-  "devDependencies": {
-    "cross-env": "latest"
   }
 }
