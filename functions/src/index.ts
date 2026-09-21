@@ -1,7 +1,7 @@
 // Skill Saga 2.0 learner callable deployment sync: 2026-09-21
 import { initializeApp } from "firebase-admin/app";
 initializeApp();
-export { listAcademic, createAcademic, updateAcademic, archiveAcademic, deleteAcademic, bulkImportAcademic, normalizeSubjectMappings } from "./academic";
+export { listAcademic, createAcademic, updateAcademic, archiveAcademic, deleteAcademic, bulkImportAcademic, normalizeSubjectMappings, repairLegacyClassMappings } from "./academic";
 export { listQuestions, createQuestion, updateQuestion, archiveQuestion, bulkImportQuestions } from "./question";
 export { listQuizzes, createQuiz, updateQuiz, archiveQuiz } from "./quiz";
 export { listCompetitions, createCompetition, updateCompetition, archiveCompetition } from "./competition";
