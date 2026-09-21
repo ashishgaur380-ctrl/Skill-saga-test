@@ -56,7 +56,7 @@ export default function QuestionBankManager() {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [notice, setNotice] = useState<string | null>(null);
+  const [notice, setNotice] = useState<string | null>(null);\n  const [bulkFile, setBulkFile] = useState<File | null>(null);
 
   const load = useCallback(async () => {
     setLoading(true); setError(null);
@@ -91,6 +91,35 @@ export default function QuestionBankManager() {
       topicId: q.topicId ?? "", skillId: q.skillId ?? "", status: q.status, active: q.active,
     });
     setOpen(true); setError(null); setNotice(null);
+  }
+
+  function parseCsv(input: string) {
+    const rows: string[][] = []; let row: string[] = [], cell = "", quoted = false;
+    for (let i = 0; i < input.length; i++) {
+      const c = input[i];
+      if (c === '"') { if (quoted && input[i + 1] === '"') { cell += '"'; i++; } else quoted = !quoted; }
+      else if (c === ',' && !quoted) { row.push(cell.trim()); cell = ""; }
+      else if ((c === "\\n" || c === "\\r") && !quoted) { if (c === "\\r" && input[i + 1] === "\\n") i++; row.push(cell.trim()); cell = ""; if (row.some(Boolean)) rows.push(row); row = []; }
+      else cell += c;
+    }
+    if (cell || row.length) { row.push(cell.trim()); if (row.some(Boolean)) rows.push(row); }
+    return rows;
+  }
+
+  async function bulkImport() {
+    if (!bulkFile) return;
+    setSaving(true); setError(null); setNotice(null);
+    try {
+      const matrix = parseCsv(await bulkFile.text());
+      if (!matrix.length) throw new Error("CSV is empty.");
+      const headers = matrix[0].map(v => v.trim().toLowerCase().replace(/\\s+/g, ""));
+      const rows = matrix.slice(1).filter(r => r.some(Boolean)).map(r => Object.fromEntries(headers.map((h, i) => [h, r[i] ?? ""])));
+      if (rows.length > 5000) throw new Error("Maximum 5,000 questions per import.");
+      const result = await callQuestion<{success:boolean;imported:number;errors?:Array<{row:number;message:string}>}>("bulkImportQuestions", { rows });
+      if (!result.success) throw new Error((result.errors ?? []).slice(0, 5).map(x => `Row ${x.row}: ${x.message}`).join(" | ") || "Import failed.");
+      setBulkFile(null); setNotice(`Imported ${result.imported} questions successfully.`); await load();
+    } catch (e) { setError(e instanceof Error ? e.message : "Unable to import questions."); }
+    finally { setSaving(false); }
   }
 
   async function save() {
@@ -131,7 +160,12 @@ export default function QuestionBankManager() {
         <div className="academic-status"><span className="status-dot" /> {counts.active} active • {counts.draft} draft</div>
       </header>
 
-      <section className="academic-panel">
+            <section className="academic-panel">
+        <div className="academic-panel-header"><div><h2>Bulk Question Import</h2><p>CSV: questionText, option1, option2, option3, option4, correctOption, explanation, difficulty, marks, board, class, subject, chapter, topic, status.</p></div></div>
+        <div className="row-actions"><input type="file" accept=".csv,.txt" onChange={e => setBulkFile(e.target.files?.[0] ?? null)} /><button className="secondary-button" disabled={!bulkFile || saving} onClick={() => void bulkImport()}>{saving ? "Importing…" : "Import Questions"}</button></div>
+      </section>
+
+<section className="academic-panel">
         <div className="academic-panel-header"><div><h2>Questions</h2><p>Start with a tiny test set before importing real content.</p></div>
           <button type="button" className="primary-button" onClick={openCreate}>+ Add Question</button></div>
         {error && <div className="academic-message error">{error}</div>}
