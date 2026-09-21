@@ -87,7 +87,11 @@ function validateData(collection: AcademicCollection, raw: unknown): Record<stri
     data.classIds = Array.isArray(input.classIds) ? input.classIds : [];
   }
 
-  if (collection === "chapters") data.subjectId = requiredText(input.subjectId, "subjectId");
+  if (collection === "chapters") {
+    data.subjectId = requiredText(input.subjectId, "subjectId");
+    data.boardIds = Array.isArray(input.boardIds) ? input.boardIds : [];
+    data.classIds = Array.isArray(input.classIds) ? input.classIds : [];
+  }
   if (collection === "topics") data.chapterId = requiredText(input.chapterId, "chapterId");
   if (collection === "skills") data.categoryId = requiredText(input.categoryId, "categoryId");
   if (collection === "skillCategories" && input.description !== undefined) {
@@ -163,6 +167,18 @@ export const createAcademic = onCall(async (request) => {
   const validated = validateData(collection, data?.data);
 
   const db = getFirestore();
+  // Chapters inherit their board/class scope from the selected subject.
+  // This keeps manual creation consistent with the bulk-import hierarchy.
+  if (collection === "chapters") {
+    const subjectId = String(validated.subjectId ?? "");
+    const subject = await db.collection("subjects").doc(subjectId).get();
+    if (!subject.exists || subject.data()?.active !== true) {
+      throw new HttpsError("failed-precondition", "Referenced subject is missing or inactive.");
+    }
+    validated.boardIds = Array.isArray(subject.data()?.boardIds) ? subject.data()?.boardIds : [];
+    validated.classIds = Array.isArray(subject.data()?.classIds) ? subject.data()?.classIds : [];
+  }
+
   const ref = db.collection(collection).doc();
 
   await ref.set({
@@ -190,7 +206,17 @@ export const updateAcademic = onCall(async (request) => {
   }
 
   const validated = validateData(collection, data?.data);
-  const ref = getFirestore().collection(collection).doc(data.id);
+  const db = getFirestore();
+  if (collection === "chapters") {
+    const subjectId = String(validated.subjectId ?? "");
+    const subject = await db.collection("subjects").doc(subjectId).get();
+    if (!subject.exists || subject.data()?.active !== true) {
+      throw new HttpsError("failed-precondition", "Referenced subject is missing or inactive.");
+    }
+    validated.boardIds = Array.isArray(subject.data()?.boardIds) ? subject.data()?.boardIds : [];
+    validated.classIds = Array.isArray(subject.data()?.classIds) ? subject.data()?.classIds : [];
+  }
+  const ref = db.collection(collection).doc(data.id);
 
   if (!(await ref.get()).exists) {
     throw new HttpsError("not-found", "Academic record was not found.");
@@ -292,6 +318,15 @@ export const normalizeSubjectMappings = onCall(async (request) => {
 
   for (const group of groups.values()) {
     if (group.length < 2) continue;
+
+    // Never merge unmapped legacy duplicates. They do not contain enough
+    // information to determine which class they belonged to. They will be
+    // superseded by the canonical board+class bulk import.
+    const hasMapping = group.some(item =>
+      Array.isArray(item.data.boardIds) && item.data.boardIds.length > 0 &&
+      Array.isArray(item.data.classIds) && item.data.classIds.length > 0
+    );
+    if (!hasMapping) continue;
 
     group.sort((left, right) => {
       const leftActive = left.data.active === true ? 1 : 0;
@@ -520,7 +555,11 @@ export const bulkImportAcademic = onCall(async (request) => {
           subjectName,
           subjectCode ? "code" : "name",
         );
-        if (id) data.subjectId=id;
+        if (id) {
+          data.subjectId=id;
+          data.boardIds=boardValues.map(v => resolve("boards",v,"Board",rowNumber)).filter((v):v is string=>Boolean(v));
+          data.classIds=classValues.map(v => resolve("classes",v,"Class",rowNumber)).filter((v):v is string=>Boolean(v));
+        }
       }
       if (collection==="topics") {
         const id=resolve("chapters",requiredText(row.chapterName,"chapterName"),"Chapter",rowNumber);
