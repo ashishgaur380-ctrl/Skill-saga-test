@@ -16,7 +16,7 @@ function storagePathFromUrl(value:unknown):string|null{
   if(typeof value!=="string"||!value.trim())return null;
   const raw=value.trim();
   if(raw.startsWith("gs://")){const slash=raw.indexOf("/",5);return slash>5?decodeURIComponent(raw.slice(slash+1)):null;}
-  try{const url=new URL(raw);const match=url.pathname.match(/\\/o\\/(.+)$/);return match?decodeURIComponent(match[1]):null;}catch{return null;}
+  try{const url=new URL(raw);const match=url.pathname.match(/\/o\/(.+)$/);return match?decodeURIComponent(match[1]):null;}catch{return null;}
 }
 async function deleteStorageForMaterial(data:any){
   const paths=new Set<string>();
