@@ -213,3 +213,21 @@ h1{letter-spacing:-.035em}
  .topbar h1{font-size:28px}
  .admin-session{display:flex}
 }
+
+
+/* Learning Content Manager */
+.grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:18px 20px}
+.grid label{display:grid;gap:8px;color:#334155;font-size:13px;font-weight:700;min-width:0}
+.grid label.full-width{grid-column:1/-1}
+.grid input,.grid select,.grid textarea{width:100%;min-width:0;padding:11px 12px;border:1px solid #cbd5e1;border-radius:10px;background:#fff;color:#172033;font:inherit;font-weight:400;outline:none}
+.grid input:focus,.grid select:focus,.grid textarea:focus{border-color:#526a9e;box-shadow:0 0 0 3px rgba(82,106,158,.10)}
+.grid select:disabled{background:#f1f5f9;color:#94a3b8;cursor:not-allowed}
+.grid small{color:#64748b;font-weight:400}
+.actions{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-top:18px}
+.actions button{border:1px solid #101d3a;background:#101d3a;color:#fff;border-radius:10px;padding:10px 15px;font-weight:750;cursor:pointer}
+.actions button:hover{background:#17284d}
+.actions button:disabled{opacity:.5;cursor:not-allowed}
+.actions span{color:#526076;font-size:13px}
+.content-library-card{background:#fff;border:1px solid #e2e7f1;border-radius:14px;padding:16px;margin-top:12px}
+@media(max-width:1050px){.grid{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media(max-width:650px){.grid{grid-template-columns:1fr}.grid label.full-width{grid-column:auto}}
