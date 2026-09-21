@@ -28,7 +28,7 @@ async function listStorageFiles(prefix:string,out:any[]=[]){
   return out;
 }
 function academicId(list:A[],value:any){const s=String(value??"").trim();if(!s)return "";return list.find(x=>x.id===s||key(x.name)===key(s))?.id||"";}
-function materialFileKey(title:string){return key(title.replace(/\s*-\s*Study Material$/i,"").replace(/\s*-\s*Practice Quiz$/i,""));}
+function materialFileKey(title:string){return key(title.replace(/\s*[-_]\s*(Study Material|Practice Quiz|Quiz)$/i,"").replace(/\s+(Study Material|Practice Quiz|Quiz)$/i,""));}
 function storageFileKey(path:string){
   let n=path.split("/").pop()||"";
   n=n.replace(/\.(pdf|docx?|pptx?|xlsx?|csv|txt|mp4|webm|jpe?g|png|gif|mp3|wav)$/i,"");
