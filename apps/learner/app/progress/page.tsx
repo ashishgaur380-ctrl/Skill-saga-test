@@ -25,11 +25,13 @@ export default function Progress() {
     if (!user) { window.location.replace("/login/"); return; }
     try {
       const token = await user.getIdToken();
-      const [progress, history] = await Promise.all([
+      const [progress, history, statsResult] = await Promise.all([
         learnerFunction("getLearnerProgress", {}, token),
         learnerFunction("listLearnerAttempts", {}, token),
+        learnerFunction("getLearnerStats", {}, token),
       ]);
-      setData(progress);
+      const stats = statsResult?.stats || {};
+      setData({ ...progress, summary: { ...(progress?.summary || {}), ...stats } });
       setAttempts(history?.items || []);
     } catch (e) {
       setError(e instanceof Error ? e.message : "Unable to load progress.");
