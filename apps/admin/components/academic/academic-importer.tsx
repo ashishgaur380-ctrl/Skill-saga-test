@@ -117,7 +117,7 @@ export default function AcademicImporter({ onComplete }: { onComplete: () => voi
       <div className="importer-head">
         <div>
           <h3>Bulk academic import</h3>
-          <p>Upload one CSV containing boards, classes, subjects, chapters, topics, skill categories and skills.</p>
+          <p>Upload one CSV containing the full Board → Class → Subject → Chapter → Topic hierarchy. A subject can map to multiple classes in one row using | in classCodes.</p>
         </div>
         <button className="secondary-button" type="button" onClick={downloadTemplate}>Download template</button>
       </div>
@@ -141,7 +141,7 @@ export default function AcademicImporter({ onComplete }: { onComplete: () => voi
               ))}</tbody></table>
             </div>
           </div>
-          <div className="importer-note">Import is create-only. Existing records and duplicate rows are rejected; parent relationships are validated before any data is written.</div>
+          <div className="importer-note">Use canonical board-scoped class codes such as CBSE-1. Keep one canonical subject code and map it to multiple classes with | (for example CBSE-1|CBSE-2|CBSE-3). Parent relationships are validated before any data is written.</div>
           <div className="modal-actions"><button className="primary-button" type="button" disabled={importing} onClick={() => void startImport()}>{importing ? "Validating & importing…" : `Import ${rows.length} rows`}</button></div>
         </>
       )}
