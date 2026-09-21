@@ -34,6 +34,9 @@ export async function learnerFunction(
     if (code.includes("unauthenticated")) throw new Error("Please sign in again.");
     if (code.includes("permission-denied")) throw new Error("You do not have permission for this action.");
     if (code.includes("not-found")) throw new Error("This Skill Saga service is not deployed yet.");
+    if (code.includes("internal")) {
+      throw new Error(`Skill Saga backend error (INTERNAL). Check the Functions emulator log for ${action}.`);
+    }
     throw new Error(message.replace(/^FirebaseError:\s*/i, ""));
   }
 }
