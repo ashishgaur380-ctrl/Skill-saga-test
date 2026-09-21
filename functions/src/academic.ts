@@ -131,6 +131,7 @@ export const listAcademic = onCall(async (request) => {
   type AcademicListItem = {
     id: string;
     name?: unknown;
+    code?: unknown;
     [key: string]: unknown;
   };
 
