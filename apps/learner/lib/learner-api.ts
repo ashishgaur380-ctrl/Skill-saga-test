@@ -3,14 +3,17 @@ import { learnerFunctions } from "./firebase";
 
 function emulatorFunctionUrl(action: string): string | null {
   if (typeof window === "undefined") return null;
+
   const host = window.location.hostname;
   if (host === "localhost" || host === "127.0.0.1") return null;
 
-  const match = host.match(/^(.*)-\d+(\.[^.]+(?:\.[^.]+)*)$/);
-  if (!match) return null;
+  // GitHub Codespaces: keep callable traffic same-origin so the browser does
+  // not need CORS access to the forwarded Functions emulator port.
+  if (host.endsWith(".app.github.dev")) {
+    return `${window.location.origin}/__skill_saga_functions/skill-saga-2/us-central1/${action}`;
+  }
 
-  const base = `https://${match[1]}-5001${match[2]}`;
-  return `${base}/skill-saga-2/us-central1/${action}`;
+  return null;
 }
 
 export async function learnerFunction(
@@ -31,6 +34,6 @@ export async function learnerFunction(
     if (code.includes("unauthenticated")) throw new Error("Please sign in again.");
     if (code.includes("permission-denied")) throw new Error("You do not have permission for this action.");
     if (code.includes("not-found")) throw new Error("This Skill Saga service is not deployed yet.");
-    throw new Error(message.replace(/^FirebaseError:\\s*/i, ""));
+    throw new Error(message.replace(/^FirebaseError:\s*/i, ""));
   }
 }
