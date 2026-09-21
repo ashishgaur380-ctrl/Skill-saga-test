@@ -11,6 +11,7 @@ const allowedActions = new Set([
   "deleteAcademic",
   "bulkImportAcademic",
   "normalizeSubjectMappings",
+  "repairLegacyClassMappings",
 ]);
 
 const projectId = process.env.GCLOUD_PROJECT ?? "skill-saga-2";
