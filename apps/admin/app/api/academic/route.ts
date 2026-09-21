@@ -14,7 +14,10 @@ const allowedActions = new Set([
 
 const projectId = process.env.GCLOUD_PROJECT ?? "skill-saga-2";
 const region = process.env.FIREBASE_FUNCTIONS_REGION ?? "us-central1";
-const base = process.env.NEXT_PUBLIC_USE_FIREBASE_EMULATORS === "true" ? `http://127.0.0.1:5001/${projectId}/${region}` : (process.env.FIREBASE_FUNCTIONS_BASE_URL ?? `https://${region}-${projectId}.cloudfunctions.net`);
+const useEmulators = process.env.NEXT_PUBLIC_USE_FIREBASE_EMULATORS === "true" || process.env.NODE_ENV !== "production";
+const base = useEmulators
+  ? `http://127.0.0.1:5001/${projectId}/${region}`
+  : (process.env.FIREBASE_FUNCTIONS_BASE_URL ?? `https://${region}-${projectId}.cloudfunctions.net`);
 
 export async function POST(request: NextRequest) {
   const authorization = request.headers.get("authorization");
