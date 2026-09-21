@@ -19,9 +19,10 @@ export default function Progress() {
   const [attempts, setAttempts] = useState<any[]>([]);
   const [openSkill, setOpenSkill] = useState<string | null>(null);
   const [error, setError] = useState("");
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => onAuthStateChanged(learnerAuth, async user => {
-    if (!user) return;
+    if (!user) { window.location.replace("/login/"); return; }
     try {
       const token = await user.getIdToken();
       const [progress, history] = await Promise.all([
@@ -32,7 +33,7 @@ export default function Progress() {
       setAttempts(history?.items || []);
     } catch (e) {
       setError(e instanceof Error ? e.message : "Unable to load progress.");
-    }
+    } finally { setLoading(false); }
   }), []);
 
   const s = data?.summary;
@@ -46,8 +47,11 @@ export default function Progress() {
         </div>
       </header>
 
-      <main className="ss-main">
+      <main className="ss-page">
+        <Link href="/profile" className="ss-back-link">‹ Back to Profile</Link>
+        {loading && <div className="ss-message">Loading your performance…</div>}
         {error && <div className="error-box">{error}</div>}
+        {!loading && !error && <div className="ss-message">Your performance is calculated from completed quizzes and topic practice.</div>}
 
         <section className="ss-progress-hero">
           <span>Current Level</span>
