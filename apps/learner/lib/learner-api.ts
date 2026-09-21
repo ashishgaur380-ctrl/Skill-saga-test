@@ -6,7 +6,7 @@ function emulatorFunctionUrl(action: string): string | null {
   const host = window.location.hostname;
   if (host === "localhost" || host === "127.0.0.1") return null;
 
-  const match = host.match(/^(.*)-\\d+(\\.[^.]+(?:\\.[^.]+)*)$/);
+  const match = host.match(/^(.*)-\d+(\.[^.]+(?:\.[^.]+)*)$/);
   if (!match) return null;
 
   const base = `https://${match[1]}-5001${match[2]}`;
