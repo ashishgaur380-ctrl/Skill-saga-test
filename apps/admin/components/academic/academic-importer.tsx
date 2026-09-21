@@ -16,7 +16,7 @@ const TEMPLATE = [
   ["classes","Class 1","CBSE-1","1","","","","","","","","1","true"].join(","),
   ["subjects","Mathematics","CBSE_MAT","","CBSE","CBSE-1|CBSE-2|CBSE-3","","","","","","1","true"].join(","),
   ["chapters","Chapter 1 - Shapes","","","CBSE","CBSE-1","Mathematics","CBSE_MATH","","","","1","true"].join(","),
-  ["topics","2D Shapes","","","","","","","Chapter 1 - Shapes","","","1","true"].join(","),
+  ["topics","2D Shapes","","","CBSE","CBSE-1","Mathematics","CBSE_MAT","Chapter 1 - Shapes","","","1","true"].join(","),
   ["skillCategories","Problem Solving","","","","","","","","","Core problem solving skills","1","true"].join(","),
   ["skills","Logical Reasoning","","","","","","","","Problem Solving","","1","true"].join(","),
 ].join("\n");
