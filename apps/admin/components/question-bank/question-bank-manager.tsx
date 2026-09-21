@@ -61,7 +61,7 @@ export default function QuestionBankManager() {
   const load = useCallback(async () => {
     setLoading(true); setError(null);
     try {
-      const [q, boards, classes, subjects, chapters, skills] = await Promise.all([
+      const [q, boards, classes, subjects, chapters, topics] = await Promise.all([
         callQuestion<{ items: Question[] }>("listQuestions"),
         listAcademic("boards"), listAcademic("classes"), listAcademic("subjects"),
         listAcademic("chapters"), listAcademic("topics"),
@@ -99,7 +99,7 @@ export default function QuestionBankManager() {
       const c = input[i];
       if (c === '"') { if (quoted && input[i + 1] === '"') { cell += '"'; i++; } else quoted = !quoted; }
       else if (c === ',' && !quoted) { row.push(cell.trim()); cell = ""; }
-      else if ((c === "\\n" || c === "\\r") && !quoted) { if (c === "\\r" && input[i + 1] === "\\n") i++; row.push(cell.trim()); cell = ""; if (row.some(Boolean)) rows.push(row); row = []; }
+      else if ((c === "\n" || c === "\r") && !quoted) { if (c === "\\r" && input[i + 1] === "\\n") i++; row.push(cell.trim()); cell = ""; if (row.some(Boolean)) rows.push(row); row = []; }
       else cell += c;
     }
     if (cell || row.length) { row.push(cell.trim()); if (row.some(Boolean)) rows.push(row); }
@@ -112,7 +112,7 @@ export default function QuestionBankManager() {
     try {
       const matrix = parseCsv(await bulkFile.text());
       if (!matrix.length) throw new Error("CSV is empty.");
-      const headers = matrix[0].map(v => v.trim().toLowerCase().replace(/\\s+/g, ""));
+      const headers = matrix[0].map(v => v.trim().toLowerCase().replace(/\s+/g, ""));
       const rows = matrix.slice(1).filter(r => r.some(Boolean)).map(r => Object.fromEntries(headers.map((h, i) => [h, r[i] ?? ""])));
       if (rows.length > 5000) throw new Error("Maximum 5,000 questions per import.");
       const result = await callQuestion<{success:boolean;imported:number;errors?:Array<{row:number;message:string}>}>("bulkImportQuestions", { rows });
