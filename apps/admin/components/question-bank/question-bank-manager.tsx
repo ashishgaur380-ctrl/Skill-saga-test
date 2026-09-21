@@ -7,7 +7,7 @@ type Item = { id: string; name: string; active: boolean; code?: string; subjectI
 type Question = {
   id: string; questionText: string; options: string[]; correctOption: number;
   explanation?: string; difficulty: string; marks: number;
-  boardId: string; classId: string; subjectId: string; chapterId: string; skillId: string;
+  boardId: string; classId: string; subjectId: string; chapterId: string; topicId: string; skillId?: string;
   status: string; active: boolean;
 };
 
@@ -44,7 +44,7 @@ async function listAcademic(collection: string): Promise<Item[]> {
 const blank = {
   questionText: "", options: ["", "", "", ""], correctOption: 0, explanation: "",
   difficulty: "easy", marks: 1, boardId: "", classId: "", subjectId: "", chapterId: "",
-  skillId: "", status: "draft", active: true,
+  topicId: "", skillId: "", status: "draft", active: true,
 };
 
 export default function QuestionBankManager() {
@@ -64,10 +64,10 @@ export default function QuestionBankManager() {
       const [q, boards, classes, subjects, chapters, skills] = await Promise.all([
         callQuestion<{ items: Question[] }>("listQuestions"),
         listAcademic("boards"), listAcademic("classes"), listAcademic("subjects"),
-        listAcademic("chapters"), listAcademic("skills"),
+        listAcademic("chapters"), listAcademic("topics"),
       ]);
       setQuestions(q.items ?? []);
-      setAcademic({ boards, classes, subjects, chapters, skills });
+      setAcademic({ boards, classes, subjects, chapters, topics });
     } catch (e) {
       setError(e instanceof Error ? e.message : "Unable to load Question Bank.");
     } finally { setLoading(false); }
@@ -88,7 +88,7 @@ export default function QuestionBankManager() {
       questionText: q.questionText, options: [...q.options], correctOption: q.correctOption,
       explanation: q.explanation ?? "", difficulty: q.difficulty, marks: q.marks,
       boardId: q.boardId, classId: q.classId, subjectId: q.subjectId, chapterId: q.chapterId,
-      skillId: q.skillId, status: q.status, active: q.active,
+      topicId: q.topicId ?? "", skillId: q.skillId ?? "", status: q.status, active: q.active,
     });
     setOpen(true); setError(null); setNotice(null);
   }
@@ -157,7 +157,7 @@ export default function QuestionBankManager() {
           <label>Class<select value={form.classId} onChange={e => setForm({...form, classId:e.target.value})}><option value="">Select</option>{active("classes").map(x=><option key={x.id} value={x.id}>{x.name}</option>)}</select></label>
           <label>Subject<select value={form.subjectId} onChange={e => setForm({...form, subjectId:e.target.value})}><option value="">Select</option>{active("subjects").map(x=><option key={x.id} value={x.id}>{x.name} {x.code ? `(${x.code})` : ""}</option>)}</select></label>
           <label>Chapter<select value={form.chapterId} onChange={e => setForm({...form, chapterId:e.target.value})}><option value="">Select</option>{active("chapters").map(x=><option key={x.id} value={x.id}>{x.name}</option>)}</select></label>
-          <label>Skill<select value={form.skillId} onChange={e => setForm({...form, skillId:e.target.value})}><option value="">Select</option>{active("skills").map(x=><option key={x.id} value={x.id}>{x.name}{x.active ? "" : " (Archived)"}</option>)}</select></label>
+          <label>Topic<select value={form.topicId} onChange={e => setForm({...form, topicId:e.target.value})}><option value="">Select</option>{active("topics").filter(x=>!form.chapterId||x.chapterId===form.chapterId).map(x=><option key={x.id} value={x.id}>{x.name}</option>)}</select></label>
           <label className="full-width">Explanation<textarea rows={3} value={form.explanation} onChange={e => setForm({...form, explanation:e.target.value})} placeholder="Explain the correct answer." /></label>
           <label className="checkbox-row"><input type="checkbox" checked={form.active} onChange={e => setForm({...form, active:e.target.checked})} /> Active</label>
         </div>
