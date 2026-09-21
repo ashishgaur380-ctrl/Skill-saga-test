@@ -750,7 +750,7 @@ export const bulkImportAcademic = onCall(async (request) => {
       // rejecting the entire import. This lets a single CSV safely include
       // subject mappings that may already have been created manually.
       const existingId = existing.get(collection)?.get(key);
-      if (collection === "subjects" && existingId) {
+      if (existingId && (collection === "boards" || collection === "classes" || collection === "subjects")) {
         planned.get(collection)!.set(key, existingId);
         planned.get(collection)!.set(
           "name:" + name.toLowerCase() + "|" +
