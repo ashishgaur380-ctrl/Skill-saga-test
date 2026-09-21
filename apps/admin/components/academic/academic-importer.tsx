@@ -14,7 +14,7 @@ const TEMPLATE = [
   HEADERS.join(","),
   ["boards","CBSE","CBSE","","","","","","","","","1","true"].join(","),
   ["classes","Class 1","CBSE-1","1","","","","","","","","1","true"].join(","),
-  ["subjects","Mathematics","CBSE_MATH","","CBSE","CBSE-1|CBSE-2|CBSE-3","","","","","","1","true"].join(","),
+  ["subjects","Mathematics","CBSE_MAT","","CBSE","CBSE-1|CBSE-2|CBSE-3","","","","","","1","true"].join(","),
   ["chapters","Chapter 1 - Shapes","","","CBSE","CBSE-1","Mathematics","CBSE_MATH","","","","1","true"].join(","),
   ["topics","2D Shapes","","","","","","","Chapter 1 - Shapes","","","1","true"].join(","),
   ["skillCategories","Problem Solving","","","","","","","","","Core problem solving skills","1","true"].join(","),
@@ -117,7 +117,7 @@ export default function AcademicImporter({ onComplete }: { onComplete: () => voi
       <div className="importer-head">
         <div>
           <h3>Bulk academic import</h3>
-          <p>Upload one CSV containing the full Board → Class → Subject → Chapter → Topic hierarchy. A subject can map to multiple classes in one row using | in classCodes.</p>
+          <p>Upload one CSV containing the full Board → Class → Subject → Chapter → Topic hierarchy. Every subject is explicitly mapped to board + class, every chapter inherits that mapping, and every topic is resolved through its exact chapter.</p>
         </div>
         <button className="secondary-button" type="button" onClick={downloadTemplate}>Download template</button>
       </div>
