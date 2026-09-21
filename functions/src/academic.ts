@@ -134,10 +134,18 @@ export const listAcademic = onCall(async (request) => {
     [key: string]: unknown;
   };
 
-  const items: AcademicListItem[] = snapshot.docs.map((doc) => {
-    const data = doc.data() as Record<string, unknown>;
-    return { id: doc.id, ...data };
-  });
+  const items: AcademicListItem[] = snapshot.docs
+    .map((doc) => {
+      const data = doc.data() as Record<string, unknown>;
+      return { id: doc.id, ...data };
+    })
+    // The original prototype created generic CLASS_1...CLASS_12 records.
+    // Board-scoped records such as CBSE-1...CBSE-12 are the canonical
+    // hierarchy, so keep legacy generic class rows out of the active
+    // management view without deleting their documents or relationships.
+    .filter((item) =>
+      collection !== "classes" || !/^CLASS_\\d+$/i.test(String(item.code ?? "").trim()),
+    );
 
   items.sort((a, b) =>
     String(a.name ?? "").localeCompare(String(b.name ?? "")),
