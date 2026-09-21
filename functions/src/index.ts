@@ -13,7 +13,7 @@ export { listNotificationTemplates, createNotificationTemplate, updateNotificati
 export { getAnalyticsSummary } from "./analytics";
 export { getSystemSettings, updateSystemSettings } from "./system";
 export { listUsers, updateUser } from "./users";
-export { listPublishedQuizzes, getQuizForAttempt, submitQuizAttempt, getLearnerStats, getLearnerLeaderboard, listLearnerAttempts, getLearnerHome, listLearnerNotifications, markNotificationRead, getLearnerAcademic, listPublishedLearningMaterials, getTopicPractice, submitTopicPractice, getLearnerProgress, listLearnerAssignments, listPublishedCompetitions, joinCompetition, getCompetitionQuiz, submitCompetitionAttempt, getCompetitionLeaderboard, getLearnerRewards, redeemReward } from "./learner";
+export { listPublishedQuizzes, getQuizForAttempt, submitQuizAttempt, getLearnerStats, updateLearnerProfile, getLearnerLeaderboard, listLearnerAttempts, getLearnerHome, listLearnerNotifications, markNotificationRead, getLearnerAcademic, listPublishedLearningMaterials, getTopicPractice, submitTopicPractice, getLearnerProgress, listLearnerAssignments, listPublishedCompetitions, joinCompetition, getCompetitionQuiz, submitCompetitionAttempt, getCompetitionLeaderboard, getLearnerRewards, redeemReward } from "./learner";
 export { createLearnerLinkCode, linkLearner, listLinkedLearners, getLinkedLearnerProgress } from "./guardian";
 export { listLearningMaterials, createLearningMaterial, updateLearningMaterial, archiveLearningMaterial, bulkCreateLearningMaterials } from "./content";
 export { createAssignment, listAssignments, updateAssignment, archiveAssignment } from "./assignment";
