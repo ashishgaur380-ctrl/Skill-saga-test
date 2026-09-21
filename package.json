@@ -21,6 +21,6 @@
     "functions"
   ],
   "engines": {
-    "node": ">=20 <21"
+    "node": ">=22 <23"
   }
 }
