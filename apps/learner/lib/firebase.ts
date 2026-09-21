@@ -21,7 +21,17 @@ if (useFirebaseEmulators) {
   };
 
   if (!emulatorState.__skillSagaLearnerEmulatorsConnected) {
-    connectAuthEmulator(learnerAuth, "http://127.0.0.1:9099", {
+    let authUrl = "http://127.0.0.1:9099";
+
+    if (typeof window !== "undefined") {
+      const host = window.location.hostname;
+      const match = host.match(/^(.*)-\\d+(\\.[^.]+(?:\\.[^.]+)*)$/);
+      if (match && host !== "localhost" && host !== "127.0.0.1") {
+        authUrl = `https://${match[1]}-9099${match[2]}`;
+      }
+    }
+
+    connectAuthEmulator(learnerAuth, authUrl, {
       disableWarnings: true,
     });
     connectFunctionsEmulator(learnerFunctions, "127.0.0.1", 5001);
