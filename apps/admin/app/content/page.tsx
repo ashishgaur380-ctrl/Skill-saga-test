@@ -1,7 +1,7 @@
 "use client";
 
 import { firebaseAuth, firebaseStorage } from "../../lib/firebase";
-import { getDownloadURL, listAll, ref as storageRef, uploadBytesResumable } from "firebase/storage";
+import { getBlob, getDownloadURL, listAll, ref as storageRef, uploadBytesResumable } from "firebase/storage";
 import { useEffect, useState } from "react";
 
 declare global { interface Window { XLSX?: any } }
@@ -41,7 +41,7 @@ function storageFileKey(path:string){
 export default function ContentPage(){
  const [items,setItems]=useState<M[]>([]),[form,setForm]=useState<M>(blank),[token,setToken]=useState(""),[editing,setEditing]=useState<string|null>(null),[msg,setMsg]=useState("");
  const [boards,setBoards]=useState<A[]>([]),[classes,setClasses]=useState<A[]>([]),[subjects,setSubjects]=useState<A[]>([]),[chapters,setChapters]=useState<A[]>([]),[topics,setTopics]=useState<A[]>([]);
- const [file,setFile]=useState<File|null>(null),[bulkFile,setBulkFile]=useState<File|null>(null),[busy,setBusy]=useState(false);
+ const [file,setFile]=useState<File|null>(null),[bulkFile,setBulkFile]=useState<File|null>(null),[storageCsvPath,setStorageCsvPath]=useState("Class1_Content_Manager_Bulk_Import_FIXED.csv"),[busy,setBusy]=useState(false);
 
  useEffect(()=>{(async()=>{const u=firebaseAuth.currentUser;if(!u){setMsg("You are not authenticated.");return;}try{const t=await u.getIdToken();setToken(t);const [x,b,c,s]=await Promise.all([call("listLearningMaterials",{},t),academic("boards",t),academic("classes",t),academic("subjects",t)]);setItems(x.items||[]);setBoards(b);setClasses(c);setSubjects(s);}catch(e:any){setMsg(e.message)}})()},[]);
  const set=(k:keyof M,v:any)=>setForm(x=>({...x,[k]:v}));
@@ -96,17 +96,18 @@ export default function ContentPage(){
  async function selectSubject(id:string){set("subjectId",id);set("chapterId","");set("topicId","");setTopics([]);try{const x=await academic("chapters",token);setChapters(x.filter((v:A)=>(v as any).subjectId===id));}catch(e:any){setMsg(e.message)}}
  async function selectChapter(id:string){set("chapterId",id);set("topicId","");try{const x=await academic("topics",token);setTopics(x.filter((v:A)=>(v as any).chapterId===id));}catch(e:any){setMsg(e.message)}}
 
- async function bulkImport(){
-   if(!bulkFile)return;
+ async function bulkImport(sourceFile?:File){
+   const source=sourceFile||bulkFile;
+   if(!source)return;
    setBusy(true);setMsg("Reading bulk file and mapping academic content…");
    try{
      let rows:any[]=[];
-     if(bulkFile.name.toLowerCase().endsWith(".csv")||bulkFile.name.toLowerCase().endsWith(".txt")){
-       const matrix=parseCsv(await bulkFile.text());if(!matrix.length)throw new Error("The CSV is empty.");
+     if(source.name.toLowerCase().endsWith(".csv")||source.name.toLowerCase().endsWith(".txt")){
+       const matrix=parseCsv(await source.text());if(!matrix.length)throw new Error("The CSV is empty.");
        const headers=matrix[0].map(x=>x.trim().toLowerCase().replace(/\s+/g,""));
        rows=matrix.slice(1).filter(r=>r.some(Boolean)).map(r=>Object.fromEntries(headers.map((h,i)=>[h,r[i]??""])));
-     }else if(bulkFile.name.toLowerCase().endsWith(".xlsx")||bulkFile.name.toLowerCase().endsWith(".xls")){
-       const XLSX=await loadXlsx();const wb=XLSX.read(await bulkFile.arrayBuffer(),{type:"array"});const sheet=wb.Sheets[wb.SheetNames[0]];rows=XLSX.utils.sheet_to_json(sheet,{defval:""});
+     }else if(source.name.toLowerCase().endsWith(".xlsx")||source.name.toLowerCase().endsWith(".xls")){
+       const XLSX=await loadXlsx();const wb=XLSX.read(await source.arrayBuffer(),{type:"array"});const sheet=wb.Sheets[wb.SheetNames[0]];rows=XLSX.utils.sheet_to_json(sheet,{defval:""});
      }else throw new Error("Use CSV, XLSX or XLS.");
      if(rows.length>500)throw new Error("Maximum 500 rows per import.");
      if(rows.some(x=>!x.title))throw new Error("Every row must have a title.");
@@ -168,7 +169,7 @@ export default function ContentPage(){
  return <main className="shell"><aside className="sidebar"><div className="brand">Skill Saga</div><div className="brand-subtitle">Admin Console</div><nav><a className="nav-item" href="/">Dashboard</a><a className="nav-item" href="/academic">Academic Structure</a><a className="nav-item" href="/content">Content</a><a className="nav-item" href="/question-bank">Question Bank</a></nav></aside><section className="content">
  <header className="topbar"><div><p className="eyebrow">CONTENT</p><h1>Learning Content Manager</h1><p className="muted">Upload, map, schedule and publish content for Skill Saga UI 2.0.</p></div></header>
 
- <section className="panel"><h2>Bulk Import</h2><p className="muted">CSV/XLSX/XLS · up to 500 rows. The importer resolves Board → Class → Subject → Chapter → Topic names to the academic IDs automatically. If <b>fileUrl</b> is blank, it also auto-matches a file already uploaded anywhere under <b>learning-materials/</b> by its filename/title.</p><div className="actions"><input type="file" accept=".csv,.xlsx,.xls,.txt" onChange={e=>setBulkFile(e.target.files?.[0]||null)}/><button disabled={!bulkFile||busy} onClick={()=>void bulkImport()}>{busy?"Processing…":"Import Content"}</button></div></section>
+ <section className="panel"><h2>Bulk Import</h2><p className="muted">CSV/XLSX/XLS · up to 500 rows. The importer resolves Board → Class → Subject → Chapter → Topic names to the academic IDs automatically. If <b>fileUrl</b> is blank, it also auto-matches a file already uploaded anywhere under <b>learning-materials/</b> by its filename/title.</p><div className="actions"><input type="file" accept=".csv,.xlsx,.xls,.txt" onChange={e=>setBulkFile(e.target.files?.[0]||null)}/><button disabled={!bulkFile||busy} onClick={()=>void bulkImport()}>{busy?"Processing…":"Import Content"}</button></div><div className="actions"><input value={storageCsvPath} onChange={e=>setStorageCsvPath(e.target.value)} placeholder="Storage path, e.g. imports/content.csv"/><button disabled={!storageCsvPath.trim()||busy} onClick={async()=>{try{setBusy(true);setMsg("Reading CSV from Firebase Storage…");const blob=await getBlob(storageRef(firebaseStorage,storageCsvPath.trim()));const name=storageCsvPath.trim().split("/").pop()||"content.csv";await bulkImport(new File([blob],name,{type:"text/csv"}));}catch(e:any){setMsg(e?.message||"Unable to read CSV from Firebase Storage.");setBusy(false);}}}>Import from Storage</button></div></section>
 
  <section className="panel"><h2>{editing?"Edit content":"Add learning content"}</h2><div className="grid">
  <label>Title<input value={form.title} onChange={e=>set("title",e.target.value)}/></label><label>Description<input value={form.description} onChange={e=>set("description",e.target.value)}/></label>
