@@ -56,7 +56,8 @@ export default function QuestionBankManager() {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [notice, setNotice] = useState<string | null>(null);\n  const [bulkFile, setBulkFile] = useState<File | null>(null);
+  const [notice, setNotice] = useState<string | null>(null);
+  const [bulkFile, setBulkFile] = useState<File | null>(null);
 
   const load = useCallback(async () => {
     setLoading(true); setError(null);
