@@ -37,6 +37,33 @@ function academicNameKey(value: unknown) {
   return text(value).toLowerCase().replace(/(\\d+)\\s*to\\s*(\\d+)/g, "$1-$2").replace(/&/g, "and").replace(/[^a-z0-9]+/g, "");
 }
 
+function fuzzyAcademicMatch<T extends { name?: unknown }>(items: T[], value: unknown) {
+  const target = academicNameKey(value);
+  if (!target) return null;
+  const exact = items.filter((item) => academicNameKey(item.name) === target);
+  if (exact.length === 1) return exact[0];
+  const targetTokens = new Set(target.match(/[a-z]+|\\d+/g) ?? []);
+  let best: T | null = null;
+  let bestScore = 0;
+  let ties = 0;
+  for (const item of items) {
+    const candidate = academicNameKey(item.name);
+    if (!candidate) continue;
+    if (candidate.includes(target) || target.includes(candidate)) {
+      const score = Math.min(target.length, candidate.length) / Math.max(target.length, candidate.length);
+      if (score > bestScore) { best = item; bestScore = score; ties = 0; }
+      else if (score === bestScore) ties++;
+      continue;
+    }
+    const candidateTokens = new Set(candidate.match(/[a-z]+|\\d+/g) ?? []);
+    const overlap = [...targetTokens].filter((token) => candidateTokens.has(token)).length;
+    const score = targetTokens.size ? overlap / targetTokens.size : 0;
+    if (score > bestScore) { best = item; bestScore = score; ties = 0; }
+    else if (score === bestScore && score > 0) ties++;
+  }
+  return best && bestScore >= 0.6 && ties === 0 ? best : null;
+}
+
 function validate(raw: Question) {
   const questionText = text(raw.questionText);
   if (!questionText) throw new HttpsError("invalid-argument", "Question text is required.");
@@ -214,11 +241,13 @@ export const bulkImportQuestions = onCall(async (request) => {
 
   const boardMap = new Map<string,string>(), classMap = new Map<string,string>(), subjectMap = new Map<string,string>();
   const chapterMap = new Map<string,string>(), topicMap = new Map<string,string>();
+  const chapterRecords: Array<{id:string;name?:unknown;subjectId?:unknown}> = [];
+  const topicRecords: Array<{id:string;name?:unknown;chapterId?:unknown}> = [];
   boards.docs.forEach(d => { const x=d.data(); boardMap.set(d.id,d.id); if(text(x.code)) boardMap.set(text(x.code).toUpperCase(),d.id); });
   classes.docs.forEach(d => { const x=d.data(); classMap.set(d.id,d.id); if(text(x.code)) classMap.set(text(x.code).toUpperCase(),d.id); });
   subjects.docs.forEach(d => { const x=d.data(); subjectMap.set(d.id,d.id); if(text(x.code)) subjectMap.set(text(x.code).toUpperCase(),d.id); });
-  chapters.docs.forEach(d => { const x=d.data(); const k=text(x.subjectId)+"|"+academicNameKey(x.name); if(k!=="|") chapterMap.set(k,d.id); chapterMap.set(d.id,d.id); });
-  const topicSnap = await db.collection("topics").where("active","==",true).limit(10000).get(); topicSnap.docs.forEach(d => { const x=d.data(); const k=text(x.chapterId)+"|"+academicNameKey(x.name); if(k!=="|") topicMap.set(k,d.id); topicMap.set(d.id,d.id); });
+  chapters.docs.forEach(d => { const x=d.data(); chapterRecords.push({id:d.id,name:x.name,subjectId:x.subjectId}); const k=text(x.subjectId)+"|"+academicNameKey(x.name); if(k!=="|") chapterMap.set(k,d.id); chapterMap.set(d.id,d.id); });
+  const topicSnap = await db.collection("topics").where("active","==",true).limit(10000).get(); topicSnap.docs.forEach(d => { const x=d.data(); topicRecords.push({id:d.id,name:x.name,chapterId:x.chapterId}); const k=text(x.chapterId)+"|"+academicNameKey(x.name); if(k!=="|") topicMap.set(k,d.id); topicMap.set(d.id,d.id); });
 
   const duplicateKeys = new Set<string>();
   existing.docs.forEach(d => {
@@ -252,10 +281,10 @@ export const bulkImportQuestions = onCall(async (request) => {
       const classId=resolve(row.classId,row.classCode,classMap,"Class",rowNo);
       const subjectId=resolve(row.subjectId,row.subjectCode,subjectMap,"Subject",rowNo);
       let chapterId=text(row.chapterId);
-      if(!chapterId && text(row.chapterName)) chapterId=chapterMap.get(subjectId+"|"+academicNameKey(row.chapterName))||"";
+      if(!chapterId && text(row.chapterName)) { chapterId=chapterMap.get(subjectId+"|"+academicNameKey(row.chapterName))||""; if(!chapterId) chapterId=fuzzyAcademicMatch(chapterRecords.filter(x=>text(x.subjectId)===subjectId),row.chapterName)?.id||""; }
       if(!chapterId) errors.push({row:rowNo,message:"Chapter ID or chapterName is required and must match the selected subject."});
       let topicId=text(row.topicId);
-      if(!topicId && text(row.topicName)) topicId=topicMap.get(chapterId+"|"+academicNameKey(row.topicName))||"";
+      if(!topicId && text(row.topicName)) { topicId=topicMap.get(chapterId+"|"+academicNameKey(row.topicName))||""; if(!topicId) topicId=fuzzyAcademicMatch(topicRecords.filter(x=>text(x.chapterId)===chapterId),row.topicName)?.id||""; }
       if(!topicId) errors.push({row:rowNo,message:"Topic ID or topicName is required and must match the selected chapter."});
       if(!boardId||!classId||!subjectId||!chapterId||!topicId) continue;
       raw.boardId=boardId; raw.classId=classId; raw.subjectId=subjectId; raw.chapterId=chapterId; raw.topicId=topicId;
