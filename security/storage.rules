@@ -11,7 +11,7 @@ service firebase.storage {
         request.auth.token.role in ['admin', 'super_admin', 'content_manager'];
     }
 
-    match /learning-materials/{uid}/{allPaths=**} {
+    // Admins may read uploaded manifests/CSVs from the bucket root or imports/ folder; writes remain restricted below.\n    match /{allPaths=**} {\n      allow read: if contentManager();\n    }\n\n    match /learning-materials/{uid}/{allPaths=**} {
       allow read: if signedIn();
       allow write: if contentManager() &&
         request.resource.size < 50 * 1024 * 1024 &&
