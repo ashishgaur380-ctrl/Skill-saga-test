@@ -760,6 +760,16 @@ export const bulkImportAcademic = onCall(async (request) => {
             existingId,
           );
         }
+        // Reusing an existing canonical record must also restore it to the
+        // active state. Older prototype rows may have been archived; otherwise
+        // a successful bulk import can leave the hierarchy invisible in the
+        // admin list and unusable as a dependency.
+        prepared.push({
+          collection,
+          key,
+          data: { ...data, active: true, updatedBy: uid },
+          existingId,
+        });
         continue;
       }
 
