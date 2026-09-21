@@ -28,8 +28,7 @@ export default function Profile() {
     setDraftName(display);
     setEmail(u.email || "");
     try {
-      const token = await u.getIdToken();
-      const result = await learnerFunction("getLearnerStats", {}, token);
+      const result = await learnerFunction("getLearnerStats", {});
       setStats(result?.stats || {});
     } catch (e) {
       setError(e instanceof Error ? e.message : "Unable to load profile.");
@@ -44,7 +43,7 @@ export default function Profile() {
     if (!user) { setError("Please sign in again."); return; }
     setSaving(true); setError(""); setMessage("");
     try {
-      await learnerFunction("updateLearnerProfile", { displayName: value }, await user.getIdToken());
+      await learnerFunction("updateLearnerProfile", { displayName: value });
       // The callable updates Firestore (and attempts Auth sync server-side).
       // Do not make the browser perform a second Auth write; in Codespaces
       // that can fail when the Auth emulator proxy is unavailable.
@@ -61,7 +60,7 @@ export default function Profile() {
     const user = learnerAuth.currentUser;
     if (!user) return;
     try {
-      await learnerFunction("requestAccountDeletion", {}, await user.getIdToken());
+      await learnerFunction("requestAccountDeletion", {});
       setMessage("Account deletion requested. Your account has been disabled.");
       await signOut(learnerAuth);
       window.location.replace(APP_BASE + "/login/");
@@ -72,7 +71,7 @@ export default function Profile() {
     const user = learnerAuth.currentUser;
     if (!user) return;
     try {
-      const result = await learnerFunction("createLearnerLinkCode", {}, await user.getIdToken());
+      const result = await learnerFunction("createLearnerLinkCode", {});
       setLinkCode(result?.code || "");
       setMessage("Share this code with your parent or teacher. It expires in 15 minutes.");
     } catch (e) {
