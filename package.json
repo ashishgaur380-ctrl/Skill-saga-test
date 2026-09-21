@@ -17,5 +17,8 @@
   "workspaces": [
     "apps/*",
     "functions"
-  ]
+  ],
+  "engines": {
+    "node": ">=20 <21"
+  }
 }
