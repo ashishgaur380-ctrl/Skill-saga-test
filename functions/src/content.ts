@@ -48,8 +48,8 @@ function validate(d:any){
     boardId:text(d.boardId),classId:text(d.classId),subjectId:text(d.subjectId),
     chapterId:text(d.chapterId),topicId:text(d.topicId),language:(text(d.language)||"English").slice(0,80),
     difficulty:text(d.difficulty).slice(0,40),tags,accessType,status,
-    fileUrl:text(d.fileUrl).slice(0,2000),thumbnailUrl:text(d.thumbnailUrl).slice(0,2000),
-    publishAtMs:p,expireAtMs:e,
+    fileUrl:text(d.fileUrl).slice(0,2000),storagePath:text(d.storagePath).slice(0,1000),thumbnailUrl:text(d.thumbnailUrl).slice(0,2000),
+    publishAtMs:p,expireAtMs:e,storagePath:text(d.storagePath).slice(0,1000),
   };
 }
 
@@ -71,7 +71,7 @@ function clean(x:any){
   return {id:x.id,title:text(x.title),description:text(x.description),type:text(x.type)||"pdf",
     boardId:text(x.boardId),classId:text(x.classId),subjectId:text(x.subjectId),chapterId:text(x.chapterId),topicId:text(x.topicId),
     language:text(x.language)||"English",difficulty:text(x.difficulty),tags:Array.isArray(x.tags)?x.tags:[],
-    accessType:text(x.accessType)||"free",status:text(x.status)||"draft",fileUrl:text(x.fileUrl),thumbnailUrl:text(x.thumbnailUrl),
+    accessType:text(x.accessType)||"free",status:text(x.status)||"draft",fileUrl:text(x.fileUrl),storagePath:text(x.storagePath),thumbnailUrl:text(x.thumbnailUrl),
     publishAtMs:num(x.publishAtMs??x.scheduledAtMs),expireAtMs:num(x.expireAtMs),createdBy:text(x.createdBy),
     createdAt:x.createdAt??null,updatedAt:x.updatedAt??null};
 }
