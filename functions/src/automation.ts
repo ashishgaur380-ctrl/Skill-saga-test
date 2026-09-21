@@ -67,7 +67,7 @@ async function runQuizAutomation(db:any, rule:any){
   return {success:true,quizId:quiz.id};
 }
 
-async function runNotificationAutomation(db:FirebaseFirestore.Firestore, rule:any){
+async function runNotificationAutomation(db:Firestore, rule:any){
   const ref=db.collection("notificationJobs").doc();
   await ref.set({ruleId:rule.id,type:"notification",action:text(rule.action),status:"queued",createdAt:FieldValue.serverTimestamp()});
   return {success:true,jobId:ref.id};
