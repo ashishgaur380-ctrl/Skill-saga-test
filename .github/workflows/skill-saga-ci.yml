@@ -1,4 +1,5 @@
 name: Skill Saga CI
+# CI retriggered after the Functions lockfile refresh.
 # Main validation gate for the current workspace lockfile.
 
 on:
