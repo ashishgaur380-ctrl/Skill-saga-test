@@ -12,6 +12,7 @@
     "lint": "echo 'lint not configured yet'"
   },
   "dependencies": {
+    "@google-cloud/firestore": "^9.2.0",
     "firebase-admin": "latest",
     "firebase-functions": "latest"
   },
