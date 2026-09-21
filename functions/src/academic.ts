@@ -1,4 +1,5 @@
 import { getFirestore, FieldValue, type DocumentReference } from "firebase-admin/firestore";
+import { getStorage } from "firebase-admin/storage";
 import { onCall, HttpsError, type CallableRequest } from "firebase-functions/v2/https";
 
 type AcademicCollection =
@@ -10,7 +11,58 @@ type AcademicCollection =
   | "skillCategories"
   | "skills";
 
+
 const WRITE_ROLES = new Set(["super_admin", "admin", "content_manager"]);
+
+function storagePathFromUrl(value: unknown): string | null {
+  if (typeof value !== "string" || !value.trim()) return null;
+  const raw = value.trim();
+  if (raw.startsWith("gs://")) {
+    const slash = raw.indexOf("/", 5);
+    return slash > 5 ? decodeURIComponent(raw.slice(slash + 1)) : null;
+  }
+  try {
+    const url = new URL(raw);
+    const match = url.pathname.match(/\/o\/(.+)$/);
+    if (match) return decodeURIComponent(match[1]);
+    const storageMatch = url.pathname.match(/\/v0\/b\/[^/]+\/o\/(.+)$/);
+    if (storageMatch) return decodeURIComponent(storageMatch[1]);
+  } catch {
+    return null;
+  }
+  return null;
+}
+
+async function deleteOwnedStorageObjects(docs: Array<{ data: () => Record<string, unknown> }>) {
+  const paths = new Set<string>();
+  for (const doc of docs) {
+    const data = doc.data();
+    for (const field of ["fileUrl", "thumbnailUrl", "storagePath", "filePath", "mediaUrl", "thumbnailPath"]) {
+      const path = field.endsWith("Url")
+        ? storagePathFromUrl(data[field])
+        : typeof data[field] === "string" && data[field]
+          ? String(data[field])
+          : null;
+      if (path) paths.add(path);
+    }
+  }
+
+  if (!paths.size) return 0;
+  const bucket = getStorage().bucket();
+  let deleted = 0;
+  for (const path of paths) {
+    try {
+      await bucket.file(path).delete();
+      deleted += 1;
+    } catch (error: unknown) {
+      const code = typeof error === "object" && error !== null && "code" in error
+        ? String((error as { code?: unknown }).code)
+        : "";
+      if (code !== "404") throw error;
+    }
+  }
+  return deleted;
+}
 
 function assertRole(request: CallableRequest<unknown>): { uid: string; role: string } {
   const uid = request.auth?.uid;
@@ -471,6 +523,10 @@ export const deleteAcademic = onCall(async (request) => {
     await addQuery("skills", "categoryId", data.id);
   }
 
+  const materialRefs = refs.filter((ref) => ref.parent.id === "learningMaterials");
+  const materialDocs = await Promise.all(materialRefs.map((ref) => ref.get()));
+  const storageDeleted = await deleteOwnedStorageObjects(materialDocs);
+
   let deleted = 0;
   for (let offset = 0; offset < refs.length; offset += 450) {
     const batch = db.batch();
@@ -482,9 +538,10 @@ export const deleteAcademic = onCall(async (request) => {
   await db.collection("auditLogs").doc().set({
     ...auditPayload(uid, role, "DELETE", collection, data.id),
     deletedDocuments: deleted,
+    storageObjectsDeleted: storageDeleted,
   });
 
-  return { success: true, deletedDocuments: deleted, collection, id: data.id };
+  return { success: true, deletedDocuments: deleted, storageObjectsDeleted: storageDeleted, collection, id: data.id };
 });
 
 export const bulkImportAcademic = onCall(async (request) => {
