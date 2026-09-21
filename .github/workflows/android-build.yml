@@ -1,4 +1,5 @@
 name: Android 2.0 Build
+# Triggered for latest Firebase Test Lab APK build
 
 on:
   push:
