@@ -66,9 +66,26 @@ async function callImport(rows: Record<string, string>[]) {
     body: JSON.stringify({ action: "bulkImportAcademic", data: { rows } }),
     cache: "no-store",
   });
-  const payload = await response.json() as { data?: ImportResult; error?: { message?: string } };
-  if (!response.ok) throw new Error(payload.error?.message || "Bulk import failed.");
-  return payload.data as ImportResult;
+  const responseText = await response.text();
+  let payload: { data?: ImportResult; error?: { message?: string } } = {};
+  if (responseText.trim()) {
+    try {
+      payload = JSON.parse(responseText) as { data?: ImportResult; error?: { message?: string } };
+    } catch {
+      throw new Error(
+        response.ok
+          ? "Academic import service returned an invalid response. Refresh the Admin Console and try again."
+          : "Bulk import failed (HTTP " + response.status + ").",
+      );
+    }
+  }
+  if (!response.ok) {
+    throw new Error(payload.error?.message || "Bulk import failed (HTTP " + response.status + ").");
+  }
+  if (!payload.data) {
+    throw new Error("Academic import service returned an empty response. The import was not confirmed.");
+  }
+  return payload.data;
 }
 
 export default function AcademicImporter({ onComplete }: { onComplete: () => void }) {
