@@ -49,7 +49,7 @@ function validate(d:any){
     chapterId:text(d.chapterId),topicId:text(d.topicId),language:(text(d.language)||"English").slice(0,80),
     difficulty:text(d.difficulty).slice(0,40),tags,accessType,status,
     fileUrl:text(d.fileUrl).slice(0,2000),storagePath:text(d.storagePath).slice(0,1000),thumbnailUrl:text(d.thumbnailUrl).slice(0,2000),
-    publishAtMs:p,expireAtMs:e,storagePath:text(d.storagePath).slice(0,1000),
+    publishAtMs:p,expireAtMs:e,
   };
 }
 
