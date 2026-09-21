@@ -283,7 +283,8 @@ export const bulkImportQuestions = onCall(async (request) => {
       const subjectId=resolve(row.subjectId,row.subjectCode,subjectMap,"Subject",rowNo);
       let chapterId=text(row.chapterId);
       if(!chapterId && text(row.chapterName)) { chapterId=chapterMap.get(subjectId+"|"+academicNameKey(row.chapterName))||""; if(!chapterId) chapterId=fuzzyAcademicMatch(chapterRecords.filter(x=>text(x.subjectId)===subjectId),row.chapterName)?.id||""; }
-      if(!chapterId && text(row.chapterName)) { const matches = fuzzyAcademicMatch(chapterRecords.filter(x => { const sid=text(x.subjectId); return sid===subjectId || subjectRecords.some(s => s.id===sid && academicNameKey(s.name)===academicNameKey(subjectRecords.find(v=>v.id===subjectId)?.name)); }), row.chapterName); if(matches) chapterId=matches.id; }\n      if(!chapterId) errors.push({row:rowNo,message:"Chapter ID or chapterName is required and must match the selected subject."});
+      if(!chapterId && text(row.chapterName)) { const matches = fuzzyAcademicMatch(chapterRecords.filter(x => { const sid=text(x.subjectId); return sid===subjectId || subjectRecords.some(s => s.id===sid && academicNameKey(s.name)===academicNameKey(subjectRecords.find(v=>v.id===subjectId)?.name)); }), row.chapterName); if(matches) chapterId=matches.id; }
+      if(!chapterId) errors.push({row:rowNo,message:"Chapter ID or chapterName is required and must match the selected subject."});
       let topicId=text(row.topicId);
       if(!topicId && text(row.topicName)) { topicId=topicMap.get(chapterId+"|"+academicNameKey(row.topicName))||""; if(!topicId) topicId=fuzzyAcademicMatch(topicRecords.filter(x=>text(x.chapterId)===chapterId),row.topicName)?.id||""; }
       if(!topicId) errors.push({row:rowNo,message:"Topic ID or topicName is required and must match the selected chapter."});
