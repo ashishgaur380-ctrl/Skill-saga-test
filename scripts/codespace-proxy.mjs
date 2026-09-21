@@ -17,13 +17,26 @@ function targetFor(pathname) {
 }
 
 function forward(req, res) {
+  const origin = req.headers.origin;
+  if (req.method === "OPTIONS" && origin) {
+    res.writeHead(204, {
+      "access-control-allow-origin": origin,
+      "access-control-allow-credentials": "true",
+      "access-control-allow-methods": "GET,HEAD,PUT,PATCH,POST,DELETE,OPTIONS",
+      "access-control-allow-headers": req.headers["access-control-request-headers"] || "Content-Type, Authorization, X-Requested-With",
+      "access-control-max-age": "600",
+      "vary": "Origin, Access-Control-Request-Headers",
+    });
+    res.end();
+    return;
+  }
+
   const pathname = new URL(req.url || "/", "http://localhost").pathname;
   const target = targetFor(pathname);
   const targetPath = target.prefix ? pathname.slice(target.prefix.length) || "/" : pathname;
   const query = new URL(req.url || "/", "http://localhost").search;
 
   const headers = { ...req.headers, host: `127.0.0.1:${target.port}` };
-  delete headers["content-length"];
 
   const upstream = http.request(
     {
@@ -34,7 +47,14 @@ function forward(req, res) {
       headers,
     },
     (upstreamRes) => {
-      res.writeHead(upstreamRes.statusCode || 502, upstreamRes.headers);
+      const responseHeaders = { ...upstreamRes.headers };
+      const origin = req.headers.origin;
+      if (origin) {
+        responseHeaders["access-control-allow-origin"] = origin;
+        responseHeaders["access-control-allow-credentials"] = "true";
+        responseHeaders["vary"] = "Origin";
+      }
+      res.writeHead(upstreamRes.statusCode || 502, responseHeaders);
       upstreamRes.pipe(res);
     },
   );
