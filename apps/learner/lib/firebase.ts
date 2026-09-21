@@ -25,7 +25,7 @@ if (useFirebaseEmulators) {
 
     if (typeof window !== "undefined") {
       const host = window.location.hostname;
-      const match = host.match(/^(.*)-\\d+(\\.[^.]+(?:\\.[^.]+)*)$/);
+      const match = host.match(/^(.*)-\d+(\.[^.]+(?:\.[^.]+)*)$/);
       if (match && host !== "localhost" && host !== "127.0.0.1") {
         authUrl = `https://${match[1]}-9099${match[2]}`;
       }
