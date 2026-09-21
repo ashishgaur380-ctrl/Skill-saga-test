@@ -13,7 +13,7 @@ type Question = {
   classId?: unknown;
   subjectId?: unknown;
   chapterId?: unknown;
-  skillId?: unknown;
+  skillId?: unknown; topicId?: unknown;
   status?: unknown;
   active?: unknown;
 };
@@ -58,7 +58,7 @@ function validate(raw: Question) {
     throw new HttpsError("invalid-argument", "Marks must be greater than 0.");
   }
 
-  const ids = ["boardId","classId","subjectId","chapterId","skillId"] as const;
+  const ids = ["boardId","classId","subjectId","chapterId","topicId"] as const;
   for (const field of ids) {
     if (!text(raw[field])) throw new HttpsError("invalid-argument", field + " is required.");
   }
@@ -79,7 +79,7 @@ function validate(raw: Question) {
     classId: text(raw.classId),
     subjectId: text(raw.subjectId),
     chapterId: text(raw.chapterId),
-    skillId: text(raw.skillId),
+    topicId: text(raw.topicId), skillId: text(raw.skillId),
     status,
     active: raw.active === undefined ? true : Boolean(raw.active),
   };
@@ -92,7 +92,7 @@ async function ensureAcademicReferences(data: ReturnType<typeof validate>) {
     ["classes", data.classId],
     ["subjects", data.subjectId],
     ["chapters", data.chapterId],
-    ["skills", data.skillId],
+    ["topics", data.topicId],
   ] as const;
   const docs = await Promise.all(refs.map(([collection, id]) => db.collection(collection).doc(id).get()));
   for (let i = 0; i < docs.length; i++) {
@@ -188,9 +188,9 @@ type QuestionImportRow = {
   option1?: unknown; option2?: unknown; option3?: unknown; option4?: unknown;
   options?: unknown;
   correctOption?: unknown; explanation?: unknown; difficulty?: unknown; marks?: unknown;
-  boardId?: unknown; classId?: unknown; subjectId?: unknown; chapterId?: unknown; skillId?: unknown;
+  boardId?: unknown; classId?: unknown; subjectId?: unknown; chapterId?: unknown; skillId?: unknown; topicId?: unknown;
   boardCode?: unknown; classCode?: unknown; subjectCode?: unknown;
-  chapterName?: unknown; skillName?: unknown;
+  chapterName?: unknown; topicName?: unknown; skillName?: unknown;
   status?: unknown; active?: unknown;
 };
 
@@ -218,12 +218,12 @@ export const bulkImportQuestions = onCall(async (request) => {
 
   const byId = (snap: QuerySnapshot) => new Map(snap.docs.map(d => [d.id, d.data()]));
   const boardMap = new Map<string,string>(), classMap = new Map<string,string>(), subjectMap = new Map<string,string>();
-  const chapterMap = new Map<string,string>(), skillMap = new Map<string,string>();
+  const chapterMap = new Map<string,string>(), topicMap = new Map<string,string>();
   boards.docs.forEach(d => { const x=d.data(); boardMap.set(d.id,d.id); if(text(x.code)) boardMap.set(text(x.code).toUpperCase(),d.id); });
   classes.docs.forEach(d => { const x=d.data(); classMap.set(d.id,d.id); if(text(x.code)) classMap.set(text(x.code).toUpperCase(),d.id); });
   subjects.docs.forEach(d => { const x=d.data(); subjectMap.set(d.id,d.id); if(text(x.code)) subjectMap.set(text(x.code).toUpperCase(),d.id); });
   chapters.docs.forEach(d => { const x=d.data(); const k=text(x.subjectId)+"|"+text(x.name).toLowerCase(); if(k!=="|") chapterMap.set(k,d.id); chapterMap.set(d.id,d.id); });
-  skills.docs.forEach(d => { const x=d.data(); const k=text(x.categoryId)+"|"+text(x.name).toLowerCase(); if(k!=="|") skillMap.set(k,d.id); skillMap.set(d.id,d.id); });
+  const topicSnap = await db.collection("topics").where("active","==",true).limit(10000).get(); topicSnap.docs.forEach(d => { const x=d.data(); const k=text(x.chapterId)+"|"+text(x.name).toLowerCase(); if(k!=="|") topicMap.set(k,d.id); topicMap.set(d.id,d.id); });
 
   const duplicateKeys = new Set<string>();
   existing.docs.forEach(d => {
@@ -259,14 +259,11 @@ export const bulkImportQuestions = onCall(async (request) => {
       let chapterId=text(row.chapterId);
       if(!chapterId && text(row.chapterName)) chapterId=chapterMap.get(subjectId+"|"+text(row.chapterName).toLowerCase())||"";
       if(!chapterId) errors.push({row:rowNo,message:"Chapter ID or chapterName is required and must match the selected subject."});
-      let skillId=text(row.skillId);
-      if(!skillId && text(row.skillName)) {
-        const categoryId=text((row as any).categoryId);
-        skillId=skillMap.get(categoryId+"|"+text(row.skillName).toLowerCase())||"";
-      }
-      if(!skillId) errors.push({row:rowNo,message:"Skill ID or skillName with categoryId is required."});
-      if(!boardId||!classId||!subjectId||!chapterId||!skillId) continue;
-      raw.boardId=boardId; raw.classId=classId; raw.subjectId=subjectId; raw.chapterId=chapterId; raw.skillId=skillId;
+      let topicId=text(row.topicId);
+      if(!topicId && text(row.topicName)) topicId=topicMap.get(chapterId+"|"+text(row.topicName).toLowerCase())||"";
+      if(!topicId) errors.push({row:rowNo,message:"Topic ID or topicName is required and must match the selected chapter."});
+      if(!boardId||!classId||!subjectId||!chapterId||!topicId) continue;
+      raw.boardId=boardId; raw.classId=classId; raw.subjectId=subjectId; raw.chapterId=chapterId; raw.topicId=topicId;
       const data=validate(raw);
       await ensureAcademicReferences(data);
       const duplicateKey=chapterId+"|"+data.questionText.toLowerCase();
