@@ -101,7 +101,8 @@ export default function AcademicManager() {
   const [notice, setNotice] = useState<string | null>(null);
   const [editing, setEditing] = useState<AcademicItem | null>(null);
   const [formOpen, setFormOpen] = useState(false);
-  const [importOpen, setImportOpen] = useState(false);\n  const [normalizingSubjects, setNormalizingSubjects] = useState(false);
+  const [importOpen, setImportOpen] = useState(false);
+  const [normalizingSubjects, setNormalizingSubjects] = useState(false);
   const [form, setForm] = useState(emptyForm("boards"));
 
   const current = modules.find((item) => item.key === activeModule) ?? modules[0];
