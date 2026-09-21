@@ -10,7 +10,7 @@ const app = getApps().length ? getApps()[0] : initializeApp(getFirebaseConfig())
 export const firebaseApp = app;
 export const firebaseAuth = getAuth(app);
 export const firestore = getFirestore(app);
-export const firebaseStorage = getStorage(app);
+export const firebaseStorage = getStorage(app, "gs://skill-saga-2.firebasestorage.app");
 export const firebaseFunctions = getFunctions(app);
 
 const useFirebaseEmulators =
