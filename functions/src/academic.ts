@@ -768,7 +768,6 @@ export const bulkImportAcademic = onCall(async (request) => {
           collection,
           key,
           data: { ...data, active: true, updatedBy: uid },
-          existingId,
         });
         continue;
       }
@@ -801,7 +800,7 @@ export const bulkImportAcademic = onCall(async (request) => {
     for (const item of prepared.filter(entry=>entry.collection===collection)) {
       const id=planned.get(collection)!.get(item.key)!;
       const ref=db.collection(collection).doc(id);
-      batch.set(ref,{...item.data,createdAt:FieldValue.serverTimestamp(),updatedAt:FieldValue.serverTimestamp()});
+      batch.set(ref,{...item.data,createdAt:FieldValue.serverTimestamp(),updatedAt:FieldValue.serverTimestamp()},{merge:true});
       auditEntries.push({collection,id});
       operations++;
       if (operations===450) { await batch.commit(); batch=db.batch(); operations=0; }
