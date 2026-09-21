@@ -15,7 +15,7 @@ export { getSystemSettings, updateSystemSettings } from "./system";
 export { listUsers, updateUser } from "./users";
 export { listPublishedQuizzes, getQuizForAttempt, submitQuizAttempt, getLearnerStats, updateLearnerProfile, getLearnerLeaderboard, listLearnerAttempts, getLearnerHome, listLearnerNotifications, markNotificationRead, getLearnerAcademic, listPublishedLearningMaterials, getTopicPractice, submitTopicPractice, getLearnerProgress, listLearnerAssignments, listPublishedCompetitions, joinCompetition, getCompetitionQuiz, submitCompetitionAttempt, getCompetitionLeaderboard, getLearnerRewards, redeemReward } from "./learner";
 export { createLearnerLinkCode, linkLearner, listLinkedLearners, getLinkedLearnerProgress } from "./guardian";
-export { listLearningMaterials, createLearningMaterial, updateLearningMaterial, archiveLearningMaterial, bulkCreateLearningMaterials } from "./content";
+export { listLearningMaterials, createLearningMaterial, updateLearningMaterial, archiveLearningMaterial, deleteLearningMaterial, bulkCreateLearningMaterials } from "./content";
 export { createAssignment, listAssignments, updateAssignment, archiveAssignment } from "./assignment";
 export { getTeacherDashboard, listTeacherAssignments, listTeacherResults, listTeacherMaterials, createTeacherMaterial, updateTeacherMaterial } from "./teacher";
 export { getSchoolDashboard, listSchoolMembers, updateSchoolMember, listSchoolAssignments } from "./school";
