@@ -63,6 +63,6 @@ jobs:
           set -eu
           export GOOGLE_APPLICATION_CREDENTIALS="$RUNNER_TEMP/firebase-service-account.json"
           echo "Firebase ADC credentials accepted; deploying skill-saga-2."
-          npx --yes firebase-tools@15.30.2 deploy --non-interactive --only functions,firestore:rules,storage --project "skill-saga-2"
+          npx --yes firebase-tools@15.30.2 deploy --non-interactive --only functions,firestore:rules --project "skill-saga-2"
         env:
           GOOGLE_APPLICATION_CREDENTIALS: $RUNNER_TEMP/firebase-service-account.json
