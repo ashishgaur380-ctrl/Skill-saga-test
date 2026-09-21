@@ -416,6 +416,77 @@ export const normalizeSubjectMappings = onCall(async (request) => {
   };
 });
 
+
+export const deleteAcademic = onCall(async (request) => {
+  const { uid, role } = assertRole(request);
+  if (role !== "super_admin") {
+    throw new HttpsError("permission-denied", "Permanent academic deletion requires super_admin access.");
+  }
+
+  const data = request.data as { collection?: unknown; id?: unknown } | undefined;
+  const collection = collectionName(data?.collection);
+  if (typeof data?.id !== "string" || !data.id.trim()) {
+    throw new HttpsError("invalid-argument", "id is required.");
+  }
+
+  const db = getFirestore();
+  const root = db.collection(collection).doc(data.id);
+  const rootSnapshot = await root.get();
+  if (!rootSnapshot.exists) throw new HttpsError("not-found", "Academic record was not found.");
+
+  const refs: DocumentReference[] = [root];
+  const seen = new Set<string>([root.path]);
+
+  const addQuery = async (collectionNameValue: string, field: string, value: string) => {
+    const snapshot = await db.collection(collectionNameValue).where(field, "==", value).get();
+    for (const doc of snapshot.docs) {
+      if (!seen.has(doc.ref.path)) {
+        seen.add(doc.ref.path);
+        refs.push(doc.ref);
+      }
+    }
+  };
+
+  if (collection === "subjects") {
+    await addQuery("chapters", "subjectId", data.id);
+    await addQuery("learningMaterials", "subjectId", data.id);
+    await addQuery("quizzes", "subjectId", data.id);
+    await addQuery("questions", "subjectId", data.id);
+  }
+
+  if (collection === "chapters") {
+    await addQuery("topics", "chapterId", data.id);
+    await addQuery("learningMaterials", "chapterId", data.id);
+    await addQuery("quizzes", "chapterId", data.id);
+    await addQuery("questions", "chapterId", data.id);
+  }
+
+  if (collection === "topics") {
+    await addQuery("learningMaterials", "topicId", data.id);
+    await addQuery("quizzes", "topicId", data.id);
+    await addQuery("questions", "topicId", data.id);
+  }
+
+  if (collection === "skillCategories") {
+    await addQuery("skills", "categoryId", data.id);
+  }
+
+  let deleted = 0;
+  for (let offset = 0; offset < refs.length; offset += 450) {
+    const batch = db.batch();
+    for (const ref of refs.slice(offset, offset + 450)) batch.delete(ref);
+    await batch.commit();
+    deleted += Math.min(450, refs.length - offset);
+  }
+
+  await db.collection("auditLogs").doc().set({
+    ...auditPayload(uid, role, "DELETE", collection, data.id),
+    deletedDocuments: deleted,
+  });
+
+  return { success: true, deletedDocuments: deleted, collection, id: data.id };
+});
+
 export const bulkImportAcademic = onCall(async (request) => {
   const { uid, role } = assertRole(request);
   const payload = request.data as { rows?: unknown } | undefined;
