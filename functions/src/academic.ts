@@ -144,7 +144,7 @@ export const listAcademic = onCall(async (request) => {
     // hierarchy, so keep legacy generic class rows out of the active
     // management view without deleting their documents or relationships.
     .filter((item) =>
-      collection !== "classes" || !/^CLASS_\\d+$/i.test(String(item.code ?? "").trim()),
+      collection !== "classes" || !/^CLASS_[0-9]+$/i.test(String(item.code ?? "").trim()),
     );
 
   items.sort((a, b) =>
