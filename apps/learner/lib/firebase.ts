@@ -11,7 +11,9 @@ export const learnerFunctions = getFunctions(
   process.env.NEXT_PUBLIC_FIREBASE_FUNCTIONS_REGION ?? "us-central1"
 );
 
-const useFirebaseEmulators =\n  process.env.NEXT_PUBLIC_USE_FIREBASE_EMULATORS === "true" ||\n  process.env.NODE_ENV === "development";\n\nif (useFirebaseEmulators) {
+const useFirebaseEmulators =
+  process.env.NEXT_PUBLIC_USE_FIREBASE_EMULATORS === "true" ||
+  process.env.NODE_ENV === "development";\n\nif (useFirebaseEmulators) {
   const emulatorState = globalThis as typeof globalThis & {
     __skillSagaLearnerEmulatorsConnected?: boolean;
   };
