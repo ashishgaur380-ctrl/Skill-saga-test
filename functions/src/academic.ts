@@ -136,7 +136,7 @@ export const listAcademic = onCall(async (request) => {
   };
 
   const items: AcademicListItem[] = snapshot.docs
-    .map((doc) => {
+    .map((doc): AcademicListItem => {
       const data = doc.data() as Record<string, unknown>;
       return { id: doc.id, ...data };
     })
