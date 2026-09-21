@@ -1,5 +1,4 @@
 import { getFirestore, FieldValue } from "firebase-admin/firestore";
-import type { QuerySnapshot } from "firebase-admin/firestore";
 import { onCall, HttpsError, type CallableRequest } from "firebase-functions/v2/https";
 
 type Question = {
@@ -194,12 +193,6 @@ type QuestionImportRow = {
   status?: unknown; active?: unknown;
 };
 
-function importList(value: unknown): string[] {
-  return typeof value === "string"
-    ? value.split(/[|;,]/).map(v => v.trim()).filter(Boolean)
-    : Array.isArray(value) ? value.map(v => text(v)).filter(Boolean) : [];
-}
-
 export const bulkImportQuestions = onCall(async (request) => {
   const { uid, role } = assertRole(request);
   const rows = (request.data as { rows?: unknown } | undefined)?.rows;
@@ -207,16 +200,14 @@ export const bulkImportQuestions = onCall(async (request) => {
   if (rows.length > 5000) throw new HttpsError("invalid-argument", "Import is limited to 5,000 rows per upload.");
 
   const db = getFirestore();
-  const [boards, classes, subjects, chapters, skills, existing] = await Promise.all([
+  const [boards, classes, subjects, chapters, existing] = await Promise.all([
     db.collection("boards").where("active","==",true).limit(5000).get(),
     db.collection("classes").where("active","==",true).limit(5000).get(),
     db.collection("subjects").where("active","==",true).limit(5000).get(),
     db.collection("chapters").where("active","==",true).limit(5000).get(),
-    db.collection("skills").where("active","==",true).limit(5000).get(),
     db.collection("questions").limit(5000).get(),
   ]);
 
-  const byId = (snap: QuerySnapshot) => new Map(snap.docs.map(d => [d.id, d.data()]));
   const boardMap = new Map<string,string>(), classMap = new Map<string,string>(), subjectMap = new Map<string,string>();
   const chapterMap = new Map<string,string>(), topicMap = new Map<string,string>();
   boards.docs.forEach(d => { const x=d.data(); boardMap.set(d.id,d.id); if(text(x.code)) boardMap.set(text(x.code).toUpperCase(),d.id); });
