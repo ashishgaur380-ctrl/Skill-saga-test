@@ -44,6 +44,7 @@ export default function Profile() {
     if (!user) { setError("Please sign in again."); return; }
     setSaving(true); setError(""); setMessage("");
     try {
+      await learnerFunction("updateLearnerProfile", { displayName: value }, await user.getIdToken());
       await updateProfile(user, { displayName: value });
       setName(value);
       setEditing(false);
