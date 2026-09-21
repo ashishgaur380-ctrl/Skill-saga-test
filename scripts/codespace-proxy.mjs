@@ -29,6 +29,44 @@ function targetFor(pathname) {
   return { port: NEXT_PORT, prefix: "" };
 }
 
+function health(req, res) {
+  const checks = [
+    ["learner", NEXT_PORT],
+    ["auth", AUTH_PORT],
+    ["functions", FUNCTIONS_PORT],
+  ];
+  let remaining = checks.length;
+  const result = {};
+  for (const [name, port] of checks) {
+    const socket = net.connect(port, "127.0.0.1");
+    socket.setTimeout(800);
+    socket.on("connect", () => {
+      result[name] = { ok: true, port };
+      socket.destroy();
+      if (--remaining === 0) {
+        res.writeHead(200, { "content-type": "application/json", "cache-control": "no-store" });
+        res.end(JSON.stringify({ ok: true, checks: result }));
+      }
+    });
+    socket.on("timeout", () => {
+      result[name] = { ok: false, port, error: "timeout" };
+      socket.destroy();
+      if (--remaining === 0) {
+        res.writeHead(503, { "content-type": "application/json", "cache-control": "no-store" });
+        res.end(JSON.stringify({ ok: false, checks: result }));
+      }
+    });
+    socket.on("error", (error) => {
+      result[name] = { ok: false, port, error: error.code || error.message };
+      socket.destroy();
+      if (--remaining === 0) {
+        res.writeHead(503, { "content-type": "application/json", "cache-control": "no-store" });
+        res.end(JSON.stringify({ ok: false, checks: result }));
+      }
+    });
+  }
+}
+
 function forward(req, res) {
   const origin = req.headers.origin;
   if (req.method === "OPTIONS" && origin) {
@@ -45,6 +83,10 @@ function forward(req, res) {
   }
 
   const pathname = new URL(req.url || "/", "http://localhost").pathname;
+  if (pathname === "/__skill_saga_health" && req.method === "GET") {
+    health(req, res);
+    return;
+  }
   const target = targetFor(pathname);
   const targetPath = target.prefix ? pathname.slice(target.prefix.length) || "/" : pathname;
   const query = new URL(req.url || "/", "http://localhost").search;
