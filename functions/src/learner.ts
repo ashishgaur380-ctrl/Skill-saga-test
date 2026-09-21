@@ -260,7 +260,7 @@ export const getLearnerAttemptDetails = onCall(async (request) => {
   const questionDocs = questionIds.length
     ? await db.getAll(...questionIds.map((id:string) => db.collection("questions").doc(id)))
     : [];
-  const questionMap = new Map(questionDocs.filter(d => d.exists).map(d => [d.id, d.data()!]));
+  const questionMap = new Map<string, any>(questionDocs.filter(d => d.exists).map(d => [d.id, d.data()!]));
 
   let title = "Quiz Attempt";
   const quizId = text(attempt.quizId);
