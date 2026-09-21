@@ -33,10 +33,11 @@ function storagePathFromUrl(value: unknown): string | null {
   return null;
 }
 
-async function deleteOwnedStorageObjects(docs: Array<{ data: () => Record<string, unknown> }>) {
+async function deleteOwnedStorageObjects(docs: Array<{ data: () => Record<string, unknown> | undefined }>) {
   const paths = new Set<string>();
   for (const doc of docs) {
     const data = doc.data();
+    if (!data) continue;
     for (const field of ["fileUrl", "thumbnailUrl", "storagePath", "filePath", "mediaUrl", "thumbnailPath"]) {
       const path = field.endsWith("Url")
         ? storagePathFromUrl(data[field])
