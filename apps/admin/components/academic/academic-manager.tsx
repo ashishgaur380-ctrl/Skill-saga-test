@@ -101,7 +101,7 @@ export default function AcademicManager() {
   const [notice, setNotice] = useState<string | null>(null);
   const [editing, setEditing] = useState<AcademicItem | null>(null);
   const [formOpen, setFormOpen] = useState(false);
-  const [importOpen, setImportOpen] = useState(false);
+  const [importOpen, setImportOpen] = useState(false);\n  const [normalizingSubjects, setNormalizingSubjects] = useState(false);
   const [form, setForm] = useState(emptyForm("boards"));
 
   const current = modules.find((item) => item.key === activeModule) ?? modules[0];
@@ -162,6 +162,27 @@ export default function AcademicManager() {
     if (activeModule === "skills") return labelFor("skillCategories", item.categoryId);
     return "";
   };
+
+  async function normalizeSubjects() {
+    if (!window.confirm("Normalize duplicate subject records into one canonical subject per code/name? Existing chapters, questions, learning materials and quizzes will be remapped safely.")) return;
+    setNormalizingSubjects(true);
+    setError(null);
+    setNotice(null);
+    try {
+      const result = await callAcademic<{ success: boolean; groupsNormalized: number; mergedSubjectRecords: number }>(
+        "normalizeSubjectMappings",
+        {},
+      );
+      setNotice(
+        `Subject normalization complete: ${result.data.groupsNormalized} group(s), ${result.data.mergedSubjectRecords} duplicate record(s) merged.`,
+      );
+      await loadCollection("subjects");
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Unable to normalize subject mappings.");
+    } finally {
+      setNormalizingSubjects(false);
+    }
+  }
 
   function openCreate() {
     setEditing(null);
@@ -318,7 +339,7 @@ export default function AcademicManager() {
             <h2>{current.name}</h2>
             <p>{current.description}</p>
           </div>
-          <div className="academic-header-actions"><button type="button" className="secondary-button" onClick={() => setImportOpen(true)}>Bulk import</button><button type="button" className="primary-button" onClick={openCreate}>+ Add {singularName}</button></div>
+          <div className="academic-header-actions">{activeModule === "subjects" && <button type="button" className="secondary-button" disabled={normalizingSubjects} onClick={() => void normalizeSubjects()}>{normalizingSubjects ? "Normalizing…" : "Normalize subjects"}</button>}<button type="button" className="secondary-button" onClick={() => setImportOpen(true)}>Bulk import</button><button type="button" className="primary-button" onClick={openCreate}>+ Add {singularName}</button></div>
         </div>
 
         <div className="academic-toolbar">
