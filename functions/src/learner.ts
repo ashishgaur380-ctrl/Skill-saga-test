@@ -1,3 +1,4 @@
+import { getAuth } from "firebase-admin/auth";
 import { getFirestore, FieldValue } from "firebase-admin/firestore";
 import type { Firestore } from "firebase-admin/firestore";
 import { onCall, HttpsError, type CallableRequest } from "firebase-functions/v2/https";
@@ -199,6 +200,22 @@ export const submitQuizAttempt = onCall(async (request) => {
   return { attemptId: attemptRef.id, duplicate: false, result: { correct, total: ids.length, marks, totalMarks, percentage, xpEarned, coinsEarned } };
 });
 
+
+export const updateLearnerProfile = onCall(async (request) => {
+  const uid = learner(request);
+  const displayName = text((request.data as any)?.displayName);
+  if (displayName.length < 2 || displayName.length > 60) {
+    throw new HttpsError("invalid-argument", "Name must be between 2 and 60 characters.");
+  }
+  const db = getFirestore();
+  await getAuth().updateUser(uid, { displayName });
+  await db.collection("users").doc(uid).set({
+    displayName,
+    updatedAt: FieldValue.serverTimestamp(),
+    updatedBy: uid,
+  }, { merge: true });
+  return { success: true, displayName };
+});
 
 export const getLearnerStats = onCall(async (request) => {
   const uid = learner(request);
