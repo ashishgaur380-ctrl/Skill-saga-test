@@ -158,7 +158,11 @@ export default function AcademicManager() {
         ...(item.classIds ?? []).map((id) => labelFor("classes", id)),
       ].join(" • ") || "Not mapped";
     }
-    if (activeModule === "chapters") return labelFor("subjects", item.subjectId);
+    if (activeModule === "chapters") {
+      const subject = labelFor("subjects", item.subjectId);
+      const classes = (item.classIds ?? []).map((id) => labelFor("classes", id)).join(", ");
+      return classes ? `${subject} • ${classes}` : subject;
+    }
     if (activeModule === "topics") return labelFor("chapters", item.chapterId);
     if (activeModule === "skills") return labelFor("skillCategories", item.categoryId);
     return "";
