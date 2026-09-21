@@ -1,4 +1,5 @@
 import { getFirestore, FieldValue } from "firebase-admin/firestore";
+import type { Firestore } from "firebase-admin/firestore";
 import { onCall, HttpsError, type CallableRequest } from "firebase-functions/v2/https";
 
 function learner(request: CallableRequest<unknown>) {
@@ -356,7 +357,7 @@ export const getLearnerHome = onCall(async (request) => {
 });
 
 
-async function learnerAcademicCollection(db: FirebaseFirestore.Firestore, collection: string) {
+async function learnerAcademicCollection(db: Firestore, collection: string) {
   const allowed = new Set(["boards","classes","subjects","chapters","topics","skillCategories","skills"]);
   if (!allowed.has(collection)) throw new HttpsError("invalid-argument", "Invalid academic collection.");
   const snap = await db.collection(collection).where("active","==",true).limit(1000).get();
