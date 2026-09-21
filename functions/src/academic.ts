@@ -512,6 +512,20 @@ export const bulkImportAcademic = onCall(async (request) => {
     return id;
   };
 
+  const resolveChapterMapping = (
+    chapterName:string,
+    subjectId:string,
+    label:string,
+    row:number,
+  ) => {
+    const snapshotKey = subjectId + "|" + chapterName.toLowerCase();
+    const id = planned.get("chapters")?.get(snapshotKey) ?? existing.get("chapters")?.get(snapshotKey);
+    if (!id) {
+      errors.push({row, message: label + ' "' + chapterName + '" was not found under the selected subject.'});
+      return null;
+    }
+    return id;
+  };
   const orderedRows = rows.map((row, index) => ({ row, originalRow: index + 2 }))
     .sort((a,b) => IMPORT_ORDER.indexOf(entityFromRow(a.row.entity)) - IMPORT_ORDER.indexOf(entityFromRow(b.row.entity)));
 
@@ -562,8 +576,30 @@ export const bulkImportAcademic = onCall(async (request) => {
         }
       }
       if (collection==="topics") {
-        const id=resolve("chapters",requiredText(row.chapterName,"chapterName"),"Chapter",rowNumber);
-        if (id) data.chapterId=id;
+        const boardValues=csvList(row.boardCodes);
+        const classValues=csvList(row.classCodes);
+        if (!boardValues.length || !classValues.length) {
+          throw new HttpsError("invalid-argument","Topics require boardCodes and classCodes.");
+        }
+        const subjectCode=textValue(row.subjectCode);
+        const subjectName=textValue(row.subjectName);
+        if (!subjectCode && !subjectName) {
+          throw new HttpsError("invalid-argument","Topics require subjectCode or subjectName.");
+        }
+        const subjectId=resolveSubjectMapping(
+          subjectCode || subjectName,
+          boardValues,
+          classValues,
+          "Subject",
+          rowNumber,
+          subjectName,
+          subjectCode ? "code" : "name",
+        );
+        const chapterName=requiredText(row.chapterName,"chapterName");
+        if (subjectId) {
+          const id=resolveChapterMapping(chapterName,subjectId,"Chapter",rowNumber);
+          if (id) data.chapterId=id;
+        }
       }
       if (collection==="skillCategories") data.description=textValue(row.description);
       if (collection==="skills") {
