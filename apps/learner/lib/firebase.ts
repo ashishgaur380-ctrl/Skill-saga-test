@@ -35,7 +35,9 @@ if (useFirebaseEmulators) {
 
   if (!emulatorState.__skillSagaLearnerEmulatorsConnected) {
     const authUrl =
-      codespacesProxyUrl("/__skill_saga_auth") ??
+      (typeof window !== "undefined" && window.location.hostname.endsWith(".app.github.dev")
+        ? window.location.origin
+        : null) ??
       "http://127.0.0.1:9099";
 
     connectAuthEmulator(learnerAuth, authUrl, {
