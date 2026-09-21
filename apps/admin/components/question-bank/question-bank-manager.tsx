@@ -100,7 +100,7 @@ export default function QuestionBankManager() {
       const c = input[i];
       if (c === '"') { if (quoted && input[i + 1] === '"') { cell += '"'; i++; } else quoted = !quoted; }
       else if (c === ',' && !quoted) { row.push(cell.trim()); cell = ""; }
-      else if ((c === "\n" || c === "\r") && !quoted) { if (c === "\\r" && input[i + 1] === "\\n") i++; row.push(cell.trim()); cell = ""; if (row.some(Boolean)) rows.push(row); row = []; }
+      else if ((c === "\n" || c === "\r") && !quoted) { if (c === "\r" && input[i + 1] === "\n") i++; row.push(cell.trim()); cell = ""; if (row.some(Boolean)) rows.push(row); row = []; }
       else cell += c;
     }
     if (cell || row.length) { row.push(cell.trim()); if (row.some(Boolean)) rows.push(row); }
@@ -114,7 +114,7 @@ export default function QuestionBankManager() {
       const matrix = parseCsv(await bulkFile.text());
       if (!matrix.length) throw new Error("CSV is empty.");
       const headers = matrix[0].map(v => v.trim().toLowerCase().replace(/\s+/g, ""));
-      const rows = matrix.slice(1).filter(r => r.some(Boolean)).map(r => Object.fromEntries(headers.map((h, i) => [h, r[i] ?? ""])));
+      const rows = matrix.slice(1).filter(r => r.some(Boolean)).map(r => { const raw = Object.fromEntries(headers.map((h, i) => [h, r[i] ?? ""])); const alias = (a:string,b:string) => { if (raw[a] === undefined && raw[b] !== undefined) raw[a] = raw[b]; }; alias("boardcode","board"); alias("classcode","class"); alias("subjectcode","subject"); alias("chaptername","chapter"); alias("topicname","topic"); alias("boardcode","boardname"); alias("classcode","classname"); alias("subjectcode","subjectname"); return raw; });
       if (rows.length > 5000) throw new Error("Maximum 5,000 questions per import.");
       const result = await callQuestion<{success:boolean;imported:number;errors?:Array<{row:number;message:string}>}>("bulkImportQuestions", { rows });
       if (!result.success) throw new Error((result.errors ?? []).slice(0, 5).map(x => `Row ${x.row}: ${x.message}`).join(" | ") || "Import failed.");
