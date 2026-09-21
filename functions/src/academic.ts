@@ -752,12 +752,14 @@ export const bulkImportAcademic = onCall(async (request) => {
       const existingId = existing.get(collection)?.get(key);
       if (existingId && (collection === "boards" || collection === "classes" || collection === "subjects")) {
         planned.get(collection)!.set(key, existingId);
-        planned.get(collection)!.set(
-          "name:" + name.toLowerCase() + "|" +
-          (data.boardIds as string[]).slice().sort().join(",") + "|" +
-          (data.classIds as string[]).slice().sort().join(","),
-          existingId,
-        );
+        if (collection === "subjects") {
+          planned.get(collection)!.set(
+            "name:" + name.toLowerCase() + "|" +
+            (data.boardIds as string[]).slice().sort().join(",") + "|" +
+            (data.classIds as string[]).slice().sort().join(","),
+            existingId,
+          );
+        }
         continue;
       }
 
