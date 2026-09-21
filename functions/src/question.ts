@@ -1,4 +1,5 @@
 import { getFirestore, FieldValue } from "firebase-admin/firestore";
+import type { QuerySnapshot } from "firebase-admin/firestore";
 import { onCall, HttpsError, type CallableRequest } from "firebase-functions/v2/https";
 
 type Question = {
@@ -215,7 +216,7 @@ export const bulkImportQuestions = onCall(async (request) => {
     db.collection("questions").limit(5000).get(),
   ]);
 
-  const byId = (snap: FirebaseFirestore.QuerySnapshot) => new Map(snap.docs.map(d => [d.id, d.data()]));
+  const byId = (snap: QuerySnapshot) => new Map(snap.docs.map(d => [d.id, d.data()]));
   const boardMap = new Map<string,string>(), classMap = new Map<string,string>(), subjectMap = new Map<string,string>();
   const chapterMap = new Map<string,string>(), skillMap = new Map<string,string>();
   boards.docs.forEach(d => { const x=d.data(); boardMap.set(d.id,d.id); if(text(x.code)) boardMap.set(text(x.code).toUpperCase(),d.id); });
