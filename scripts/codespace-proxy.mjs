@@ -14,7 +14,9 @@ function targetFor(pathname) {
     pathname.startsWith("/identitytoolkit.googleapis.com/") ||
     pathname.startsWith("/securetoken.googleapis.com/") ||
     pathname.startsWith("/www.googleapis.com/identitytoolkit/") ||
-    pathname.startsWith("/emulator/")
+    pathname.startsWith("/emulator/") ||
+    pathname.startsWith("/__/auth/") ||
+    pathname.startsWith("/__/firebase/")
   ) {
     return { port: AUTH_PORT, prefix: "" };
   }
