@@ -208,12 +208,23 @@ export const updateLearnerProfile = onCall(async (request) => {
     throw new HttpsError("invalid-argument", "Name must be between 2 and 60 characters.");
   }
   const db = getFirestore();
-  await getAuth().updateUser(uid, { displayName });
+
+  // Firestore is the learner profile source of truth. Keep the profile update
+  // usable in the emulator even if the Auth emulator is temporarily unavailable.
   await db.collection("users").doc(uid).set({
     displayName,
     updatedAt: FieldValue.serverTimestamp(),
     updatedBy: uid,
   }, { merge: true });
+
+  try {
+    await getAuth().updateUser(uid, { displayName });
+  } catch (error) {
+    // Do not turn a successful profile save into a generic INTERNAL(500).
+    // The next authenticated refresh will reconcile the Auth display name.
+    console.warn("updateLearnerProfile: Auth displayName sync failed", error);
+  }
+
   return { success: true, displayName };
 });
 
