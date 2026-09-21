@@ -13,7 +13,8 @@
     "test": "node scripts/validate-foundation.mjs && node scripts/validate-scheduling.mjs && node scripts/validate-security.mjs && node scripts/validate-production-hardening.mjs && node scripts/validate-admin-learner-regression.mjs && node scripts/validate-competition-integrity.mjs && node scripts/validate-automation-leaderboard-integrity.mjs && node scripts/validate-guardian-security.mjs && node scripts/validate-learning-content.mjs && node scripts/validate-quiz-integrity.mjs && node scripts/validate-competition-integrity-ui.mjs && node scripts/validate-content-access.mjs && node scripts/validate-assignments.mjs && node scripts/validate-ecosystem.mjs",
     "lint": "echo 'lint configured per app in CI'",
     "emulators:start:persistent": "mkdir -p emulator-data && npx firebase emulators:start --import=./emulator-data --export-on-exit=./emulator-data",
-    "dev:codespace-proxy": "node scripts/codespace-proxy.mjs"
+    "dev:codespace-proxy": "node scripts/codespace-proxy.mjs",
+    "dev:functions:codespace": "cross-env FIRESTORE_EMULATOR_HOST=127.0.0.1:8080 FIREBASE_AUTH_EMULATOR_HOST=127.0.0.1:9099 GCLOUD_PROJECT=skill-saga-2 pnpm build:functions && firebase emulators:start --only functions --project skill-saga-2"
   },
   "workspaces": [
     "apps/*",
@@ -21,5 +22,8 @@
   ],
   "engines": {
     "node": ">=20 <21"
+  },
+  "devDependencies": {
+    "cross-env": "latest"
   }
 }
