@@ -83,7 +83,7 @@ function forward(req, res) {
   }
 
   const pathname = new URL(req.url || "/", "http://localhost").pathname;
-  if (pathname === "/__skill_saga_health" && req.method === "GET") {
+  if ((pathname === "/__skill_saga_health" || pathname === "/__skill_saga_health/") && req.method === "GET") {
     health(req, res);
     return;
   }
