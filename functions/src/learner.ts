@@ -361,7 +361,12 @@ async function learnerAcademicCollection(db: Firestore, collection: string) {
   const allowed = new Set(["boards","classes","subjects","chapters","topics","skillCategories","skills"]);
   if (!allowed.has(collection)) throw new HttpsError("invalid-argument", "Invalid academic collection.");
   const snap = await db.collection(collection).where("active","==",true).limit(1000).get();
-  return snap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+  const items = snap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+  if (collection === "classes") {
+    // Legacy generic CLASS_1..CLASS_12 records must never reach the learner UI.
+    return items.filter((item:any) => !/^CLASS_\d+$/i.test(text(item.code)));
+  }
+  return items;
 }
 
 export const getLearnerAcademic = onCall(async (request) => {
