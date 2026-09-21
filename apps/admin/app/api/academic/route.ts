@@ -8,6 +8,7 @@ const allowedActions = new Set([
   "createAcademic",
   "updateAcademic",
   "archiveAcademic",
+  "deleteAcademic",
   "bulkImportAcademic",
   "normalizeSubjectMappings",
 ]);
