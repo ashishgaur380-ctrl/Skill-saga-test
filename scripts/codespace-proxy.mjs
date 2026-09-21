@@ -7,6 +7,17 @@ const AUTH_PORT = Number(process.env.AUTH_PORT || 9099);
 const FUNCTIONS_PORT = Number(process.env.FUNCTIONS_PORT || 5001);
 
 function targetFor(pathname) {
+  // Firebase Auth's Web SDK strips any path supplied to connectAuthEmulator()
+  // and sends requests from the emulator host root. Route those Auth API
+  // namespaces to the Auth emulator while keeping the Learner app at /.
+  if (
+    pathname.startsWith("/identitytoolkit.googleapis.com/") ||
+    pathname.startsWith("/securetoken.googleapis.com/") ||
+    pathname.startsWith("/www.googleapis.com/identitytoolkit/") ||
+    pathname.startsWith("/emulator/")
+  ) {
+    return { port: AUTH_PORT, prefix: "" };
+  }
   if (pathname.startsWith("/__skill_saga_auth/") || pathname === "/__skill_saga_auth") {
     return { port: AUTH_PORT, prefix: "/__skill_saga_auth" };
   }
