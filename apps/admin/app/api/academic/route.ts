@@ -9,6 +9,7 @@ const allowedActions = new Set([
   "updateAcademic",
   "archiveAcademic",
   "bulkImportAcademic",
+  "normalizeSubjectMappings",
 ]);
 
 const projectId = process.env.GCLOUD_PROJECT ?? "skill-saga-2";
