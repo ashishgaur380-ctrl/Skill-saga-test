@@ -278,6 +278,28 @@ export default function AcademicManager() {
     }
   }
 
+  async function deleteRecord(item: AcademicItem) {
+    if (!window.confirm(
+      `Permanently delete "${item.name}"? This cannot be undone. Dependent academic records linked directly to it may also be deleted. Use Archive if you want a reversible/non-destructive action.`,
+    )) return;
+
+    setSaving(true);
+    setError(null);
+    setNotice(null);
+    try {
+      const result = await callAcademic<{ success: boolean; deletedDocuments: number }>("deleteAcademic", {
+        collection: activeModule,
+        id: item.id,
+      });
+      setNotice(`${item.name} permanently deleted (${result.data.deletedDocuments} document(s)).`);
+      await loadCollection(activeModule);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Unable to delete record.");
+    } finally {
+      setSaving(false);
+    }
+  }
+
   async function archiveRecord(item: AcademicItem) {
     if (!window.confirm(`Archive "${item.name}"? It will remain available for historical relationships.`)) return;
 
@@ -396,6 +418,7 @@ export default function AcademicManager() {
                       <div className="row-actions">
                         <button type="button" className="text-button" onClick={() => openEdit(item)}>Edit</button>
                         {item.active && <button type="button" className="text-button danger" disabled={saving} onClick={() => void archiveRecord(item)}>Archive</button>}
+                        <button type="button" className="text-button danger" disabled={saving} onClick={() => void deleteRecord(item)}>Delete</button>
                       </div>
                     </td>
                   </tr>
