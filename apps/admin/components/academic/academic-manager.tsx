@@ -168,6 +168,27 @@ export default function AcademicManager() {
     return "";
   };
 
+  async function repairLegacyClassMappings() {
+    if (!window.confirm("Repair the legacy CBSE Class 1 mapping to the canonical CBSE-1 class? Only the known legacy Class 1 ID will be remapped; unrelated records will not be changed.")) return;
+    setSaving(true);
+    setError(null);
+    setNotice(null);
+    try {
+      const result = await callAcademic<{ success: boolean; subjectsRemapped: number; writes: number }>(
+        "repairLegacyClassMappings",
+        {},
+      );
+      setNotice(
+        `Class 1 mapping repaired: ${result.data.subjectsRemapped} subject(s), ${result.data.writes} dependent mapping(s) updated.`,
+      );
+      await Promise.all([loadCollection("classes"), loadCollection("subjects"), loadCollection("chapters")]);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Unable to repair legacy Class 1 mappings.");
+    } finally {
+      setSaving(false);
+    }
+  }
+
   async function normalizeSubjects() {
     if (!window.confirm("Normalize duplicate subject records into one canonical subject per code/name? Existing chapters, questions, learning materials and quizzes will be remapped safely.")) return;
     setNormalizingSubjects(true);
@@ -366,7 +387,7 @@ export default function AcademicManager() {
             <h2>{current.name}</h2>
             <p>{current.description}</p>
           </div>
-          <div className="academic-header-actions">{activeModule === "subjects" && <button type="button" className="secondary-button" disabled={normalizingSubjects} onClick={() => void normalizeSubjects()}>{normalizingSubjects ? "Normalizing…" : "Normalize subjects"}</button>}<button type="button" className="secondary-button" onClick={() => setImportOpen(true)}>Bulk import</button><button type="button" className="primary-button" onClick={openCreate}>+ Add {singularName}</button></div>
+          <div className="academic-header-actions">{activeModule === "subjects" && <><button type="button" className="secondary-button" disabled={saving} onClick={() => void repairLegacyClassMappings()}>Repair Class 1 mapping</button><button type="button" className="secondary-button" disabled={normalizingSubjects} onClick={() => void normalizeSubjects()}>{normalizingSubjects ? "Normalizing…" : "Normalize subjects"}</button></>}<button type="button" className="secondary-button" onClick={() => setImportOpen(true)}>Bulk import</button><button type="button" className="primary-button" onClick={openCreate}>+ Add {singularName}</button></div>
         </div>
 
         <div className="academic-toolbar">
