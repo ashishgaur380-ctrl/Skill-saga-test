@@ -33,6 +33,10 @@ function text(value: unknown) {
   return typeof value === "string" ? value.trim() : "";
 }
 
+function academicNameKey(value: unknown) {
+  return text(value).toLowerCase().replace(/(\\d+)\\s*to\\s*(\\d+)/g, "$1-$2").replace(/&/g, "and").replace(/[^a-z0-9]+/g, "");
+}
+
 function validate(raw: Question) {
   const questionText = text(raw.questionText);
   if (!questionText) throw new HttpsError("invalid-argument", "Question text is required.");
@@ -213,8 +217,8 @@ export const bulkImportQuestions = onCall(async (request) => {
   boards.docs.forEach(d => { const x=d.data(); boardMap.set(d.id,d.id); if(text(x.code)) boardMap.set(text(x.code).toUpperCase(),d.id); });
   classes.docs.forEach(d => { const x=d.data(); classMap.set(d.id,d.id); if(text(x.code)) classMap.set(text(x.code).toUpperCase(),d.id); });
   subjects.docs.forEach(d => { const x=d.data(); subjectMap.set(d.id,d.id); if(text(x.code)) subjectMap.set(text(x.code).toUpperCase(),d.id); });
-  chapters.docs.forEach(d => { const x=d.data(); const k=text(x.subjectId)+"|"+text(x.name).toLowerCase(); if(k!=="|") chapterMap.set(k,d.id); chapterMap.set(d.id,d.id); });
-  const topicSnap = await db.collection("topics").where("active","==",true).limit(10000).get(); topicSnap.docs.forEach(d => { const x=d.data(); const k=text(x.chapterId)+"|"+text(x.name).toLowerCase(); if(k!=="|") topicMap.set(k,d.id); topicMap.set(d.id,d.id); });
+  chapters.docs.forEach(d => { const x=d.data(); const k=text(x.subjectId)+"|"+academicNameKey(x.name); if(k!=="|") chapterMap.set(k,d.id); chapterMap.set(d.id,d.id); });
+  const topicSnap = await db.collection("topics").where("active","==",true).limit(10000).get(); topicSnap.docs.forEach(d => { const x=d.data(); const k=text(x.chapterId)+"|"+academicNameKey(x.name); if(k!=="|") topicMap.set(k,d.id); topicMap.set(d.id,d.id); });
 
   const duplicateKeys = new Set<string>();
   existing.docs.forEach(d => {
@@ -248,10 +252,10 @@ export const bulkImportQuestions = onCall(async (request) => {
       const classId=resolve(row.classId,row.classCode,classMap,"Class",rowNo);
       const subjectId=resolve(row.subjectId,row.subjectCode,subjectMap,"Subject",rowNo);
       let chapterId=text(row.chapterId);
-      if(!chapterId && text(row.chapterName)) chapterId=chapterMap.get(subjectId+"|"+text(row.chapterName).toLowerCase())||"";
+      if(!chapterId && text(row.chapterName)) chapterId=chapterMap.get(subjectId+"|"+academicNameKey(row.chapterName))||"";
       if(!chapterId) errors.push({row:rowNo,message:"Chapter ID or chapterName is required and must match the selected subject."});
       let topicId=text(row.topicId);
-      if(!topicId && text(row.topicName)) topicId=topicMap.get(chapterId+"|"+text(row.topicName).toLowerCase())||"";
+      if(!topicId && text(row.topicName)) topicId=topicMap.get(chapterId+"|"+academicNameKey(row.topicName))||"";
       if(!topicId) errors.push({row:rowNo,message:"Topic ID or topicName is required and must match the selected chapter."});
       if(!boardId||!classId||!subjectId||!chapterId||!topicId) continue;
       raw.boardId=boardId; raw.classId=classId; raw.subjectId=subjectId; raw.chapterId=chapterId; raw.topicId=topicId;
