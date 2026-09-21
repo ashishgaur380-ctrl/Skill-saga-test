@@ -1,4 +1,4 @@
-import { getFirestore, FieldValue } from "firebase-admin/firestore";
+import { getFirestore, FieldValue, type DocumentReference } from "firebase-admin/firestore";
 import { onCall, HttpsError, type CallableRequest } from "firebase-functions/v2/https";
 
 type AcademicCollection =
@@ -286,7 +286,7 @@ export const normalizeSubjectMappings = onCall(async (request) => {
     groups.set(key, group);
   }
 
-  const writes: Array<{ type: "set" | "update"; ref: FirebaseFirestore.DocumentReference; data: Record<string, unknown> }> = [];
+  const writes: Array<{ type: "set" | "update"; ref: DocumentReference; data: Record<string, unknown> }> = [];
   const auditItems: Array<{ id: string; merged: number }> = [];
   let merged = 0;
 
