@@ -43,7 +43,33 @@ jobs:
           test -n "$FIREBASE_SERVICE_ACCOUNT_JSON"
           printf '%s' "$FIREBASE_SERVICE_ACCOUNT_JSON" > "$RUNNER_TEMP/firebase-service-account.json"
           chmod 600 "$RUNNER_TEMP/firebase-service-account.json"
+      - name: Validate Firebase service account
+        env:
+          FIREBASE_SERVICE_ACCOUNT_JSON: ${{ secrets.FIREBASE_SERVICE_ACCOUNT_JSON }}
+        run: |
+          set -eu
+          python - <<'PY'
+          import json, os
+          data=json.loads(os.environ["FIREBASE_SERVICE_ACCOUNT_JSON"])
+          assert data.get("type") == "service_account", "FIREBASE_SERVICE_ACCOUNT_JSON is not a service-account key"
+          assert data.get("client_email"), "service account client_email is missing"
+          assert data.get("private_key"), "service account private_key is missing"
+          print("Firebase service account JSON is valid for ADC.")
+          print("Service account:", data["client_email"])
+          print("Project:", data.get("project_id", "not specified"))
+          PY
       - name: Deploy Firebase backend and rules
-        run: npx firebase-tools deploy --only functions,firestore:rules,storage --project "${{ vars.FIREBASE_PROJECT_ID }}"
+        run: |
+          set -eu
+          export GOOGLE_APPLICATION_CREDENTIALS="$RUNNER_TEMP/firebase-service-account.json"
+          npx --yes firebase-tools@15.30.2 projects:list --json >/tmp/firebase-projects.json
+          python - <<'PY'
+          import json
+          data=json.load(open("/tmp/firebase-projects.json"))
+          names=[p.get("projectId") for p in data.get("result",{}).get("projects",[])]
+          assert "skill-saga-2" in names, "ADC authenticated, but skill-saga-2 is not accessible to the service account"
+          print("Firebase ADC authentication verified.")
+          PY
+          npx --yes firebase-tools@15.30.2 deploy --non-interactive --only functions,firestore:rules,storage --project "skill-saga-2"
         env:
           GOOGLE_APPLICATION_CREDENTIALS: $RUNNER_TEMP/firebase-service-account.json
