@@ -90,14 +90,14 @@ export default function Profile() {
       <header className="ss-inner-header">
         <Link href="/">‹</Link>
         <div><b>Profile</b><small>Skill Saga learner</small></div>
-        <Link href="/profile/settings" aria-label="Profile settings">⚙️</Link>
+        <button type="button" className="ss-profile-settings-button" onClick={() => window.location.assign("/profile/settings/")} aria-label="Profile settings">⚙️</button>
       </header>
 
       <main className="ss-page">
         <section className="ss-profile-card">
           <div className="ss-avatar">👦</div>
           <div><h1>{name}</h1><p>Your learning journey</p><small>{email || "Keep learning, keep growing!"}</small></div>
-          <button className="ss-profile-edit" onClick={() => { setDraftName(name); setEditing(true); setError(""); setMessage(""); }} aria-label="Edit profile">✎</button>
+          <button type="button" className="ss-profile-edit" onClick={() => { setDraftName(name); setEditing(true); setError(""); setMessage(""); }} aria-label="Edit profile">✎ <span>Edit</span></button>
         </section>
 
         {editing && <section className="ss-card ss-profile-editor">
