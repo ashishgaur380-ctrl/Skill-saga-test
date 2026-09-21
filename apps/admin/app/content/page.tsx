@@ -1,7 +1,7 @@
 "use client";
 
 import { firebaseAuth, firebaseStorage } from "../../lib/firebase";
-import { getDownloadURL, ref as storageRef, uploadBytesResumable } from "firebase/storage";
+import { getDownloadURL, listAll, ref as storageRef, uploadBytesResumable } from "firebase/storage";
 import { useEffect, useState } from "react";
 
 declare global { interface Window { XLSX?: any } }
@@ -20,6 +20,23 @@ function parseCsv(text:string){
   return rows;
 }
 async function loadXlsx(){if(window.XLSX)return window.XLSX;await new Promise<void>((resolve,reject)=>{const s=document.createElement("script");s.src="https://cdn.sheetjs.com/xlsx-0.20.3/package/dist/xlsx.full.min.js";s.onload=()=>resolve();s.onerror=()=>reject(new Error("Unable to load Excel parser."));document.head.appendChild(s);});return window.XLSX;}
+function key(v:string){return v.toLowerCase().replace(/[^a-z0-9]+/g,"");}
+async function listStorageFiles(prefix:string,out:any[]=[]){
+  const r=await listAll(storageRef(firebaseStorage,prefix));
+  out.push(...r.items);
+  for(const p of r.prefixes) await listStorageFiles(p.fullPath,out);
+  return out;
+}
+function academicId(list:A[],value:any){const s=String(value??"").trim();if(!s)return "";return list.find(x=>x.id===s||key(x.name)===key(s))?.id||"";}
+function materialFileKey(title:string){return key(title.replace(/\s*-\s*Study Material$/i,"").replace(/\s*-\s*Practice Quiz$/i,""));}
+function storageFileKey(path:string){
+  let n=path.split("/").pop()||"";
+  n=n.replace(/\.(pdf|docx?|pptx?|xlsx?|csv|txt|mp4|webm|jpe?g|png|gif|mp3|wav)$/i,"");
+  n=n.replace(/^class\d+_[^_]+_\d+_/i,"");
+  n=n.replace(/_study_material$/i,"").replace(/_quiz$/i,"");
+  return key(n);
+}
+
 
 export default function ContentPage(){
  const [items,setItems]=useState<M[]>([]),[form,setForm]=useState<M>(blank),[token,setToken]=useState(""),[editing,setEditing]=useState<string|null>(null),[msg,setMsg]=useState("");
@@ -80,7 +97,8 @@ export default function ContentPage(){
  async function selectChapter(id:string){set("chapterId",id);set("topicId","");try{const x=await academic("topics",token);setTopics(x.filter((v:A)=>(v as any).chapterId===id));}catch(e:any){setMsg(e.message)}}
 
  async function bulkImport(){
-   if(!bulkFile)return;setBusy(true);setMsg("Reading bulk file…");
+   if(!bulkFile)return;
+   setBusy(true);setMsg("Reading bulk file and mapping academic content…");
    try{
      let rows:any[]=[];
      if(bulkFile.name.toLowerCase().endsWith(".csv")||bulkFile.name.toLowerCase().endsWith(".txt")){
@@ -90,16 +108,67 @@ export default function ContentPage(){
      }else if(bulkFile.name.toLowerCase().endsWith(".xlsx")||bulkFile.name.toLowerCase().endsWith(".xls")){
        const XLSX=await loadXlsx();const wb=XLSX.read(await bulkFile.arrayBuffer(),{type:"array"});const sheet=wb.Sheets[wb.SheetNames[0]];rows=XLSX.utils.sheet_to_json(sheet,{defval:""});
      }else throw new Error("Use CSV, XLSX or XLS.");
-     const normalize=(r:any)=>({title:r.title||"",description:r.description||"",type:r.type||"pdf",boardId:r.boardid||r.boardId||"",classId:r.classid||r.classId||"",subjectId:r.subjectid||r.subjectId||"",chapterId:r.chapterid||r.chapterId||"",topicId:r.topicid||r.topicId||"",language:r.language||"English",accessType:r.accesstype||r.accessType||"free",status:r.status||"draft",fileUrl:r.fileurl||r.fileUrl||"",thumbnailUrl:r.thumbnailurl||r.thumbnailUrl||"",publishAtMs:r.publishatms||r.publishAtMs||null,expireAtMs:r.expireatms||r.expireAtMs||null});
-     const payload=rows.map(normalize);if(payload.length>500)throw new Error("Maximum 500 rows per import.");if(payload.some(x=>!x.title))throw new Error("Every row must have a title.");
-     const result=await call("bulkCreateLearningMaterials",{rows:payload},token);setMsg(`Imported ${result.created||payload.length} learning materials.`);const x=await call("listLearningMaterials",{},token);setItems(x.items||[]);setBulkFile(null);
+     if(rows.length>500)throw new Error("Maximum 500 rows per import.");
+     if(rows.some(x=>!x.title))throw new Error("Every row must have a title.");
+
+     // Resolve human-readable Board/Class/Subject/Chapter/Topic names to the real Firestore IDs.
+     const [allBoards,allClasses,allSubjects,allChapters,allTopics]=await Promise.all([
+       academic("boards",token),academic("classes",token),academic("subjects",token),
+       academic("chapters",token),academic("topics",token)
+     ]);
+
+     // Index existing Storage files once. Files placed anywhere below learning-materials/ can be matched by title.
+     const storageFiles=await listStorageFiles("learning-materials");
+     const normalize=(r:any)=>{
+       const boardId=academicId(allBoards,r.boardid||r.boardId||r.board);
+       const classId=academicId(allClasses,r.classid||r.classId||r.class);
+       const subjectPool=allSubjects.filter((x:any)=>(!boardId||x.boardIds?.includes(boardId))&&(!classId||x.classIds?.includes(classId)));
+       const subjectId=academicId(subjectPool.length?subjectPool:allSubjects,r.subjectid||r.subjectId||r.subject);
+       const chapterPool=allChapters.filter((x:any)=>!subjectId||x.subjectId===subjectId);
+       const chapterId=academicId(chapterPool.length?chapterPool:allChapters,r.chapterid||r.chapterId||r.chapter);
+       const topicPool=allTopics.filter((x:any)=>!chapterId||x.chapterId===chapterId);
+       const topicId=academicId(topicPool.length?topicPool:allTopics,r.topicid||r.topicId||r.topic);
+
+       if((r.board||r.boardId)&&!boardId)throw new Error("Board not found: "+r.board);
+       if((r.class||r.classId)&&!classId)throw new Error("Class not found: "+r.class);
+       if((r.subject||r.subjectId)&&!subjectId)throw new Error("Subject not found: "+r.subject);
+       if((r.chapter||r.chapterId)&&!chapterId)throw new Error("Chapter not found: "+r.chapter);
+       if((r.topic||r.topicId)&&!topicId)throw new Error("Topic not found: "+r.topic);
+
+       let fileUrl=r.fileurl||r.fileUrl||"";
+       let storagePath=r.storagepath||r.storagePath||"";
+       if(!fileUrl && storagePath){
+         const match=storageFiles.find((x:any)=>x.fullPath===storagePath);
+         if(!match)throw new Error("Storage file not found: "+storagePath);
+         storagePath=match.fullPath; fileUrl="__RESOLVE__";
+       }
+       if(!fileUrl){
+         const wanted=materialFileKey(r.title||"");
+         const match=storageFiles.find((x:any)=>{
+           const fk=storageFileKey(x.fullPath);
+           return fk===wanted;
+         });
+         if(match){storagePath=match.fullPath;fileUrl="__RESOLVE__";}
+       }
+       return {title:r.title||"",description:r.description||"",type:(r.type||"pdf").toLowerCase(),boardId,classId,subjectId,chapterId,topicId,language:r.language||"English",accessType:r.accesstype||r.accessType||r.access||"free",status:r.status||"draft",fileUrl,storagePath,thumbnailUrl:r.thumbnailurl||r.thumbnailUrl||"",publishAtMs:r.publishatms||r.publishAtMs||null,expireAtMs:r.expireatms||r.expireAtMs||null};
+     };
+
+     const payload=rows.map((r,i)=>{try{return normalize(r);}catch(e:any){throw new Error(`Row ${i+1}: ${e.message||"mapping failed"}`);}});
+     for(const item of payload){
+       if(item.fileUrl==="__RESOLVE__"&&item.storagePath){
+         item.fileUrl=await getDownloadURL(storageRef(firebaseStorage,item.storagePath));
+       }
+     }
+     const result=await call("bulkCreateLearningMaterials",{rows:payload},token);
+     setMsg(`Imported ${result.created||payload.length} learning materials with academic mapping and Storage links.`);
+     const x=await call("listLearningMaterials",{},token);setItems(x.items||[]);setBulkFile(null);
    }catch(e:any){setMsg(e.message||"Bulk import failed.")}finally{setBusy(false);}
  }
 
  return <main className="shell"><aside className="sidebar"><div className="brand">Skill Saga</div><div className="brand-subtitle">Admin Console</div><nav><a className="nav-item" href="/">Dashboard</a><a className="nav-item" href="/academic">Academic Structure</a><a className="nav-item" href="/content">Content</a><a className="nav-item" href="/question-bank">Question Bank</a></nav></aside><section className="content">
  <header className="topbar"><div><p className="eyebrow">CONTENT</p><h1>Learning Content Manager</h1><p className="muted">Upload, map, schedule and publish content for Skill Saga UI 2.0.</p></div></header>
 
- <section className="panel"><h2>Bulk Import</h2><p className="muted">CSV/XLSX/XLS · up to 500 rows. Required: <b>title</b>. Map content with Board → Class → Subject → Chapter → Topic. Types: PDF, video, article, link, image, audio, worksheet, presentation. Use publishAtMs / expireAtMs for scheduling.</p><div className="actions"><input type="file" accept=".csv,.xlsx,.xls,.txt" onChange={e=>setBulkFile(e.target.files?.[0]||null)}/><button disabled={!bulkFile||busy} onClick={()=>void bulkImport()}>{busy?"Processing…":"Import Content"}</button></div></section>
+ <section className="panel"><h2>Bulk Import</h2><p className="muted">CSV/XLSX/XLS · up to 500 rows. The importer resolves Board → Class → Subject → Chapter → Topic names to the academic IDs automatically. If <b>fileUrl</b> is blank, it also auto-matches a file already uploaded anywhere under <b>learning-materials/</b> by its filename/title.</p><div className="actions"><input type="file" accept=".csv,.xlsx,.xls,.txt" onChange={e=>setBulkFile(e.target.files?.[0]||null)}/><button disabled={!bulkFile||busy} onClick={()=>void bulkImport()}>{busy?"Processing…":"Import Content"}</button></div></section>
 
  <section className="panel"><h2>{editing?"Edit content":"Add learning content"}</h2><div className="grid">
  <label>Title<input value={form.title} onChange={e=>set("title",e.target.value)}/></label><label>Description<input value={form.description} onChange={e=>set("description",e.target.value)}/></label>
