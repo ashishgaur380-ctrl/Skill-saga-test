@@ -58,6 +58,17 @@ export default function QuizManager(){
  async function save(){setSaving(true);setError(null);try{if(editing)await callQuiz("updateQuiz",{id:editing.id,data:form});else await callQuiz("createQuiz",{data:form});setOpen(false);setNotice(editing?"Quiz updated successfully.":"Quiz created successfully.");await loadAll()}catch(e){setError(e instanceof Error?e.message:"Unable to save quiz.")}finally{setSaving(false)}}
  async function archive(q:Quiz){if(!confirm(`Archive "${q.title}"?`))return;setSaving(true);try{await callQuiz("archiveQuiz",{id:q.id});setNotice("Quiz archived.");await loadAll()}catch(e){setError(e instanceof Error?e.message:"Unable to archive quiz.")}finally{setSaving(false)}}
  function toggleQuestion(id:string){setForm(f=>({...f,questionIds:f.questionIds.includes(id)?f.questionIds.filter(x=>x!==id):[...f.questionIds,id]}))}
+ const filteredQuestions=questions.filter(q=>{
+   if(!q.active)return false;
+   if(form.quizType!=="ACADEMIC")return true;
+   if(form.boardId&&q.boardId!==form.boardId)return false;
+   if(form.classId&&q.classId!==form.classId)return false;
+   if(form.subjectId&&q.subjectId!==form.subjectId)return false;
+   if(form.chapterId&&q.chapterId!==form.chapterId)return false;
+   if(form.topicId&&q.topicId!==form.topicId)return false;
+   return true;
+ });
+
  return <main className="academic-manager"><header className="academic-header"><div><span className="academic-eyebrow">ASSESSMENT</span><h1>Quiz Manager</h1><p>Build quizzes from the central Question Bank.</p></div><div className="academic-status"><span className="status-dot"/> {quizzes.filter(q=>q.active).length} active</div></header>
  <section className="academic-panel"><div className="academic-panel-header"><div><h2>Quizzes</h2><p>Start with one draft quiz for integration testing.</p></div><button className="primary-button" onClick={create}>+ Add Quiz</button></div>{error&&<div className="academic-message error">{error}</div>}{notice&&<div className="academic-message success">{notice}</div>}
  {loading?<div className="academic-empty"><h3>Loading quizzes…</h3></div>:quizzes.length===0?<div className="academic-empty"><h3>No quizzes yet</h3><p>Create one draft quiz using the test question.</p><button className="secondary-button" onClick={create}>Create test quiz</button></div>:<div className="academic-table-wrap"><table className="academic-table"><thead><tr><th>Title</th><th>Questions</th><th>Status</th><th>Actions</th></tr></thead><tbody>{quizzes.map(q=><tr key={q.id}><td><strong>{q.title}</strong></td><td>{q.questionIds.length}</td><td><span className={q.active?"status-pill active":"status-pill"}>{q.active?q.status:"Archived"}</span></td><td><div className="row-actions"><button className="text-button" onClick={()=>edit(q)}>Edit</button>{q.active&&<button className="text-button danger" disabled={saving} onClick={()=>void archive(q)}>Archive</button>}</div></td></tr>)}</tbody></table></div>}</section>
@@ -82,11 +93,11 @@ export default function QuizManager(){
  </>}
  <label className="full-width">Description<textarea rows={2} value={form.description} onChange={e=>setForm({...form,description:e.target.value})}/></label>
  {form.quizType==="ACADEMIC"&&<>
- <label>Board<select value={form.boardId} onChange={e=>setForm({...form,boardId:e.target.value})}><option value="">Optional</option>{(academic.boards??[]).map(x=><option key={x.id} value={x.id}>{x.name}</option>)}</select></label>
- <label>Class<select value={form.classId} onChange={e=>setForm({...form,classId:e.target.value})}><option value="">Optional</option>{(academic.classes??[]).map(x=><option key={x.id} value={x.id}>{x.name}</option>)}</select></label>
- <label>Subject<select value={form.subjectId} onChange={e=>setForm({...form,subjectId:e.target.value})}><option value="">Optional</option>{(academic.subjects??[]).map(x=><option key={x.id} value={x.id}>{x.name} {x.code?`(${x.code})`:""}</option>)}</select></label>
+ <label>Board<select value={form.boardId} onChange={e=>setForm({...form,boardId:e.target.value,questionIds:[]})}><option value="">Select</option>{(academic.boards??[]).map(x=><option key={x.id} value={x.id}>{x.name}</option>)}</select></label>
+ <label>Class<select value={form.classId} onChange={e=>setForm({...form,classId:e.target.value,questionIds:[]})}><option value="">Select</option>{(academic.classes??[]).map(x=><option key={x.id} value={x.id}>{x.name}</option>)}</select></label>
+ <label>Subject<select value={form.subjectId} onChange={e=>setForm({...form,subjectId:e.target.value,chapterId:"",topicId:"",questionIds:[]})}><option value="">Select</option>{(academic.subjects??[]).filter(x=>!form.classId||!x.categoryId||x.categoryId===form.classId).map(x=><option key={x.id} value={x.id}>{x.name} {x.code?`(${x.code})`:""}</option>)}</select></label>
  </>}
- <fieldset className="academic-fieldset full-width"><legend>Questions</legend>{questions.length===0?<p>No questions available.</p>:questions.map(q=><label key={q.id} className="multi-option"><input type="checkbox" checked={form.questionIds.includes(q.id)} onChange={()=>toggleQuestion(q.id)}/>{q.questionText}{q.active?"":" (Archived)"}</label>)}</fieldset>
+ <fieldset className="academic-fieldset full-width"><legend>Questions ({filteredQuestions.length} matching)</legend>{filteredQuestions.length===0?<p>No active questions match the selected academic path.</p>:filteredQuestions.map(q=><label key={q.id} className="multi-option"><input type="checkbox" checked={form.questionIds.includes(q.id)} onChange={()=>toggleQuestion(q.id)}/>{q.questionText}</label>)}</fieldset>
  <label className="checkbox-row"><input type="checkbox" checked={form.active} onChange={e=>setForm({...form,active:e.target.checked})}/> Active</label>
  </div>{error&&<div className="academic-message error">{error}</div>}<div className="modal-actions"><button className="secondary-button" onClick={()=>setOpen(false)}>Cancel</button><button className="primary-button" disabled={saving} onClick={()=>void save()}>{saving?"Saving…":editing?"Save changes":"Create"}</button></div></section></div>}</main>
 }
