@@ -750,7 +750,7 @@ export const bulkImportAcademic = onCall(async (request) => {
       // rejecting the entire import. This lets a single CSV safely include
       // subject mappings that may already have been created manually.
       const existingId = existing.get(collection)?.get(key);
-      if (existingId && (collection === "boards" || collection === "classes" || collection === "subjects")) {
+      if (existingId) {
         planned.get(collection)!.set(key, existingId);
         if (collection === "subjects") {
           planned.get(collection)!.set(
@@ -760,10 +760,10 @@ export const bulkImportAcademic = onCall(async (request) => {
             existingId,
           );
         }
-        // Reusing an existing canonical record must also restore it to the
-        // active state. Older prototype rows may have been archived; otherwise
-        // a successful bulk import can leave the hierarchy invisible in the
-        // admin list and unusable as a dependency.
+        // Bulk imports are intentionally idempotent for exact scoped keys.
+        // Reuse the canonical record, restore it to active state, and update
+        // its current mapping instead of creating duplicates or failing a
+        // re-import of an already-loaded curriculum.
         prepared.push({
           collection,
           key,
