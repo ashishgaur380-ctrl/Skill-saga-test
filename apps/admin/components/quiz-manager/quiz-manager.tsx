@@ -3,7 +3,7 @@
 import {useCallback,useEffect,useState} from "react";
 import {firebaseAuth} from "../../lib/firebase";
 
-type Q={id:string;questionText:string;active:boolean};
+type Q={id:string;questionText:string;active:boolean;boardId?:string;classId?:string;subjectId?:string;chapterId?:string;topicId?:string;status?:string};
 type Quiz={id:string;title:string;description?:string;questionIds:string[];quizType?:string;boardId?:string;classId?:string;subjectId?:string;chapterId?:string;topicId?:string;skillCategoryId?:string;skillId?:string;otherCategory?:string;otherTopic?:string;accessMode?:string;requiredXp?:number;requiredCoins?:number;status:string;active:boolean;publishAtMs?:number|null;expireAtMs?:number|null};
 type A={id:string;name:string;code?:string;active:boolean;chapterId?:string;subjectId?:string;categoryId?:string};
 
