@@ -27,6 +27,16 @@ export function getFirebaseConfig(): FirebaseClientConfig {
       appId: env.appId || "demo-app-id",
     };
   }
-  if (Object.values(env).some((value) => !value)) throw new Error("Firebase client configuration is incomplete.");
-  return env as FirebaseClientConfig;
+  // Firebase Web configuration is public client configuration. Keep environment
+  // variables as the preferred source, but provide the Skill Saga 2 project
+  // defaults so deployments such as Vercel can prerender pages without requiring
+  // manually duplicated environment variables.
+  return {
+    apiKey: env.apiKey || "AIzaSyD5C5lSSlegpaHnQS5AlDWN2l6IPCghhtc",
+    authDomain: env.authDomain || "skill-saga-2.firebaseapp.com",
+    projectId: env.projectId || "skill-saga-2",
+    storageBucket: env.storageBucket || "skill-saga-2.firebasestorage.app",
+    messagingSenderId: env.messagingSenderId || "310093386272",
+    appId: env.appId || "1:310093386272:web:792a85c9fa4fc4aca0a245",
+  };
 }
