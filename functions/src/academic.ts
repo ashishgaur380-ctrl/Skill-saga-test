@@ -470,6 +470,101 @@ export const normalizeSubjectMappings = onCall(async (request) => {
 });
 
 
+export const repairLegacyClassMappings = onCall(async (request) => {
+  const { uid, role } = assertRole(request);
+  const db = getFirestore();
+
+  const canonicalSnapshot = await db.collection("classes")
+    .where("code", "==", "CBSE-1")
+    .limit(1)
+    .get();
+
+  let classId: string;
+  if (canonicalSnapshot.empty) {
+    const ref = db.collection("classes").doc();
+    classId = ref.id;
+    await ref.set({
+      name: "Class 1",
+      code: "CBSE-1",
+      numericLevel: 1,
+      active: true,
+      sortOrder: 0,
+      createdBy: uid,
+      updatedBy: uid,
+      createdAt: FieldValue.serverTimestamp(),
+      updatedAt: FieldValue.serverTimestamp(),
+    });
+  } else {
+    classId = canonicalSnapshot.docs[0].id;
+    await canonicalSnapshot.docs[0].ref.update({
+      name: "Class 1",
+      code: "CBSE-1",
+      numericLevel: 1,
+      active: true,
+      updatedBy: uid,
+      updatedAt: FieldValue.serverTimestamp(),
+    });
+  }
+
+  // This is the specific legacy class ID visible in the pre-canonical Class 1
+  // subject mappings. Only this orphan ID is remapped; unrelated data is left
+  // untouched by design.
+  const legacyClassId = "1kptkUk8j6FtPRze4Czm";
+  const subjects = await db.collection("subjects").get();
+  const subjectRefs = subjects.docs.filter((doc) => {
+    const ids = doc.data().classIds;
+    return Array.isArray(ids) && ids.map(String).includes(legacyClassId);
+  });
+
+  const writes: Array<{ ref: DocumentReference; data: Record<string, unknown> }> = [];
+  for (const subject of subjectRefs) {
+    const data = subject.data();
+    const classIds = Array.isArray(data.classIds) ? data.classIds.map(String) : [];
+    const nextClassIds = [...new Set(classIds.map((id) => id === legacyClassId ? classId : id))];
+    writes.push({
+      ref: subject.ref,
+      data: { classIds: nextClassIds, active: true, updatedBy: uid, updatedAt: FieldValue.serverTimestamp() },
+    });
+
+    const dependentCollections = ["chapters", "questions", "learningMaterials", "quizzes"] as const;
+    for (const collection of dependentCollections) {
+      const dependent = await db.collection(collection).where("subjectId", "==", subject.id).get();
+      for (const doc of dependent.docs) {
+        const d = doc.data();
+        if (Array.isArray(d.classIds) && d.classIds.map(String).includes(legacyClassId)) {
+          writes.push({
+            ref: doc.ref,
+            data: {
+              classIds: [...new Set(d.classIds.map(String).map((id: string) => id === legacyClassId ? classId : id))],
+              updatedAt: FieldValue.serverTimestamp(),
+            },
+          });
+        }
+      }
+    }
+  }
+
+  for (let offset = 0; offset < writes.length; offset += 400) {
+    const batch = db.batch();
+    for (const item of writes.slice(offset, offset + 400)) batch.update(item.ref, item.data);
+    if (offset < writes.length) await batch.commit();
+  }
+
+  await db.collection("auditLogs").doc().set({
+    ...auditPayload(uid, role, "REPAIR_LEGACY_CLASS_MAPPINGS", "classes", classId),
+    legacyClassId,
+    subjectsRemapped: subjectRefs.length,
+  });
+
+  return {
+    success: true,
+    classId,
+    legacyClassId,
+    subjectsRemapped: subjectRefs.length,
+    writes: writes.length,
+  };
+});
+
 export const deleteAcademic = onCall(async (request) => {
   const { uid, role } = assertRole(request);
   if (role !== "super_admin") {
