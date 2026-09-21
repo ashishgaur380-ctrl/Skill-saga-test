@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useEffect, useState } from "react";
-import { onAuthStateChanged, signOut, updateProfile } from "firebase/auth";
+import { onAuthStateChanged, signOut } from "firebase/auth";
 import { learnerFunction } from "../../lib/learner-api";
 import { learnerAuth } from "../../lib/firebase";
 import LearnerNav from "../components/LearnerNav";
@@ -45,7 +45,9 @@ export default function Profile() {
     setSaving(true); setError(""); setMessage("");
     try {
       await learnerFunction("updateLearnerProfile", { displayName: value }, await user.getIdToken());
-      await updateProfile(user, { displayName: value });
+      // The callable updates Firestore (and attempts Auth sync server-side).
+      // Do not make the browser perform a second Auth write; in Codespaces
+      // that can fail when the Auth emulator proxy is unavailable.
       setName(value);
       setEditing(false);
       setMessage("Profile updated successfully.");
