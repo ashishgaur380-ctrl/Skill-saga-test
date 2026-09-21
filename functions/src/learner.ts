@@ -374,10 +374,13 @@ export const getLearnerAcademic = onCall(async (request) => {
   if (collection === "classes" && parentId) {
     const boardSnap = await db.collection("boards").doc(parentId).get();
     const boardCode = text(boardSnap.data()?.code).toUpperCase();
-    filtered = items.filter((x:any) =>
-      (Array.isArray(x.boardIds) && x.boardIds.includes(parentId)) ||
-      (boardCode && text(x.code).toUpperCase().startsWith(boardCode + "-"))
-    );
+    filtered = items.filter((x:any) => {
+      const code = text(x.code).toUpperCase();
+      return (
+        (Array.isArray(x.boardIds) && x.boardIds.includes(parentId)) ||
+        (boardCode && code.startsWith(boardCode + "-"))
+      );
+    });
   } else if (collection === "subjects") {
     const boardId = text((request.data as any)?.boardId);
     const classId = text((request.data as any)?.classId);
