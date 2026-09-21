@@ -144,9 +144,10 @@ export const listAcademic = onCall(async (request) => {
     // Board-scoped records such as CBSE-1...CBSE-12 are the canonical
     // hierarchy, so keep legacy generic class rows out of the active
     // management view without deleting their documents or relationships.
-    .filter((item) =>
-      collection !== "classes" || !/^CLASS_[0-9]+$/i.test(String(item.code ?? "").trim()),
-    );
+    .filter((item) => {
+      if (collection === "classes" && /^CLASS_[0-9]+$/i.test(String(item.code ?? "").trim())) return false;
+      return item.active !== false;
+    });
 
   items.sort((a, b) =>
     String(a.name ?? "").localeCompare(String(b.name ?? "")),
@@ -266,6 +267,119 @@ function entityFromRow(value: unknown): AcademicCollection {
   if (!result) throw new HttpsError("invalid-argument", "Each import row needs a valid entity.");
   return result;
 }
+
+
+export const normalizeSubjectMappings = onCall(async (request) => {
+  const { uid, role } = assertRole(request);
+  const db = getFirestore();
+  const snapshot = await db.collection("subjects").get();
+
+  const groups = new Map<string, Array<{ id: string; data: Record<string, unknown> }>>();
+  for (const doc of snapshot.docs) {
+    const data = doc.data() as Record<string, unknown>;
+    const code = textValue(data.code).toUpperCase();
+    const name = textValue(data.name).toLowerCase();
+    const key = code ? "code:" + code : "name:" + name;
+    if (!key || key === "name:") continue;
+    const group = groups.get(key) ?? [];
+    group.push({ id: doc.id, data });
+    groups.set(key, group);
+  }
+
+  const writes: Array<{ type: "set" | "update"; ref: FirebaseFirestore.DocumentReference; data: Record<string, unknown> }> = [];
+  const auditItems: Array<{ id: string; merged: number }> = [];
+  let merged = 0;
+
+  for (const group of groups.values()) {
+    if (group.length < 2) continue;
+
+    group.sort((left, right) => {
+      const leftActive = left.data.active === true ? 1 : 0;
+      const rightActive = right.data.active === true ? 1 : 0;
+      if (leftActive !== rightActive) return rightActive - leftActive;
+      const leftMappings = (Array.isArray(left.data.boardIds) ? left.data.boardIds.length : 0) +
+        (Array.isArray(left.data.classIds) ? left.data.classIds.length : 0);
+      const rightMappings = (Array.isArray(right.data.boardIds) ? right.data.boardIds.length : 0) +
+        (Array.isArray(right.data.classIds) ? right.data.classIds.length : 0);
+      return rightMappings - leftMappings;
+    });
+
+    const canonical = group[0];
+    const boardIds = new Set<string>();
+    const classIds = new Set<string>();
+    for (const item of group) {
+      for (const id of Array.isArray(item.data.boardIds) ? item.data.boardIds : []) boardIds.add(String(id));
+      for (const id of Array.isArray(item.data.classIds) ? item.data.classIds : []) classIds.add(String(id));
+    }
+
+    writes.push({
+      type: "update",
+      ref: db.collection("subjects").doc(canonical.id),
+      data: {
+        boardIds: [...boardIds],
+        classIds: [...classIds],
+        active: true,
+        updatedBy: uid,
+        updatedAt: FieldValue.serverTimestamp(),
+      },
+    });
+
+    let groupMerged = 0;
+    for (const duplicate of group.slice(1)) {
+      groupMerged += 1;
+      merged += 1;
+
+      for (const collection of ["chapters", "questions", "learningMaterials", "quizzes"] as const) {
+        const refs = await db.collection(collection).where("subjectId", "==", duplicate.id).get();
+        for (const doc of refs.docs) {
+          writes.push({
+            type: "update",
+            ref: doc.ref,
+            data: {
+              subjectId: canonical.id,
+              updatedAt: FieldValue.serverTimestamp(),
+            },
+          });
+        }
+      }
+
+      writes.push({
+        type: "update",
+        ref: db.collection("subjects").doc(duplicate.id),
+        data: {
+          active: false,
+          mergedIntoSubjectId: canonical.id,
+          updatedBy: uid,
+          updatedAt: FieldValue.serverTimestamp(),
+        },
+      });
+    }
+
+    auditItems.push({ id: canonical.id, merged: groupMerged });
+  }
+
+  for (let offset = 0; offset < writes.length; offset += 400) {
+    const batch = db.batch();
+    for (const item of writes.slice(offset, offset + 400)) {
+      if (item.type === "set") batch.set(item.ref, item.data, { merge: true });
+      else batch.update(item.ref, item.data);
+    }
+    await batch.commit();
+  }
+
+  for (const item of auditItems) {
+    await db.collection("auditLogs").doc().set({
+      ...auditPayload(uid, role, "NORMALIZE_SUBJECT_MAPPINGS", "subjects", item.id),
+      mergedRecords: item.merged,
+    });
+  }
+
+  return {
+    success: true,
+    groupsNormalized: auditItems.length,
+    mergedSubjectRecords: merged,
+  };
+});
 
 export const bulkImportAcademic = onCall(async (request) => {
   const { uid, role } = assertRole(request);
