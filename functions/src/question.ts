@@ -143,7 +143,7 @@ function audit(uid: string, role: string, action: string, id: string) {
   };
 }
 
-export const listQuestions = onCall(async (request) => {
+export const listQuestions = onCall({ invoker: "public" }, async (request) => {
   assertRole(request);
   const snapshot = await getFirestore().collection("questions").limit(500).get();
   const items: Array<{ id: string; questionText?: unknown; [key: string]: unknown }> = snapshot.docs.map((doc) => ({ id: doc.id, ...doc.data() }));
@@ -151,7 +151,7 @@ export const listQuestions = onCall(async (request) => {
   return { items };
 });
 
-export const createQuestion = onCall(async (request) => {
+export const createQuestion = onCall({ invoker: "public" }, async (request) => {
   const { uid, role } = assertRole(request);
   const data = validate((request.data as { data?: Question })?.data ?? {});
 
@@ -177,7 +177,7 @@ export const createQuestion = onCall(async (request) => {
   return { id: ref.id };
 });
 
-export const updateQuestion = onCall(async (request) => {
+export const updateQuestion = onCall({ invoker: "public" }, async (request) => {
   const { uid, role } = assertRole(request);
   const payload = request.data as { id?: unknown; data?: Question };
   const id = text(payload?.id);
@@ -200,7 +200,7 @@ export const updateQuestion = onCall(async (request) => {
   return { success: true };
 });
 
-export const archiveQuestion = onCall(async (request) => {
+export const archiveQuestion = onCall({ invoker: "public" }, async (request) => {
   const { uid, role } = assertRole(request);
   const id = text((request.data as { id?: unknown })?.id);
   if (!id) throw new HttpsError("invalid-argument", "id is required.");
@@ -224,7 +224,7 @@ type QuestionImportRow = {
   status?: unknown; active?: unknown;
 };
 
-export const bulkImportQuestions = onCall(async (request) => {
+export const bulkImportQuestions = onCall({ invoker: "public" }, async (request) => {
   const { uid, role } = assertRole(request);
   const rows = (request.data as { rows?: unknown } | undefined)?.rows;
   if (!Array.isArray(rows) || rows.length === 0) throw new HttpsError("invalid-argument", "Import must contain at least one row.");
