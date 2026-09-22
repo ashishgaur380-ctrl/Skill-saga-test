@@ -11,6 +11,21 @@ function learner(request: CallableRequest<unknown>) {
   return uid;
 }
 
+// Allows an authenticated user to establish the non-privileged learner role for their own account.
+// This cannot grant admin/teacher/etc. privileges and is safe to call after signup or login.
+export const ensureLearnerRole = onCall(async (request) => {
+  const uid = request.auth?.uid;
+  if (!uid) throw new HttpsError("unauthenticated", "Authentication is required.");
+  const auth = getAuth();
+  const user = await auth.getUser(uid);
+  const claims = user.customClaims ?? {};
+  if (claims.role !== "learner") {
+    await auth.setCustomUserClaims(uid, { ...claims, role: "learner" });
+  }
+  return { success: true, role: "learner" };
+});
+
+
 function text(value: unknown) { return typeof value === "string" ? value.trim() : ""; }
 function getQuizAccess(user:any, quiz:any){const mode=String(quiz?.accessMode||"FREE").toUpperCase();if(mode==="FREE")return{allowed:true};if(mode==="ASSIGNED")return{allowed:Array.isArray(user?.assignedQuizIds)&&user.assignedQuizIds.includes(quiz.id)};if(mode==="XP_UNLOCK")return{allowed:(Number(user?.xp)||0)>=(Number(quiz.requiredXp)||0)};if(mode==="COIN_UNLOCK")return{allowed:(Number(user?.coins)||0)>=(Number(quiz.requiredCoins)||0)};if(mode==="PREMIUM")return{allowed:user?.premiumActive===true};return{allowed:false};}
 
