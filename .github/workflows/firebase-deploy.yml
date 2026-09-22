@@ -14,7 +14,7 @@ on:
       - '.github/workflows/firebase-deploy.yml'
 
 permissions:
-  contents: write
+  contents: read
 
 concurrency:
   group: skill-saga-production-deploy
@@ -34,18 +34,7 @@ jobs:
           node-version: 22
           cache: pnpm
       - run: pnpm install --frozen-lockfile
-      - name: Build functions
-        run: |
-          set -o pipefail
-          pnpm build:functions 2>&1 | tee build-error.log
-      - name: Save build diagnostic on failure
-        if: failure()
-        run: |
-          git config user.name "github-actions[bot]"
-          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add build-error.log
-          git commit -m "CI: capture functions build diagnostic" || true
-          git push || true
+      - run: pnpm build:functions
       - name: Configure Firebase service account
         env:
           FIREBASE_SERVICE_ACCOUNT_JSON: ${{ secrets.FIREBASE_SERVICE_ACCOUNT_JSON }}
@@ -77,3 +66,6 @@ jobs:
           # Remove the retired learner-role function that is no longer in source.
           npx --yes firebase-tools@15.30.2 functions:delete ensureLearnerRole --region us-central1 --project "skill-saga-2" --force || true
           npx --yes firebase-tools@15.30.2 deploy --non-interactive --only functions --project "skill-saga-2"
+        env:
+          GOOGLE_APPLICATION_CREDENTIALS: $RUNNER_TEMP/firebase-service-account.json
+
