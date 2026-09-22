@@ -58,8 +58,9 @@ async function runQuizAutomation(db:any, rule:any){
   const snap=await db.collection("quizzes").where("active","==",true).where("status","==","published").limit(100).get();
   const now=Date.now();
   const quiz=snap.docs.map((d:any)=>({id:d.id,...d.data()})).find((x:any)=>{
-    const publish=Number(x.publishAtMs), expire=Number(x.expireAtMs);
-    return pattern.test(text(x.title)) && (!Number.isFinite(publish)||publish<=now) && (!Number.isFinite(expire)||expire>now);
+    const publish=x.publishAtMs==null||x.publishAtMs===""?null:Number(x.publishAtMs);
+    const expire=x.expireAtMs==null||x.expireAtMs===""?null:Number(x.expireAtMs);
+    return pattern.test(text(x.title)) && (publish===null||(!Number.isNaN(publish)&&publish<=now)) && (expire===null||(!Number.isNaN(expire)&&expire>now));
   });
   if(!quiz) return {success:false,message:"No matching published quiz found."};
   const key=type==="daily_quiz"?"dailyQuizId":"weeklyQuizId";
