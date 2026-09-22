@@ -5,7 +5,8 @@ import { NextRequest, NextResponse } from "next/server";
 const allowedActions=new Set(["listQuizzes","createQuiz","updateQuiz","archiveQuiz","listLearningMaterials","createLearningMaterial","updateLearningMaterial","archiveLearningMaterial"]);
 const projectId=process.env.GCLOUD_PROJECT??"skill-saga-2";
 const region=process.env.FIREBASE_FUNCTIONS_REGION??"us-central1";
-const base=process.env.NEXT_PUBLIC_USE_FIREBASE_EMULATORS==="true"?`http://127.0.0.1:5001/${projectId}/${region}`:(process.env.FIREBASE_FUNCTIONS_BASE_URL??`https://${region}-${projectId}.cloudfunctions.net`);
+const useEmulators = process.env.NEXT_PUBLIC_USE_FIREBASE_EMULATORS === "true" && process.env.NEXT_PUBLIC_ALLOW_LOCAL_EMULATORS === "true";
+const base=useEmulators ? `http://127.0.0.1:5001/${projectId}/${region}` : (process.env.FIREBASE_FUNCTIONS_BASE_URL ?? `https://${region}-${projectId}.cloudfunctions.net`);
 export async function POST(request:NextRequest){
  const authorization=request.headers.get("authorization");
  if(!authorization)return NextResponse.json({error:{message:"Authentication is required."}},{status:401});
@@ -18,5 +19,5 @@ export async function POST(request:NextRequest){
   if(!r.ok)return NextResponse.json(p,{status:r.status});
   const value=p?.data??p?.result??p;
   return NextResponse.json({data:value?.data&&Object.keys(value).length===1?value.data:value},{status:r.status});
- }catch(e){return NextResponse.json({error:{message:e instanceof Error?e.message:"Unable to reach Functions emulator."}},{status:502});}
+ }catch(e){return NextResponse.json({error:{message:e instanceof Error?e.message:"Unable to reach Quiz Manager Functions."}},{status:502});}
 }
