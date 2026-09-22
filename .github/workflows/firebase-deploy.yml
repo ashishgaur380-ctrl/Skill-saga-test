@@ -66,3 +66,25 @@ jobs:
           npx --yes firebase-tools@15.30.2 deploy --non-interactive --only functions --project "skill-saga-2"
         env:
           GOOGLE_APPLICATION_CREDENTIALS: $RUNNER_TEMP/firebase-service-account.json
+
+      - name: Configure gcloud for Cloud Run IAM
+        uses: google-github-actions/auth@v2
+        with:
+          credentials_json: ${{ secrets.FIREBASE_SERVICE_ACCOUNT_JSON }}
+
+      - name: Set Academic function invocation policy
+        uses: google-github-actions/setup-gcloud@v2
+        with:
+          project_id: skill-saga-2
+
+      - name: Allow authenticated callable requests to reach Academic functions
+        env:
+          PROJECT_ID: skill-saga-2
+          REGION: us-central1
+        run: |
+          set -eu
+          for FUNCTION in             listAcademic             createAcademic             updateAcademic             archiveAcademic             deleteAcademic             bulkImportAcademic             normalizeSubjectMappings             repairLegacyClassMappings
+          do
+            echo "Granting Cloud Run invoker to $FUNCTION"
+            gcloud run services add-iam-policy-binding "$FUNCTION"               --region "$REGION"               --project "$PROJECT_ID"               --member="allUsers"               --role="roles/run.invoker"               --quiet
+          done
