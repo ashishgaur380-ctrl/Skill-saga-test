@@ -1,4 +1,5 @@
 // Skill Saga 2.0 learner callable deployment sync: 2026-09-21
+// Deployment verification trigger: preserve the frozen source tree semantics.
 import { initializeApp } from "firebase-admin/app";
 initializeApp();
 export { listAcademic, createAcademic, updateAcademic, archiveAcademic, deleteAcademic, bulkImportAcademic, normalizeSubjectMappings, repairLegacyClassMappings } from "./academic";
