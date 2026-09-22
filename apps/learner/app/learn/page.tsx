@@ -20,7 +20,8 @@ export default function Learn(){
  useEffect(()=>onAuthStateChanged(learnerAuth,async u=>{
    if(!u){setLoading(false);return;}
    try{
-     const token=await u.getIdToken();
+     await learnerFunction("ensureLearnerRole",{},await u.getIdToken());
+     const token=await u.getIdToken(true);
      const [b,c]=await Promise.all([
        learnerFunction("getLearnerAcademic",{collection:"boards"},token),
        learnerFunction("getLearnerAcademic",{collection:"classes"},token)
