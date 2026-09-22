@@ -75,7 +75,10 @@ function validate(raw: Question) {
 
   const correctOption = Number(raw.correctOption);
   if (!Number.isInteger(correctOption) || correctOption < 0 || correctOption > 3) {
-    throw new HttpsError("invalid-argument", "Correct option must be 0, 1, 2 or 3.");
+    throw new HttpsError(
+      "invalid-argument",
+      `Correct option must be 0, 1, 2 or 3. Received: ${String(raw.correctOption)} (parsed: ${String(correctOption)})`
+    );
   }
 
   const difficulty = text(raw.difficulty).toLowerCase();
