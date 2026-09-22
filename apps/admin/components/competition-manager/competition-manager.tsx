@@ -85,7 +85,13 @@ export default function CompetitionManager() {
     } finally { setLoading(false); }
   }, []);
 
-  useEffect(() => { void load(); }, [load]);\n\n  // Keep scheduled competitions visibly in sync with the clock without requiring a manual refresh.\n  useEffect(() => {\n    const timer = window.setInterval(() => { void load(); }, 30000);\n    return () => window.clearInterval(timer);\n  }, [load]);
+  useEffect(() => { void load(); }, [load]);
+
+  // Keep scheduled competitions visibly in sync with the clock without requiring a manual refresh.
+  useEffect(() => {
+    const timer = window.setInterval(() => { void load(); }, 30000);
+    return () => window.clearInterval(timer);
+  }, [load]);
 
   function create() {
     setEditing(null); setForm({ ...blank }); setOpen(true); setError(null); setNotice(null);
