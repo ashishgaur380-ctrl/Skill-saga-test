@@ -3,27 +3,25 @@ import { getFirestore, FieldValue } from "firebase-admin/firestore";
 import type { Firestore } from "firebase-admin/firestore";
 import { onCall, HttpsError, type CallableRequest } from "firebase-functions/v2/https";
 
-function learner(request: CallableRequest<unknown>) {
+async function learner(request: CallableRequest<unknown>) {
   const uid = request.auth?.uid;
   const role = request.auth?.token.role;
   if (!uid) throw new HttpsError("unauthenticated", "Learner authentication is required.");
-  if (role !== "learner") throw new HttpsError("permission-denied", "Only learner accounts can use the learner quiz service.");
-  return uid;
-}
-
-// Allows an authenticated user to establish the non-privileged learner role for their own account.
-// This cannot grant admin/teacher/etc. privileges and is safe to call after signup or login.
-export const ensureLearnerRole = onCall(async (request) => {
-  const uid = request.auth?.uid;
-  if (!uid) throw new HttpsError("unauthenticated", "Authentication is required.");
+  if (role === "learner") return uid;
+  if (role) throw new HttpsError("permission-denied", "Only learner accounts can use the learner quiz service.");
+  // New Firebase Auth users may not have a custom role claim yet. Bootstrap
+  // the non-privileged learner role for the authenticated account, then allow
+  // this request to continue. Privileged roles are never overwritten.
   const auth = getAuth();
   const user = await auth.getUser(uid);
   const claims = user.customClaims ?? {};
-  if (claims.role !== "learner") {
+  if (!claims.role) {
     await auth.setCustomUserClaims(uid, { ...claims, role: "learner" });
+    return uid;
   }
-  return { success: true, role: "learner" };
-});
+  if (claims.role !== "learner") throw new HttpsError("permission-denied", "Only learner accounts can use the learner quiz service.");
+  return uid;
+}
 
 
 function text(value: unknown) { return typeof value === "string" ? value.trim() : ""; }
