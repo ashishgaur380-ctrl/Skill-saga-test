@@ -29,6 +29,7 @@ function quizIsLive(data: any, now = Date.now()) {
   return true;
 }
 
+// Production deployment trigger: 2026-09-22 competition live-state fix.
 function optionalTimestamp(value: unknown): number | null {
   if (value === null || value === undefined || value === "") return null;
   const n = Number(value);
