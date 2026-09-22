@@ -1,3 +1,4 @@
+// Production learner deployment sync: 2026-09-22
 // Production learner callable authorization: authenticated UID only; no custom-role dependency.
 import { getAuth } from "firebase-admin/auth";
 import { getFirestore, FieldValue } from "firebase-admin/firestore";
