@@ -1,0 +1,52 @@
+name: Skill Saga Competition Deploy
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'functions/src/competition.ts'
+      - 'functions/src/index.ts'
+      - 'functions/package.json'
+      - 'package.json'
+      - 'pnpm-lock.yaml'
+      - '.github/workflows/competition-deploy.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: skill-saga-competition-deploy
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    environment: production
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10.0.0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm build:functions
+      - name: Configure Firebase service account
+        env:
+          FIREBASE_SERVICE_ACCOUNT_JSON: ${{ secrets.FIREBASE_SERVICE_ACCOUNT_JSON }}
+        run: |
+          set -eu
+          test -n "$FIREBASE_SERVICE_ACCOUNT_JSON"
+          printf '%s' "$FIREBASE_SERVICE_ACCOUNT_JSON" > "$RUNNER_TEMP/firebase-service-account.json"
+          chmod 600 "$RUNNER_TEMP/firebase-service-account.json"
+      - name: Deploy competition functions
+        env:
+          GOOGLE_APPLICATION_CREDENTIALS: ${{ runner.temp }}/firebase-service-account.json
+        run: |
+          set -eu
+          npx --yes firebase-tools@15.30.2 deploy --non-interactive \
+            --only functions:listCompetitions,functions:createCompetition,functions:updateCompetition,functions:archiveCompetition \
+            --project skill-saga-2
