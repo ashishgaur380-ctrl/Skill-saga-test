@@ -171,7 +171,7 @@ function auditPayload(
   };
 }
 
-export const listAcademic = onCall(async (request) => {
+export const listAcademic = onCall({ invoker: "public" }, async (request) => {
   const { role } = assertRole(request);
   void role;
 
@@ -213,7 +213,7 @@ export const listAcademic = onCall(async (request) => {
   return { items };
 });
 
-export const createAcademic = onCall(async (request) => {
+export const createAcademic = onCall({ invoker: "public" }, async (request) => {
   const { uid, role } = assertRole(request);
   const data = request.data as { collection?: unknown; data?: unknown } | undefined;
   const collection = collectionName(data?.collection);
@@ -249,7 +249,7 @@ export const createAcademic = onCall(async (request) => {
   return { id: ref.id };
 });
 
-export const updateAcademic = onCall(async (request) => {
+export const updateAcademic = onCall({ invoker: "public" }, async (request) => {
   const { uid, role } = assertRole(request);
   const data = request.data as { collection?: unknown; id?: unknown; data?: unknown } | undefined;
   const collection = collectionName(data?.collection);
@@ -288,7 +288,7 @@ export const updateAcademic = onCall(async (request) => {
   return { success: true };
 });
 
-export const archiveAcademic = onCall(async (request) => {
+export const archiveAcademic = onCall({ invoker: "public" }, async (request) => {
   const { uid, role } = assertRole(request);
   const data = request.data as { collection?: unknown; id?: unknown } | undefined;
   const collection = collectionName(data?.collection);
@@ -348,7 +348,7 @@ function entityFromRow(value: unknown): AcademicCollection {
 }
 
 
-export const normalizeSubjectMappings = onCall(async (request) => {
+export const normalizeSubjectMappings = onCall({ invoker: "public" }, async (request) => {
   const { uid, role } = assertRole(request);
   const db = getFirestore();
   const snapshot = await db.collection("subjects").get();
@@ -470,7 +470,7 @@ export const normalizeSubjectMappings = onCall(async (request) => {
 });
 
 
-export const repairLegacyClassMappings = onCall(async (request) => {
+export const repairLegacyClassMappings = onCall({ invoker: "public" }, async (request) => {
   const { uid, role } = assertRole(request);
   const db = getFirestore();
 
@@ -565,7 +565,7 @@ export const repairLegacyClassMappings = onCall(async (request) => {
   };
 });
 
-export const deleteAcademic = onCall(async (request) => {
+export const deleteAcademic = onCall({ invoker: "public" }, async (request) => {
   const { uid, role } = assertRole(request);
   if (role !== "super_admin") {
     throw new HttpsError("permission-denied", "Permanent academic deletion requires super_admin access.");
@@ -640,7 +640,7 @@ export const deleteAcademic = onCall(async (request) => {
   return { success: true, deletedDocuments: deleted, storageObjectsDeleted: storageDeleted, collection, id: data.id };
 });
 
-export const bulkImportAcademic = onCall(async (request) => {
+export const bulkImportAcademic = onCall({ invoker: "public" }, async (request) => {
   const { uid, role } = assertRole(request);
   const payload = request.data as { rows?: unknown } | undefined;
   if (!Array.isArray(payload?.rows) || payload.rows.length === 0)
