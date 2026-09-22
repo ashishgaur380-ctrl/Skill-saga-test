@@ -1,7 +1,14 @@
 // Skill Saga 2.0 learner callable deployment sync: 2026-09-21
 // Deployment verification trigger: preserve the frozen source tree semantics.
 import { initializeApp } from "firebase-admin/app";
+import { setGlobalOptions } from "firebase-functions/v2/options";
+
 initializeApp();
+// The Next.js server proxies authenticated callable requests to these
+// production HTTPS functions. Cloud Run must allow the request to reach the
+// callable handler; application-level Firebase Auth remains enforced by
+// assertRole() in each admin callable.
+setGlobalOptions({ invoker: "public" });
 export { listAcademic, createAcademic, updateAcademic, archiveAcademic, deleteAcademic, bulkImportAcademic, normalizeSubjectMappings, repairLegacyClassMappings } from "./academic";
 export { listQuestions, createQuestion, updateQuestion, archiveQuestion, bulkImportQuestions } from "./question";
 export { listQuizzes, createQuiz, updateQuiz, archiveQuiz } from "./quiz";
