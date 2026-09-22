@@ -48,7 +48,7 @@ jobs:
         run: |
           set -eu
           npx --yes firebase-tools@15.30.2 deploy --non-interactive \
-            --only functions:listCompetitions,functions:createCompetition,functions:updateCompetition,functions:archiveCompetition \
+            --only functions:listCompetitions,functions:createCompetition,functions:updateCompetition,functions:archiveCompetition,functions:listPublishedCompetitions,functions:joinCompetition,functions:getCompetitionQuiz,functions:submitCompetitionAttempt,functions:getCompetitionLeaderboard,functions:runCompetitionLifecycle \
             --project skill-saga-2
       - name: Authenticate gcloud
         env:
@@ -59,7 +59,7 @@ jobs:
       - name: Set Competition invoker policy
         run: |
           set -eu
-          for f in listCompetitions createCompetition updateCompetition archiveCompetition; do
+          for f in listCompetitions createCompetition updateCompetition archiveCompetition listPublishedCompetitions joinCompetition getCompetitionQuiz submitCompetitionAttempt getCompetitionLeaderboard; do
             gcloud functions add-invoker-policy-binding "$f" \
               --gen2 --region us-central1 --project skill-saga-2 --member="allUsers"
           done
