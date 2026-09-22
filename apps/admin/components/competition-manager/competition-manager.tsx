@@ -1,7 +1,8 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
-import { firebaseAuth } from "../../lib/firebase";
+import { firebaseAuth, firebaseFunctions } from "../../lib/firebase";
+import { httpsCallable } from "firebase/functions";
 
 type C = {
   id: string; name: string; description?: string; quizId: string; boardId?: string; classId?: string;
@@ -17,18 +18,18 @@ const blank = {
 };
 
 async function call<T>(action: string, data: Record<string, unknown> = {}): Promise<T> {
-  const u = firebaseAuth.currentUser;
-  if (!u) throw new Error("You are not authenticated.");
-  const t = await u.getIdToken();
-  const r = await fetch("/api/competition-manager", {
-    method: "POST",
-    headers: { "Content-Type": "application/json", Authorization: `Bearer ${t}` },
-    body: JSON.stringify({ action, data }),
-    cache: "no-store",
-  });
-  const p = await r.json() as any;
-  if (!r.ok) throw new Error(p.error?.message || "Competition operation failed.");
-  return p.data;
+  if (!firebaseAuth.currentUser) throw new Error("You are not authenticated.");
+  try {
+    const fn = httpsCallable<Record<string, unknown>, T>(firebaseFunctions, action);
+    const result = await fn(data);
+    return result.data;
+  } catch (error: any) {
+    const message =
+      error?.message ||
+      error?.details ||
+      "Competition operation failed.";
+    throw new Error(message);
+  }
 }
 
 async function qs(): Promise<Q[]> {
