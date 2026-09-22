@@ -50,6 +50,12 @@ jobs:
           npx --yes firebase-tools@15.30.2 deploy --non-interactive \
             --only functions:listCompetitions,functions:createCompetition,functions:updateCompetition,functions:archiveCompetition \
             --project skill-saga-2
+      - name: Authenticate gcloud
+        env:
+          GOOGLE_APPLICATION_CREDENTIALS: ${{ runner.temp }}/firebase-service-account.json
+        run: |
+          set -eu
+          gcloud auth activate-service-account --key-file="$GOOGLE_APPLICATION_CREDENTIALS" --project=skill-saga-2
       - name: Set Competition invoker policy
         run: |
           set -eu
