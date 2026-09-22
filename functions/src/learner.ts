@@ -57,7 +57,7 @@ function calculateStreak(attempts:any[]) {
 }
 
 
-export const listPublishedQuizzes = onCall(async (request) => {
+export const listPublishedQuizzes = onCall({ invoker: "public" }, async (request) => {
   learner(request);
   const db = getFirestore();
   const snap = await db.collection("quizzes")
@@ -82,7 +82,7 @@ export const listPublishedQuizzes = onCall(async (request) => {
   return { items };
 });
 
-export const getQuizForAttempt = onCall(async (request) => {
+export const getQuizForAttempt = onCall({ invoker: "public" }, async (request) => {
   learner(request);
   const id = text((request.data as any)?.quizId);
   if (!id) throw new HttpsError("invalid-argument", "quizId is required.");
@@ -120,7 +120,7 @@ export const getQuizForAttempt = onCall(async (request) => {
   return { quiz: { id: quizSnap.id, title: text(quiz.title), description: text(quiz.description), questionCount: questions.length, accessMode:text(quiz.accessMode)||"FREE" }, questions };
 });
 
-export const submitQuizAttempt = onCall(async (request) => {
+export const submitQuizAttempt = onCall({ invoker: "public" }, async (request) => {
   const uid = learner(request);
   const payload = request.data as any;
   const quizId = text(payload?.quizId);
@@ -205,7 +205,7 @@ export const submitQuizAttempt = onCall(async (request) => {
 });
 
 
-export const updateLearnerProfile = onCall(async (request) => {
+export const updateLearnerProfile = onCall({ invoker: "public" }, async (request) => {
   const uid = learner(request);
   const displayName = text((request.data as any)?.displayName);
   if (displayName.length < 2 || displayName.length > 60) {
@@ -232,7 +232,7 @@ export const updateLearnerProfile = onCall(async (request) => {
   return { success: true, displayName };
 });
 
-export const getLearnerStats = onCall(async (request) => {
+export const getLearnerStats = onCall({ invoker: "public" }, async (request) => {
   const uid = learner(request);
   const db = getFirestore();
   const snap = await db.collection("quizAttempts").where("learnerId", "==", uid).limit(500).get();
@@ -258,7 +258,7 @@ export const getLearnerStats = onCall(async (request) => {
   };
 });
 
-export const listLearnerAttempts = onCall(async (request) => {
+export const listLearnerAttempts = onCall({ invoker: "public" }, async (request) => {
   const uid = learner(request);
   const snap = await getFirestore().collection("quizAttempts").where("learnerId", "==", uid).limit(100).get();
   const items = snap.docs.map(doc => {
@@ -275,7 +275,7 @@ export const listLearnerAttempts = onCall(async (request) => {
 });
 
 
-export const getLearnerAttemptDetails = onCall(async (request) => {
+export const getLearnerAttemptDetails = onCall({ invoker: "public" }, async (request) => {
   const uid = learner(request);
   const attemptId = text((request.data as any)?.attemptId);
   if (!attemptId) throw new HttpsError("invalid-argument", "attemptId is required.");
@@ -335,7 +335,7 @@ export const getLearnerAttemptDetails = onCall(async (request) => {
 });
 
 
-export const getLearnerHome = onCall(async (request) => {
+export const getLearnerHome = onCall({ invoker: "public" }, async (request) => {
   const uid = learner(request);
   const db = getFirestore();
 
@@ -401,7 +401,7 @@ async function learnerAcademicCollection(db: Firestore, collection: string) {
   return items;
 }
 
-export const getLearnerAcademic = onCall(async (request) => {
+export const getLearnerAcademic = onCall({ invoker: "public" }, async (request) => {
   learner(request);
   const db = getFirestore();
   const collection = text((request.data as any)?.collection) || "boards";
@@ -439,7 +439,7 @@ export const getLearnerAcademic = onCall(async (request) => {
 });
 
 
-export const getTopicPractice = onCall(async (request) => {
+export const getTopicPractice = onCall({ invoker: "public" }, async (request) => {
   learner(request);
   const topicId = text((request.data as any)?.topicId);
   if (!topicId) throw new HttpsError("invalid-argument", "topicId is required.");
@@ -472,7 +472,7 @@ export const getTopicPractice = onCall(async (request) => {
 });
 
 
-export const submitTopicPractice = onCall(async (request) => {
+export const submitTopicPractice = onCall({ invoker: "public" }, async (request) => {
   const uid = learner(request);
   const payload = request.data as any;
   const topicId = text(payload?.topicId);
@@ -527,7 +527,7 @@ export const submitTopicPractice = onCall(async (request) => {
 });
 
 
-export const getLearnerProgress = onCall(async (request) => {
+export const getLearnerProgress = onCall({ invoker: "public" }, async (request) => {
   const uid = learner(request);
   const db = getFirestore();
 
@@ -679,7 +679,7 @@ export const getLearnerProgress = onCall(async (request) => {
 });
 
 
-export const listPublishedLearningMaterials = onCall(async (request) => {
+export const listPublishedLearningMaterials = onCall({ invoker: "public" }, async (request) => {
   const uid = learner(request);
   const db = getFirestore();
   const payload:any = request.data || {};
@@ -718,7 +718,7 @@ export const listPublishedLearningMaterials = onCall(async (request) => {
   return {items};
 });
 
-export const listLearnerAssignments = onCall(async (request) => {
+export const listLearnerAssignments = onCall({ invoker: "public" }, async (request) => {
   const uid=learner(request); const db=getFirestore(); const user=(await db.collection("users").doc(uid).get()).data()||{};
   const classId=text(user.classId), schoolId=text(user.schoolId);
   const snap=await db.collection("assignments").where("active","==",true).limit(500).get(); const now=Date.now();
@@ -742,7 +742,7 @@ export const listLearnerAssignments = onCall(async (request) => {
   return {items};
 });
 
-export const getLearnerLeaderboard = onCall(async (request) => {
+export const getLearnerLeaderboard = onCall({ invoker: "public" }, async (request) => {
   const uid = learner(request);
   const scope = text((request.data as any)?.scope) || "class";
   const db = getFirestore();
@@ -795,7 +795,7 @@ export const getLearnerLeaderboard = onCall(async (request) => {
   return {scope, rows};
 });
 
-export const listPublishedCompetitions = onCall(async (request) => {
+export const listPublishedCompetitions = onCall({ invoker: "public" }, async (request) => {
   const uid = learner(request);
   const db = getFirestore();
   const snap = await db.collection("competitions")
@@ -830,7 +830,7 @@ export const listPublishedCompetitions = onCall(async (request) => {
   return {items};
 });
 
-export const joinCompetition = onCall(async (request) => {
+export const joinCompetition = onCall({ invoker: "public" }, async (request) => {
   const uid = learner(request), competitionId = text((request.data as any)?.competitionId);
   if (!competitionId) throw new HttpsError("invalid-argument", "competitionId is required.");
   const db = getFirestore(), ref = db.collection("competitions").doc(competitionId), snap = await ref.get();
@@ -845,7 +845,7 @@ export const joinCompetition = onCall(async (request) => {
   return {joined:true};
 });
 
-export const getCompetitionQuiz = onCall(async (request) => {
+export const getCompetitionQuiz = onCall({ invoker: "public" }, async (request) => {
   const uid = learner(request), competitionId = text((request.data as any)?.competitionId);
   if (!competitionId) throw new HttpsError("invalid-argument", "competitionId is required.");
   const db = getFirestore(), c = await db.collection("competitions").doc(competitionId).get();
@@ -861,7 +861,7 @@ export const getCompetitionQuiz = onCall(async (request) => {
   return {competition:{id:c.id,name:text(c.data()?.name),description:text(c.data()?.description),questionCount:questions.length},questions};
 });
 
-export const submitCompetitionAttempt = onCall(async (request) => {
+export const submitCompetitionAttempt = onCall({ invoker: "public" }, async (request) => {
   const uid=learner(request), p=request.data as any, competitionId=text(p?.competitionId), answers=p?.answers;
   if(!competitionId || !Array.isArray(answers)) throw new HttpsError("invalid-argument","competitionId and answers are required.");
   const db=getFirestore(), c=await db.collection("competitions").doc(competitionId).get();
@@ -882,7 +882,7 @@ export const submitCompetitionAttempt = onCall(async (request) => {
   return {result:{correct,total:ids.length,marks,totalMarks,percentage}};
 });
 
-export const getCompetitionLeaderboard = onCall(async (request) => {
+export const getCompetitionLeaderboard = onCall({ invoker: "public" }, async (request) => {
   learner(request);
   const competitionId=text((request.data as any)?.competitionId);
   if(!competitionId) throw new HttpsError("invalid-argument","competitionId is required.");
@@ -892,10 +892,10 @@ export const getCompetitionLeaderboard = onCall(async (request) => {
   return {items:items.slice(0,100).map((x,i)=>({...x,rank:i+1}))};
 });
 
-export const listLearnerNotifications=onCall(async r=>{const uid=learner(r);const db=getFirestore();const s=await db.collection("notifications").where("learnerId","==",uid).orderBy("createdAt","desc").limit(50).get();return{items:s.docs.map(d=>({id:d.id,...d.data()}))};});
-export const markNotificationRead=onCall(async r=>{const uid=learner(r),id=text((r.data as any)?.id);if(!id)throw new HttpsError("invalid-argument","Notification id is required.");const ref=getFirestore().collection("notifications").doc(id),snap=await ref.get();if(!snap.exists||snap.data()?.learnerId!==uid)throw new HttpsError("not-found","Notification was not found.");await ref.update({readAt:FieldValue.serverTimestamp()});return{success:true};});
+export const listLearnerNotifications=onCall({ invoker: "public" }, async r=>{const uid=learner(r);const db=getFirestore();const s=await db.collection("notifications").where("learnerId","==",uid).orderBy("createdAt","desc").limit(50).get();return{items:s.docs.map(d=>({id:d.id,...d.data()}))};});
+export const markNotificationRead=onCall({ invoker: "public" }, async r=>{const uid=learner(r),id=text((r.data as any)?.id);if(!id)throw new HttpsError("invalid-argument","Notification id is required.");const ref=getFirestore().collection("notifications").doc(id),snap=await ref.get();if(!snap.exists||snap.data()?.learnerId!==uid)throw new HttpsError("not-found","Notification was not found.");await ref.update({readAt:FieldValue.serverTimestamp()});return{success:true};});
 
-export const getLearnerRewards = onCall(async (request) => {
+export const getLearnerRewards = onCall({ invoker: "public" }, async (request) => {
   const uid = learner(request);
   const db = getFirestore();
   const [rewardSnap, attemptSnap, redemptionSnap] = await Promise.all([
@@ -913,7 +913,7 @@ export const getLearnerRewards = onCall(async (request) => {
   return {wallet:{balance,earned,spent},rewards,redemptions};
 });
 
-export const redeemReward = onCall(async (request) => {
+export const redeemReward = onCall({ invoker: "public" }, async (request) => {
   const uid=learner(request), rewardId=text((request.data as any)?.rewardId);
   if(!rewardId) throw new HttpsError("invalid-argument","rewardId is required.");
   const db=getFirestore(), rewardRef=db.collection("rewards").doc(rewardId), rewardSnap=await rewardRef.get();
