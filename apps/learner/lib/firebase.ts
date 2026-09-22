@@ -12,8 +12,8 @@ export const learnerFunctions = getFunctions(
 );
 
 const useFirebaseEmulators =
-  process.env.NEXT_PUBLIC_USE_FIREBASE_EMULATORS === "true" ||
-  process.env.NODE_ENV === "development";
+  process.env.NEXT_PUBLIC_USE_FIREBASE_EMULATORS === "true" &&
+  process.env.NEXT_PUBLIC_ALLOW_LOCAL_EMULATORS === "true";
 
 function codespacesProxyUrl(path: string): string | null {
   if (typeof window === "undefined") return null;
