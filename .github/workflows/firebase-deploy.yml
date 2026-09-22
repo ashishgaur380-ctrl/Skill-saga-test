@@ -14,7 +14,7 @@ on:
       - '.github/workflows/firebase-deploy.yml'
 
 permissions:
-  contents: read
+  contents: write
 
 concurrency:
   group: skill-saga-production-deploy
@@ -34,7 +34,18 @@ jobs:
           node-version: 22
           cache: pnpm
       - run: pnpm install --frozen-lockfile
-      - run: pnpm build:functions
+      - name: Build functions
+        run: |
+          set -o pipefail
+          pnpm build:functions 2>&1 | tee build-error.log
+      - name: Save build diagnostic on failure
+        if: failure()
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add build-error.log
+          git commit -m "CI: capture functions build diagnostic" || true
+          git push || true
       - name: Configure Firebase service account
         env:
           FIREBASE_SERVICE_ACCOUNT_JSON: ${{ secrets.FIREBASE_SERVICE_ACCOUNT_JSON }}
