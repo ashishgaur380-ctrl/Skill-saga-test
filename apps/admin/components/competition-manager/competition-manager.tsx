@@ -33,29 +33,25 @@ async function call<T>(action: string, data: Record<string, unknown> = {}): Prom
 }
 
 async function qs(): Promise<Q[]> {
-  const u = firebaseAuth.currentUser;
-  if (!u) throw new Error("You are not authenticated.");
-  const t = await u.getIdToken();
-  const r = await fetch("/api/quiz-manager", {
-    method: "POST", headers: { "Content-Type": "application/json", Authorization: `Bearer ${t}` },
-    body: JSON.stringify({ action: "listQuizzes", data: {} }), cache: "no-store",
-  });
-  const p = await r.json() as any;
-  if (!r.ok) throw new Error(p.error?.message || "Unable to load quizzes.");
-  return p.data?.items ?? [];
+  if (!firebaseAuth.currentUser) throw new Error("You are not authenticated.");
+  try {
+    const fn = httpsCallable<Record<string, unknown>, { items?: Q[] }>(firebaseFunctions, "listQuizzes");
+    const result = await fn({});
+    return result.data?.items ?? [];
+  } catch (error: any) {
+    throw new Error(error?.message || "Unable to load quizzes.");
+  }
 }
 
 async function ac(c: string): Promise<A[]> {
-  const u = firebaseAuth.currentUser;
-  if (!u) throw new Error("You are not authenticated.");
-  const t = await u.getIdToken();
-  const r = await fetch("/api/academic", {
-    method: "POST", headers: { "Content-Type": "application/json", Authorization: `Bearer ${t}` },
-    body: JSON.stringify({ action: "listAcademic", data: { collection: c } }), cache: "no-store",
-  });
-  const p = await r.json() as any;
-  if (!r.ok) throw new Error(p.error?.message || "Unable to load academic data.");
-  return p.data?.items ?? [];
+  if (!firebaseAuth.currentUser) throw new Error("You are not authenticated.");
+  try {
+    const fn = httpsCallable<Record<string, unknown>, { items?: A[] }>(firebaseFunctions, "listAcademic");
+    const result = await fn({ collection: c });
+    return result.data?.items ?? [];
+  } catch (error: any) {
+    throw new Error(error?.message || "Unable to load academic data.");
+  }
 }
 
 function toLocalInput(ms?: number | null) {
