@@ -1,6 +1,15 @@
 import { NextRequest, NextResponse } from "next/server";
+
+export const runtime = "nodejs";
+export const dynamic = "force-dynamic";
 const allowedActions = new Set(["listQuestions","createQuestion","updateQuestion","archiveQuestion","bulkImportQuestions"]);
 const projectId=process.env.GCLOUD_PROJECT??"skill-saga-2";
 const region=process.env.FIREBASE_FUNCTIONS_REGION??"us-central1";
-const base=process.env.NEXT_PUBLIC_USE_FIREBASE_EMULATORS==="true"?`http://127.0.0.1:5001/${projectId}/${region}`:(process.env.FIREBASE_FUNCTIONS_BASE_URL??`https://${region}-${projectId}.cloudfunctions.net`);
-export async function POST(request: NextRequest) { const authorization=request.headers.get("authorization"); if(!authorization)return NextResponse.json({error:{message:"Authentication is required."}},{status:401}); let body:any; try{body=await request.json()}catch{return NextResponse.json({error:{message:"Invalid request body."}},{status:400});} const action=typeof body.action==="string"?body.action:""; if(!allowedActions.has(action))return NextResponse.json({error:{message:"Unsupported question action."}},{status:400}); try{const response=await fetch(`${base}/${action}`,{method:"POST",headers:{"Content-Type":"application/json",Authorization:authorization},body:JSON.stringify({data:body.data}),cache:"no-store"});const text=await response.text();let payload:any;try{payload=JSON.parse(text)}catch{payload={error:{message:text||"Invalid Functions response."}}}if(!response.ok)return NextResponse.json(payload,{status:response.status});const value=payload?.data??payload?.result??payload;return NextResponse.json({data:value?.data&&Object.keys(value).length===1?value.data:value},{status:response.status});}catch(error){const message=error instanceof Error?error.message:"Unable to reach Firebase Functions.";return NextResponse.json({error:{message}},{status:502});}}
+const useEmulators =
+  process.env.NEXT_PUBLIC_USE_FIREBASE_EMULATORS === "true" &&
+  process.env.NEXT_PUBLIC_ALLOW_LOCAL_EMULATORS === "true";
+const base = useEmulators
+  ? `http://127.0.0.1:5001/${projectId}/${region}`
+  : (process.env.FIREBASE_FUNCTIONS_BASE_URL ??
+      `https://${region}-${projectId}.cloudfunctions.net`);
+export async function POST(request: NextRequest) { const authorization=request.headers.get("authorization"); if(!authorization)return NextResponse.json({error:{message:"Authentication is required."}},{status:401}); let body:any; try{body=await request.json()}catch{return NextResponse.json({error:{message:"Invalid request body."}},{status:400});} const action=typeof body.action==="string"?body.action:""; if(!allowedActions.has(action))return NextResponse.json({error:{message:"Unsupported question action."}},{status:400}); try{const response=await fetch(`${base}/${action}`,{method:"POST",headers:{"Content-Type":"application/json",Authorization:authorization},body:JSON.stringify({data:body.data}),cache:"no-store"});const text=await response.text();let payload:any;try{payload=JSON.parse(text)}catch{payload={error:{message:text||"Invalid Functions response."}}}if(!response.ok)return NextResponse.json(payload,{status:response.status});const value=payload?.data??payload?.result??payload;return NextResponse.json({data:value?.data&&Object.keys(value).length===1?value.data:value},{status:response.status});}catch(error){const message=error instanceof Error?error.message:"Unable to reach Firebase Functions.";return NextResponse.json({error:{message:`Question Bank Functions unavailable: ${message}`}},{status:502});}}
