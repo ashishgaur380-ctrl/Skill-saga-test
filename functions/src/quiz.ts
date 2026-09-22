@@ -64,14 +64,14 @@ async function ensureQuestions(ids:string[], published:boolean, data:any) {
 function audit(uid:string,role:string,action:string,id:string){
   return {actorUid:uid,actorRole:role,action,collection:"quizzes",documentId:id,createdAt:FieldValue.serverTimestamp()};
 }
-export const listQuizzes=onCall(async request=>{
+export const listQuizzes=onCall({ invoker: "public" }, async request=>{
   auth(request);
   const snap=await getFirestore().collection("quizzes").limit(500).get();
   const items=snap.docs.map(d=>({id:d.id,...d.data()}));
   items.sort((a:any,b:any)=>String(a.title??"").localeCompare(String(b.title??"")));
   return {items};
 });
-export const createQuiz=onCall(async request=>{
+export const createQuiz=onCall({ invoker: "public" }, async request=>{
   const {uid,role}=auth(request); const data=validate((request.data as any)?.data??{});
   await ensureQuestions(data.questionIds,data.status==="published",data);
   const db=getFirestore(); const ref=db.collection("quizzes").doc();
@@ -79,7 +79,7 @@ export const createQuiz=onCall(async request=>{
   await db.collection("auditLogs").doc().set(audit(uid,role,"CREATE",ref.id));
   return {id:ref.id};
 });
-export const updateQuiz=onCall(async request=>{
+export const updateQuiz=onCall({ invoker: "public" }, async request=>{
   const {uid,role}=auth(request); const p=request.data as any; const id=text(p?.id);
   if(!id) throw new HttpsError("invalid-argument","id is required.");
   const data=validate(p?.data??{}); await ensureQuestions(data.questionIds,data.status==="published",data);
@@ -89,7 +89,7 @@ export const updateQuiz=onCall(async request=>{
   await db.collection("auditLogs").doc().set(audit(uid,role,"UPDATE",id));
   return {success:true};
 });
-export const archiveQuiz=onCall(async request=>{
+export const archiveQuiz=onCall({ invoker: "public" }, async request=>{
   const {uid,role}=auth(request); const id=text((request.data as any)?.id);
   if(!id) throw new HttpsError("invalid-argument","id is required.");
   const db=getFirestore(); const ref=db.collection("quizzes").doc(id);
