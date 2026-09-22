@@ -6,7 +6,7 @@ import { httpsCallable } from "firebase/functions";
 
 type C = {
   id: string; name: string; description?: string; quizId: string; boardId?: string; classId?: string;
-  maxParticipants: number; entryType: string; entryFee: number; status: string; lifecycleStatus?: string; active: boolean;
+  maxParticipants: number; entryType: string; entryFee: number; status: string; active: boolean;
   startAtMs?: number | null; endAtMs?: number | null;
 };
 type Q = { id: string; title: string; active: boolean };
@@ -87,12 +87,6 @@ export default function CompetitionManager() {
 
   useEffect(() => { void load(); }, [load]);
 
-  // Keep scheduled competitions visibly in sync with the clock without requiring a manual refresh.
-  useEffect(() => {
-    const timer = window.setInterval(() => { void load(); }, 30000);
-    return () => window.clearInterval(timer);
-  }, [load]);
-
   function create() {
     setEditing(null); setForm({ ...blank }); setOpen(true); setError(null); setNotice(null);
   }
@@ -157,7 +151,7 @@ export default function CompetitionManager() {
               <td>{quizzes.find(q => q.id === x.quizId)?.title ?? x.quizId}</td>
               <td>{x.startAtMs ? new Date(x.startAtMs).toLocaleString() : "Immediate"}{x.endAtMs ? ` → ${new Date(x.endAtMs).toLocaleString()}` : ""}</td>
               <td>{x.maxParticipants}</td>
-              <td><span className={x.active ? "status-pill active" : "status-pill"}>{x.active ? ({ draft: "Draft", scheduled: "Scheduled", live: "Live", completed: "Completed" } as Record<string,string>)[x.lifecycleStatus ?? x.status] ?? x.status : "Archived"}</span></td>
+              <td><span className={x.active ? "status-pill active" : "status-pill"}>{x.active ? x.status : "Archived"}</span></td>
               <td><div className="row-actions"><button className="text-button" onClick={() => edit(x)}>Edit</button>{x.active && <button className="text-button danger" disabled={saving} onClick={() => void archive(x)}>Archive</button>}</div></td>
             </tr>)}
           </tbody></table></div>}
