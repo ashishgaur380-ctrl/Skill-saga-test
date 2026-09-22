@@ -22,7 +22,10 @@ export async function learnerFunction(
   _token?: string
 ): Promise<any> {
   try {
-    const forwardedUrl = emulatorFunctionUrl(action);
+    const useEmulators =
+      process.env.NEXT_PUBLIC_USE_FIREBASE_EMULATORS === "true" &&
+      process.env.NEXT_PUBLIC_ALLOW_LOCAL_EMULATORS === "true";
+    const forwardedUrl = useEmulators ? emulatorFunctionUrl(action) : null;
     const callable = forwardedUrl
       ? httpsCallableFromURL<any, any>(learnerFunctions, forwardedUrl)
       : httpsCallable<any, any>(learnerFunctions, action);
