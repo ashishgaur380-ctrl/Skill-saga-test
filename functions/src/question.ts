@@ -269,8 +269,7 @@ export const bulkImportQuestions = onCall({ invoker: "public" }, async (request)
     const row=rows[i] as QuestionImportRow, rowNo=i+2;
     try {
       const options=Array.isArray(row.options) ? row.options : [row.option1,row.option2,row.option3,row.option4];
-      let correct=Number(row.correctOption);
-      if(Number.isInteger(correct) && correct>=1 && correct<=4) correct-=1;
+      const correct=Number(row.correctOption);
       const raw:any = {
         questionText:row.questionText, options, correctOption:correct,
         explanation:row.explanation, difficulty:row.difficulty||"easy", marks:row.marks??1,
