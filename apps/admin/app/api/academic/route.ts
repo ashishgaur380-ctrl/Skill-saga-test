@@ -16,10 +16,18 @@ const allowedActions = new Set([
 
 const projectId = process.env.GCLOUD_PROJECT ?? "skill-saga-2";
 const region = process.env.FIREBASE_FUNCTIONS_REGION ?? "us-central1";
-const useEmulators = process.env.NEXT_PUBLIC_USE_FIREBASE_EMULATORS === "true" || process.env.NODE_ENV !== "production";
+
+// Production is the default. Local emulators are used only when explicitly
+// enabled by both environment flags; NODE_ENV=development alone must never
+// redirect production-bound admin requests to 127.0.0.1.
+const useEmulators =
+  process.env.NEXT_PUBLIC_USE_FIREBASE_EMULATORS === "true" &&
+  process.env.NEXT_PUBLIC_ALLOW_LOCAL_EMULATORS === "true";
+
 const base = useEmulators
   ? `http://127.0.0.1:5001/${projectId}/${region}`
-  : (process.env.FIREBASE_FUNCTIONS_BASE_URL ?? `https://${region}-${projectId}.cloudfunctions.net`);
+  : (process.env.FIREBASE_FUNCTIONS_BASE_URL ??
+      `https://${region}-${projectId}.cloudfunctions.net`);
 
 export async function POST(request: NextRequest) {
   const authorization = request.headers.get("authorization");
@@ -67,16 +75,15 @@ export async function POST(request: NextRequest) {
     try {
       payload = JSON.parse(text);
     } catch {
-      payload = { error: { message: text || "Emulator returned an invalid response." } };
+      payload = { error: { message: text || "Firebase Function returned an invalid response." } };
     }
 
     if (!response.ok) {
       return NextResponse.json(payload, { status: response.status });
     }
 
-    // Firebase callable responses are normally { data: ... }. The emulator
-    // can expose the callable result in a slightly different envelope, so
-    // normalize it here before returning it to the browser client.
+    // Firebase callable responses are normally { data: ... }. Normalize the
+    // response so the browser client always receives { data: ... }.
     if (payload && typeof payload === "object") {
       const envelope = payload as { data?: unknown; result?: unknown };
       let value =
@@ -86,7 +93,6 @@ export async function POST(request: NextRequest) {
             ? envelope.data
             : payload;
 
-      // Some emulator/runtime combinations add an extra callable envelope.
       if (
         value &&
         typeof value === "object" &&
