@@ -66,15 +66,3 @@ jobs:
           # Remove the retired learner-role function that is no longer in source.
           npx --yes firebase-tools@15.30.2 functions:delete ensureLearnerRole --region us-central1 --project "skill-saga-2" --force || true
           npx --yes firebase-tools@15.30.2 deploy --non-interactive --only functions --project "skill-saga-2"
-      - name: Ensure learner callable functions are publicly invokable
-        env:
-          GOOGLE_APPLICATION_CREDENTIALS: ${{ runner.temp }}/firebase-service-account.json
-        run: |
-          set -eu
-          gcloud auth activate-service-account --key-file="$GOOGLE_APPLICATION_CREDENTIALS" --project="skill-saga-2"
-          for f in listPublishedCompetitions joinCompetition getCompetitionQuiz submitCompetitionAttempt getCompetitionLeaderboard listPublishedQuizzes getQuizForAttempt submitQuizAttempt getLearnerHome getLearnerStats getLearnerLeaderboard; do
-            gcloud functions add-invoker-policy-binding "$f" --gen2 --region us-central1 --project skill-saga-2 --member="allUsers" || true
-          done
-        env:
-          GOOGLE_APPLICATION_CREDENTIALS: $RUNNER_TEMP/firebase-service-account.json
-
