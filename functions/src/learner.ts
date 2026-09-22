@@ -825,7 +825,7 @@ export const listPublishedCompetitions = onCall({ invoker: "public" }, async (re
     const startAtMs = optionalTimestamp(d.startAtMs);
     const endAtMs = optionalTimestamp(d.endAtMs);
     const live = competitionIsLive(d, now);
-    const upcoming = Number.isFinite(startAtMs) && startAtMs > now;
+    const upcoming = startAtMs !== null && startAtMs > now;
     return {
       id: doc.id, name: text(d.name), description: text(d.description), quizId: text(d.quizId),
       maxParticipants: Number(d.maxParticipants) || 0, entryType: text(d.entryType) || "free",
