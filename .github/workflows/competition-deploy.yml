@@ -50,3 +50,10 @@ jobs:
           npx --yes firebase-tools@15.30.2 deploy --non-interactive \
             --only functions:listCompetitions,functions:createCompetition,functions:updateCompetition,functions:archiveCompetition \
             --project skill-saga-2
+      - name: Set Competition invoker policy
+        run: |
+          set -eu
+          for f in listCompetitions createCompetition updateCompetition archiveCompetition; do
+            gcloud functions add-invoker-policy-binding "$f" \
+              --gen2 --region us-central1 --project skill-saga-2 --member="allUsers"
+          done
