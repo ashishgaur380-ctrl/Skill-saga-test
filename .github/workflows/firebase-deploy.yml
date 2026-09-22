@@ -58,6 +58,18 @@ jobs:
           print("Service account:", data["client_email"])
           print("Project:", data.get("project_id", "not specified"))
           PY
+      - name: Grant Cloud Scheduler deployment permission
+        run: |
+          set -eu
+          export GOOGLE_APPLICATION_CREDENTIALS="$RUNNER_TEMP/firebase-service-account.json"
+          gcloud auth activate-service-account --key-file="$GOOGLE_APPLICATION_CREDENTIALS" --project "skill-saga-2"
+          DEPLOY_SA="$(python - <<'PY'
+          import json, os
+          with open(os.environ["GOOGLE_APPLICATION_CREDENTIALS"]) as f:
+              print(json.load(f)["client_email"])
+          PY
+          )"
+          gcloud projects add-iam-policy-binding "skill-saga-2" --member="serviceAccount:${DEPLOY_SA}" --role="roles/cloudscheduler.admin" --quiet
       - name: Deploy Firebase backend and rules
         run: |
           set -eu
