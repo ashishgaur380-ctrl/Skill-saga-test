@@ -1,0 +1,11 @@
+
+> skill-saga-2@0.1.0 build:functions /home/runner/work/Skill-saga-test/Skill-saga-test
+> pnpm --dir functions build
+
+
+> @skill-saga/functions@0.1.0 build /home/runner/work/Skill-saga-test/Skill-saga-test/functions
+> tsc
+
+src/learner.ts(828,52): error TS18047: 'startAtMs' is possibly 'null'.
+ ELIFECYCLE  Command failed with exit code 2.
+ ELIFECYCLE  Command failed with exit code 2.
