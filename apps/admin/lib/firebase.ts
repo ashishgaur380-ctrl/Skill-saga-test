@@ -13,8 +13,10 @@ export const firestore = getFirestore(app);
 export const firebaseStorage = getStorage(app, "gs://skill-saga-2.firebasestorage.app");
 export const firebaseFunctions = getFunctions(app);
 
+// Production is the default. Local emulators require BOTH explicit flags.
 const useFirebaseEmulators =
-  process.env.NEXT_PUBLIC_USE_FIREBASE_EMULATORS === 'true';
+  process.env.NEXT_PUBLIC_USE_FIREBASE_EMULATORS === 'true' &&
+  process.env.NEXT_PUBLIC_ALLOW_LOCAL_EMULATORS === 'true';
 
 if (useFirebaseEmulators) {
   const emulatorState = globalThis as typeof globalThis & {
