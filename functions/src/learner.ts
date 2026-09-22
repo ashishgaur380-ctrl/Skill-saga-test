@@ -29,12 +29,18 @@ function quizIsLive(data: any, now = Date.now()) {
   return true;
 }
 
+function optionalTimestamp(value: unknown): number | null {
+  if (value === null || value === undefined || value === "") return null;
+  const n = Number(value);
+  return Number.isFinite(n) ? n : null;
+}
+
 function competitionIsLive(data: any, now = Date.now()) {
   if (data?.active !== true || data?.status !== "published") return false;
-  const start = Number(data?.startAtMs);
-  const end = Number(data?.endAtMs);
-  if (Number.isFinite(start) && start > now) return false;
-  if (Number.isFinite(end) && end <= now) return false;
+  const start = optionalTimestamp(data?.startAtMs);
+  const end = optionalTimestamp(data?.endAtMs);
+  if (start !== null && start > now) return false;
+  if (end !== null && end <= now) return false;
   return true;
 }
 function calculateStreak(attempts:any[]) {
@@ -815,16 +821,16 @@ export const listPublishedCompetitions = onCall({ invoker: "public" }, async (re
       .where("competitionId", "==", doc.id)
       .limit(1000)
       .get()).size;
-    const startAtMs = Number(d.startAtMs);
-    const endAtMs = Number(d.endAtMs);
+    const startAtMs = optionalTimestamp(d.startAtMs);
+    const endAtMs = optionalTimestamp(d.endAtMs);
     const live = competitionIsLive(d, now);
     const upcoming = Number.isFinite(startAtMs) && startAtMs > now;
     return {
       id: doc.id, name: text(d.name), description: text(d.description), quizId: text(d.quizId),
       maxParticipants: Number(d.maxParticipants) || 0, entryType: text(d.entryType) || "free",
       entryFee: Number(d.entryFee) || 0, participants: entryCount, joined: joined.exists,
-      startAtMs: Number.isFinite(startAtMs) ? startAtMs : null,
-      endAtMs: Number.isFinite(endAtMs) ? endAtMs : null,
+      startAtMs,
+      endAtMs,
       state: live ? "live" : upcoming ? "upcoming" : "ended",
     };
   }));
