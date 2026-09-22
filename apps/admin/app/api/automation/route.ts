@@ -8,6 +8,7 @@ const allowed = new Set([
   "createAutomationRule",
   "updateAutomationRule",
   "setAutomationEnabled",
+  "runAutomationEngineNow",
 ]);
 
 // Automation Manager uses the same explicit production routing pattern as
