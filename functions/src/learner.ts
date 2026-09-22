@@ -19,7 +19,8 @@ async function learner(request: CallableRequest<unknown>) {
     await auth.setCustomUserClaims(uid, { ...claims, role: "learner" });
     return uid;
   }
-  if (claims.role !== "learner") throw new HttpsError("permission-denied", "Only learner accounts can use the learner quiz service.");
+  if (claims.role === "learner") return uid;
+  throw new HttpsError("permission-denied", "Only learner accounts can use the learner quiz service.");
   return uid;
 }
 
