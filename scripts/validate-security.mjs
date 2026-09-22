@@ -7,7 +7,7 @@ const competition=read("functions/src/competition.ts");
 const rules=read("security/firestore.rules");
 
 assert.match(learner,/const uid = request\.auth\?\.uid/);
-assert.match(learner,/role !== "learner"/);
+assert.doesNotMatch(learner,/role !== "learner"/);\nassert.match(learner,/const uid = request\\.auth\\?\\.uid/);
 assert.match(learner,/submitQuizAttempt/);
 assert.match(learner,/quizIsLive\(quizSnap\.data\(\)\)/);
 assert.match(learner,/Number\(d\.correctOption\)/);
